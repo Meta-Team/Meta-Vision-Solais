@@ -18,6 +18,7 @@ find_package(Qt${QT_VERSION} COMPONENTS ${QT_LIBS} REQUIRED)
 find_package(OpenCV 4 REQUIRED)
 message("Found OpenCV")
 message("    Version: " ${OpenCV_VERSION})
+message("    Libraries: " ${OpenCV_LIBRARIES})
 message("    Includes: " ${OpenCV_INCLUDE_DIRS})
 
 include_directories(include)
