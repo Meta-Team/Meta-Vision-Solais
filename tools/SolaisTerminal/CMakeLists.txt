@@ -5,6 +5,7 @@ set(CMAKE_AUTOUIC ON)
 add_executable(SolarisTerminal
         main.cpp
         MainWindow.ui
-        MainWindow.cpp)
+        MainWindow.cpp
+        ValueUIBindings.hpp)
 target_link_libraries(SolarisTerminal ${QT_LIBS_QUALIFIED} ArmorDetector ${OpenCV_LIBRARIES})
 target_include_directories(SolarisTerminal PRIVATE ${OpenCV_INCLUDE_DIRS})

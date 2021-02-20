@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QtWidgets/QLabel>
 #include "ArmorDetector.h"
+#include "ValueUIBindings.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -29,11 +30,15 @@ private:
 
     void setImages() const;
 
+    std::vector<ValueUIBinding *> bindings;
+
 private slots:
 
     void runSingleDetection();
 
     void updateUIFromParams();
+
+    void updateParamsFromUI();
 };
 
 }

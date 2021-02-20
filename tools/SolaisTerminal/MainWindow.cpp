@@ -1,6 +1,5 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
-#define IMAGE_HEIGHT 200
 
 namespace meta {
 
@@ -9,23 +8,65 @@ MainWindow::MainWindow(QWidget *parent) :
         ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    updateUIFromParams();
+    bindings = {
+            new ValueCheckSpinBinding<double>(
+                    &params.brightnessThreshold,
+                    nullptr, ui->brightnessSpin),
+            new EnumRadioBinding<ArmorDetector::ColorThresholdMode>(
+                    &params.colorThresholdMode,
+                    std::vector<std::pair<ArmorDetector::ColorThresholdMode, QRadioButton *>>{
+                            {ArmorDetector::HSV,         ui->hsvRadio},
+                            {ArmorDetector::RB_CHANNELS, ui->rbChannelRadio},
+                    }),
+            new RangeCheckSpinBinding<double>(
+                    nullptr, &params.hsvRedHue,
+                    nullptr, ui->hsvRedHueMinSpin, ui->hsvRedHueMaxSpin),
+            new RangeCheckSpinBinding<double>(
+                    nullptr, &params.hsvBlueHue,
+                    nullptr, ui->hsvBlueHueMinSpin, ui->hsvBlueHueMaxSpin),
+            new ValueCheckSpinBinding<double>(
+                    &params.rbChannelThreshold,
+                    nullptr, ui->rbChannelThresholdSpin),
+            new ValueCheckSpinBinding<int>(
+                    &params.colorDilate,
+                    ui->colorDliateCheck, ui->colorDliateSpin),
+            new ValueCheckSpinBinding<double>(
+                    &params.contourRectMinSize,
+                    ui->rectMinSizeCheck, ui->rectMinSizeSpin),
+            new ValueCheckSpinBinding<double>(
+                    &params.contourMinArea,
+                    ui->contourMinAreaCheck, ui->contourMinAreaSpin),
+            new ValueCheckSpinBinding<int>(
+                    &params.longEdgeMinLength,
+                    ui->longEdgeMinLengthCheck, ui->longEdgeMinLengthSpin),
+            new RangeCheckSpinBinding<double>(&params.enableAspectRatioFilter, &params.aspectRatio,
+                    ui->aspectRatioFilterCheck, ui->aspectRatioMinSpin, ui->aspectRatioMaxSpin),
 
+    };
+
+    updateUIFromParams();
     connect(ui->runButtons, &QPushButton::clicked, this, &MainWindow::runSingleDetection);
 }
 
 MainWindow::~MainWindow() {
+    for (auto &binding : bindings) delete binding;
     delete ui;
 }
 
 void MainWindow::updateUIFromParams() {
-    ui->brightnessSpinBox->setValue(params.brightnessThreshold);
+    for (auto &binding : bindings) {
+        binding->param2UI();
+    }
+}
 
-    ui->hsvRadio->setChecked(params.colorThresholdMode == ArmorDetector::HSV);
+void MainWindow::updateParamsFromUI() {
+    for (auto &binding : bindings) {
+        binding->ui2Params();
+    }
 }
 
 void MainWindow::runSingleDetection() {
-    params.brightnessThreshold = ui->brightnessSpinBox->value();
+    updateParamsFromUI();
     detector.setParams(params);
     detector.detect(cv::imread("/Users/liuzikai/Files/VOCdevkit/VOC/JPEGImages/305.jpg"));
     setImages();

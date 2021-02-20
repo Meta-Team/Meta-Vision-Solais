@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>706</width>
-    <height>951</height>
+    <width>1151</width>
+    <height>597</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -61,8 +61,8 @@
     </item>
     <item>
      <widget class="QWidget" name="widget" native="true">
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
         <widget class="QGroupBox" name="originalGroup">
          <property name="title">
           <string>Original/Grey</string>
@@ -89,6 +89,12 @@
               <height>120</height>
              </size>
             </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>120</height>
+             </size>
+            </property>
             <property name="text">
              <string>Image</string>
             </property>
@@ -105,28 +111,9 @@
               <height>120</height>
              </size>
             </property>
-            <property name="text">
-             <string>Image</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="brightnessThresholdGroup">
-         <property name="title">
-          <string>Brightness Threshold</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="3" rowspan="2">
-           <widget class="QLabel" name="brightnessThresholdImage">
-            <property name="minimumSize">
+            <property name="maximumSize">
              <size>
-              <width>0</width>
+              <width>16777215</width>
               <height>120</height>
              </size>
             </property>
@@ -138,40 +125,10 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="2">
-           <spacer name="horizontalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>291</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Threshold</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QDoubleSpinBox" name="brightnessSpinBox">
-            <property name="decimals">
-             <number>0</number>
-            </property>
-            <property name="maximum">
-             <double>255.000000000000000</double>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="2" column="0">
         <widget class="QGroupBox" name="colorThresholdGroup">
          <property name="title">
           <string>Color Threshold</string>
@@ -185,7 +142,7 @@
            </widget>
           </item>
           <item row="4" column="2">
-           <widget class="QDoubleSpinBox" name="rbChannelThresholdSpinBox">
+           <widget class="QDoubleSpinBox" name="rbChannelThresholdSpin">
             <property name="decimals">
              <number>0</number>
             </property>
@@ -202,7 +159,7 @@
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="hsvRedHueMinSpinBox">
+           <widget class="QDoubleSpinBox" name="hsvRedHueMinSpin">
             <property name="decimals">
              <number>0</number>
             </property>
@@ -236,7 +193,7 @@
            </widget>
           </item>
           <item row="2" column="4">
-           <widget class="QDoubleSpinBox" name="hsvBlueHueMaxSpinBox">
+           <widget class="QDoubleSpinBox" name="hsvBlueHueMaxSpin">
             <property name="decimals">
              <number>0</number>
             </property>
@@ -253,7 +210,7 @@
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QDoubleSpinBox" name="hsvBlueHueMinSpinBox">
+           <widget class="QDoubleSpinBox" name="hsvBlueHueMinSpin">
             <property name="decimals">
              <number>0</number>
             </property>
@@ -262,24 +219,8 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="6" rowspan="6">
-           <widget class="QLabel" name="colorThresholdImage">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>120</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Image</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
           <item row="1" column="4">
-           <widget class="QDoubleSpinBox" name="hsvRedHueMaxSpinBox">
+           <widget class="QDoubleSpinBox" name="hsvRedHueMaxSpin">
             <property name="decimals">
              <number>0</number>
             </property>
@@ -309,22 +250,6 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="1" colspan="4">
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Minimum</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>10</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
           <item row="2" column="5">
            <spacer name="horizontalSpacer">
             <property name="orientation">
@@ -338,16 +263,99 @@
             </property>
            </spacer>
           </item>
+          <item row="0" column="6" rowspan="7">
+           <widget class="QLabel" name="colorThresholdImage">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Image</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="1" column="0">
+        <widget class="QGroupBox" name="brightnessThresholdGroup">
+         <property name="title">
+          <string>Brightness Threshold</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="3" rowspan="2">
+           <widget class="QLabel" name="brightnessThresholdImage">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Image</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>291</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Threshold</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QDoubleSpinBox" name="brightnessSpin">
+            <property name="decimals">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <double>255.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="1" rowspan="2">
         <widget class="QGroupBox" name="contourGroup">
          <property name="title">
           <string>Contour</string>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
+         <layout class="QGridLayout" name="gridLayout_4">
+          <item row="4" column="5">
            <spacer name="horizontalSpacer_4">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -360,12 +368,50 @@
             </property>
            </spacer>
           </item>
-          <item>
+          <item row="4" column="0">
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Minimum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="2" column="3">
+           <widget class="QDoubleSpinBox" name="longEdgeMinLengthSpin"/>
+          </item>
+          <item row="3" column="3">
+           <widget class="QDoubleSpinBox" name="aspectRatioMaxSpin"/>
+          </item>
+          <item row="3" column="2">
+           <widget class="QDoubleSpinBox" name="aspectRatioMinSpin"/>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="contourCountLabel">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="6" rowspan="6">
            <widget class="QLabel" name="contourImage">
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>240</height>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>360</height>
              </size>
             </property>
             <property name="text">
@@ -373,6 +419,47 @@
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Count:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="3">
+           <widget class="QDoubleSpinBox" name="contourMinAreaSpin"/>
+          </item>
+          <item row="0" column="3">
+           <widget class="QDoubleSpinBox" name="rectMinSizeSpin"/>
+          </item>
+          <item row="1" column="0" colspan="3">
+           <widget class="QCheckBox" name="contourMinAreaCheck">
+            <property name="text">
+             <string>Area min size filter</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="3">
+           <widget class="QCheckBox" name="rectMinSizeCheck">
+            <property name="text">
+             <string>Rect min size filter</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="3">
+           <widget class="QCheckBox" name="longEdgeMinLengthCheck">
+            <property name="text">
+             <string>Long edge min length filter</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QCheckBox" name="aspectRatioFilterCheck">
+            <property name="text">
+             <string>Aspect ratio filter</string>
             </property>
            </widget>
           </item>
