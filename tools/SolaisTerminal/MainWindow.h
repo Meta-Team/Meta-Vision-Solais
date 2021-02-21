@@ -28,7 +28,7 @@ private:
 
     static void showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label);
 
-    void setImages() const;
+    void setUIFromResults() const;
 
     std::vector<ValueUIBinding *> bindings;
 

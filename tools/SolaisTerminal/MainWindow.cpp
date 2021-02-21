@@ -9,9 +9,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     bindings = {
+
+            // ================================ Brightness Filter ================================
+
             new ValueCheckSpinBinding<double>(
-                    &params.brightnessThreshold,
+                    nullptr, &params.brightnessThreshold,
                     nullptr, ui->brightnessSpin),
+
+            // ================================ Color Filter ================================
+
             new EnumRadioBinding<ArmorDetector::ColorThresholdMode>(
                     &params.colorThresholdMode,
                     std::vector<std::pair<ArmorDetector::ColorThresholdMode, QRadioButton *>>{
@@ -25,27 +31,52 @@ MainWindow::MainWindow(QWidget *parent) :
                     nullptr, &params.hsvBlueHue,
                     nullptr, ui->hsvBlueHueMinSpin, ui->hsvBlueHueMaxSpin),
             new ValueCheckSpinBinding<double>(
-                    &params.rbChannelThreshold,
+                    nullptr, &params.rbChannelThreshold,
                     nullptr, ui->rbChannelThresholdSpin),
             new ValueCheckSpinBinding<int>(
-                    &params.colorDilate,
+                    &params.enableColorDilate, &params.colorDilate,
                     ui->colorDliateCheck, ui->colorDliateSpin),
+
+            // ================================ Contour Filter ================================
+
+            new EnumRadioBinding<ArmorDetector::ContourFitFunction>(
+                    &params.contourFitFunction,
+                    std::vector<std::pair<ArmorDetector::ContourFitFunction, QRadioButton *>>{
+                            {ArmorDetector::MIN_AREA_RECT, ui->minAreaRectRadio},
+                            {ArmorDetector::ELLIPSE,       ui->fitEllipseRadio},
+                    }),
             new ValueCheckSpinBinding<double>(
-                    &params.contourRectMinSize,
+                    &params.filterContourRectMinSize, &params.contourRectMinSize,
                     ui->rectMinSizeCheck, ui->rectMinSizeSpin),
             new ValueCheckSpinBinding<double>(
-                    &params.contourMinArea,
+                    &params.filterContourMinArea, &params.contourMinArea,
                     ui->contourMinAreaCheck, ui->contourMinAreaSpin),
             new ValueCheckSpinBinding<int>(
-                    &params.longEdgeMinLength,
+                    &params.filterLongEdgeMinLength, &params.longEdgeMinLength,
                     ui->longEdgeMinLengthCheck, ui->longEdgeMinLengthSpin),
-            new RangeCheckSpinBinding<double>(&params.enableAspectRatioFilter, &params.aspectRatio,
-                    ui->aspectRatioFilterCheck, ui->aspectRatioMinSpin, ui->aspectRatioMaxSpin),
+            new RangeCheckSpinBinding<double>(&params.filterLightAspectRatio, &params.lightAspectRatio,
+                                              ui->aspectRatioFilterCheck, ui->aspectRatioMinSpin,
+                                              ui->aspectRatioMaxSpin),
 
+            // ================================ Armor Filter ================================
+
+            new ValueCheckSpinBinding<double>(&params.filterLightLengthRatio, &params.lightLengthMaxRatio,
+                                              ui->lightLengthRatioCheck, ui->lightLengthRatioMaxSpin),
+            new RangeCheckSpinBinding<double>(&params.filterLightXDistance, &params.lightXDistOverL,
+                                              ui->lightXDiffCheck, ui->lightXDiffMinSpin, ui->lightXDiffMaxSpin),
+
+            new RangeCheckSpinBinding<double>(&params.filterLightYDistance, &params.lightYDistOverL,
+                                              ui->lightYDiffCheck, ui->lightYDiffMinSpin, ui->lightYDiffMaxSpin),
+            new ValueCheckSpinBinding<double>(&params.filterLightAngleDiff, &params.lightAngleMaxDiff,
+                                              ui->lightAngleDiffCheck, ui->lightAngleDiffMaxSpin),
+            new RangeCheckSpinBinding<double>(&params.filterArmorAspectRatio, &params.armorAspectRatio,
+                                              ui->armorAspectRatioCheck, ui->armorAspectRatioMinSpin,
+                                              ui->armorAspectRatioMaxSpin),
     };
 
     updateUIFromParams();
-    connect(ui->runButtons, &QPushButton::clicked, this, &MainWindow::runSingleDetection);
+
+    connect(ui->runSingleButton, &QPushButton::clicked, this, &MainWindow::runSingleDetection);
 }
 
 MainWindow::~MainWindow() {
@@ -69,15 +100,16 @@ void MainWindow::runSingleDetection() {
     updateParamsFromUI();
     detector.setParams(params);
     detector.detect(cv::imread("/Users/liuzikai/Files/VOCdevkit/VOC/JPEGImages/305.jpg"));
-    setImages();
+    setUIFromResults();
 }
 
-void MainWindow::setImages() const {
+void MainWindow::setUIFromResults() const {
     showCVMatInLabel(detector.imgOriginal, QImage::Format_BGR888, ui->originalImage);
-    showCVMatInLabel(detector.imgGray, QImage::Format_Grayscale8, ui->grayImage);
     showCVMatInLabel(detector.imgBrightnessThreshold, QImage::Format_Indexed8, ui->brightnessThresholdImage);
     showCVMatInLabel(detector.imgColorThreshold, QImage::Format_Indexed8, ui->colorThresholdImage);
     showCVMatInLabel(detector.imgContours, QImage::Format_BGR888, ui->contourImage);
+    ui->contourCountLabel->setNum(detector.acceptedContourCount);
+    showCVMatInLabel(detector.imgArmors, QImage::Format_BGR888, ui->armorImage);
 }
 
 void MainWindow::showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label) {

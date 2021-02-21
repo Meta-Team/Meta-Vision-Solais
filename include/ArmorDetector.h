@@ -24,30 +24,66 @@ public:
         RB_CHANNELS
     };
 
+    enum ContourFitFunction {
+        MIN_AREA_RECT,
+        ELLIPSE
+    };
+
     struct ParameterSet {
+
+        /*
+         * Note: int/double parameters should be preserved even when the filter is not enabled. So keep a bool value
+         * for enabled rather than using special values to represent not enabled.
+         */
+
         TargetColor targetColor = BLUE;
 
         // ================================ Brightness Filter ================================
 
-        double brightnessThreshold = 128;
+        double brightnessThreshold = 155;
 
         // ================================ Color Filter ================================
 
         ColorThresholdMode colorThresholdMode = RB_CHANNELS;
-        Range<double> hsvRedHue = {150, 30}; // across the 0 (180) point
-        Range<double> hsvBlueHue = {90, 150}; // across the 0 (180) point
-        double rbChannelThreshold = 20;
+        Range<double> hsvRedHue = {150, 30};  // across the 0 (180) point
+        Range<double> hsvBlueHue = {90, 150};
+        double rbChannelThreshold = 55;
 
-        int colorDilate = 3;  // 0 for not enabled
+        bool enableColorDilate = true;
+        int colorDilate = 6;
 
         // ================================ Contour Filter ================================
-        double contourRectMinSize = 5;  // 0 for not enabled
-        double contourMinArea = 10;     // 0 for not enabled
 
-        int longEdgeMinLength = 8;  // 0 for not enabled
+        ContourFitFunction contourFitFunction = ELLIPSE;
 
-        bool enableAspectRatioFilter = true;
-        Range<double> aspectRatio = {10, 30};
+        bool filterContourRectMinSize = true;
+        double contourRectMinSize = 15;
+
+        bool filterContourMinArea = false;
+        double contourMinArea = 3;
+
+        bool filterLongEdgeMinLength = true;
+        int longEdgeMinLength = 30;
+
+        bool filterLightAspectRatio = true;
+        Range<double> lightAspectRatio = {2, 30};
+
+        // ================================ Armor Filter ================================
+
+        bool filterLightLengthRatio = true;
+        double lightLengthMaxRatio = 1.5;
+
+        bool filterLightXDistance = false;
+        Range<double> lightXDistOverL = {1, 3};
+
+        bool filterLightYDistance = false;
+        Range<double> lightYDistOverL = {0, 1};
+
+        bool filterLightAngleDiff = true;
+        double lightAngleMaxDiff = 30;
+
+        bool filterArmorAspectRatio = true;
+        Range<double> armorAspectRatio = {1.25, 5};
     };
 
     void setParams(const ParameterSet &p) { params = p; }
@@ -64,10 +100,32 @@ private:
     cv::Mat imgColorThreshold;
     cv::Mat imgLights;
     cv::Mat imgContours;
+    int acceptedContourCount;
+    cv::Mat imgArmors;
 
     friend class MainWindow;
 
     static void drawRotatedRect(cv::Mat &img, const cv::RotatedRect& rect, const cv::Scalar& boarderColor);
+
+    /**
+     * Canonicalize a non-square rotated rect from cv::minAreaRect and make:
+     *  width: the short edge
+     *  height: the long edge
+     *  angle: in [-90, 90). The angle is then the angle between the long edge and the vertical axis.
+     *  points: consider the rect to be vertical. Bottom left is 0, and 1, 2, 3 clockwise
+     *
+     *            w               2       h       3
+     *        1  ---  2             -------------
+     *          |   |            w | angle = -90 |           (angle can't be 90)
+     *          |   |  h            -------------
+     *          |   |             1               0
+     *           ---
+     *        0      3
+     *
+     * @param rect
+     */
+    static void canonicalizeRotatedRect(cv::RotatedRect &rect);
+
 };
 
 }

@@ -11,7 +11,7 @@ template<typename T>
 struct Range {
     T min;  // inclusive
     T max;  // inclusive
-    bool inRange(const T &value) const { return min <= value && value <= max; }
+    bool contains(const T &value) const { return min <= value && value <= max; }
 };
 
 }
