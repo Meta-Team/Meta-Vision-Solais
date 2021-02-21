@@ -46,8 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
                             {ArmorDetector::ELLIPSE,       ui->fitEllipseRadio},
                     }),
             new ValueCheckSpinBinding<double>(
-                    &params.filterContourRectMinSize, &params.contourRectMinSize,
-                    ui->rectMinSizeCheck, ui->rectMinSizeSpin),
+                    &params.filterContourPixelCount, &params.contourPixelCount,
+                    ui->contourPixelMinCountCheck, ui->contourPixelMinCountSpin),
             new ValueCheckSpinBinding<double>(
                     &params.filterContourMinArea, &params.contourMinArea,
                     ui->contourMinAreaCheck, ui->contourMinAreaSpin),
@@ -77,10 +77,13 @@ MainWindow::MainWindow(QWidget *parent) :
     updateUIFromParams();
 
     connect(ui->runSingleButton, &QPushButton::clicked, this, &MainWindow::runSingleDetection);
+
+    ui->contourImageWidget->installEventFilter(this);
 }
 
 MainWindow::~MainWindow() {
     for (auto &binding : bindings) delete binding;
+    for (auto &viewer : viewers) delete viewer;
     delete ui;
 }
 
@@ -107,15 +110,24 @@ void MainWindow::setUIFromResults() const {
     showCVMatInLabel(detector.imgOriginal, QImage::Format_BGR888, ui->originalImage);
     showCVMatInLabel(detector.imgBrightnessThreshold, QImage::Format_Indexed8, ui->brightnessThresholdImage);
     showCVMatInLabel(detector.imgColorThreshold, QImage::Format_Indexed8, ui->colorThresholdImage);
-    showCVMatInLabel(detector.imgContours, QImage::Format_BGR888, ui->contourImage);
+    showCVMatInLabel(detector.noteContours.mat(), QImage::Format_BGR888, ui->contourImage);
     ui->contourCountLabel->setNum(detector.acceptedContourCount);
     showCVMatInLabel(detector.imgArmors, QImage::Format_BGR888, ui->armorImage);
 }
 
 void MainWindow::showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label) {
-    // label->setMinimumSize(0, IMAGE_HEIGHT);
     auto img = QImage(mat.data, mat.cols, mat.rows, format);
     label->setPixmap(QPixmap::fromImage(img).scaledToHeight(label->height(), Qt::SmoothTransformation));
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+    if (obj == ui->contourImageWidget) {
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            viewers.emplace_back(new AnnotatedMatViewer(detector.noteContours, QImage::Format_BGR888));
+            viewers.back()->show();
+        }
+    }
+    return QObject::eventFilter(obj, event);
 }
 
 }

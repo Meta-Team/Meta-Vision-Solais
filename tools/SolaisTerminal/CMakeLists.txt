@@ -6,6 +6,8 @@ add_executable(SolarisTerminal
         main.cpp
         MainWindow.ui
         MainWindow.cpp
-        ValueUIBindings.hpp)
+        ValueUIBindings.hpp
+        AnnotatedMatViewer.ui
+        AnnotatedMatViewer.cpp)
 target_link_libraries(SolarisTerminal ${QT_LIBS_QUALIFIED} ArmorDetector ${OpenCV_LIBRARIES})
 target_include_directories(SolarisTerminal PRIVATE ${OpenCV_INCLUDE_DIRS})

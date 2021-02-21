@@ -6,6 +6,7 @@
 #define META_VISION_SOLAIS_ARMORDETECTOR_H
 
 #include "Common.h"
+#include "AnnotatedMat.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -56,8 +57,8 @@ public:
 
         ContourFitFunction contourFitFunction = ELLIPSE;
 
-        bool filterContourRectMinSize = true;
-        double contourRectMinSize = 15;
+        bool filterContourPixelCount = true;
+        double contourPixelCount = 15;
 
         bool filterContourMinArea = false;
         double contourMinArea = 3;
@@ -80,11 +81,15 @@ public:
         Range<double> lightYDistOverL = {0, 1};
 
         bool filterLightAngleDiff = true;
-        double lightAngleMaxDiff = 30;
+        double lightAngleMaxDiff = 10;
 
         bool filterArmorAspectRatio = true;
         Range<double> armorAspectRatio = {1.25, 5};
     };
+
+    ArmorDetector()
+            : noteContours(cv::Scalar(0, 255, 255)) // yellow
+    {}
 
     void setParams(const ParameterSet &p) { params = p; }
 
@@ -99,13 +104,15 @@ private:
     cv::Mat imgBrightnessThreshold;
     cv::Mat imgColorThreshold;
     cv::Mat imgLights;
-    cv::Mat imgContours;
+#ifdef DEBUG
+    AnnotatedMat noteContours;
+#endif
     int acceptedContourCount;
     cv::Mat imgArmors;
 
     friend class MainWindow;
 
-    static void drawRotatedRect(cv::Mat &img, const cv::RotatedRect& rect, const cv::Scalar& boarderColor);
+    static void drawRotatedRect(cv::Mat &img, const cv::RotatedRect &rect, const cv::Scalar &boarderColor);
 
     /**
      * Canonicalize a non-square rotated rect from cv::minAreaRect and make:

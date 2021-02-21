@@ -3,10 +3,8 @@
 //
 
 #include "ArmorDetector.h"
-#include <vector>
 
 using namespace cv;
-using std::vector;
 
 namespace meta {
 
@@ -20,7 +18,8 @@ void ArmorDetector::detect(const cv::Mat &img) {
 
     // ================================ Setup ================================
     {
-        imgOriginal = img;
+        img.copyTo(imgOriginal);
+        // resize(img, imgOriginal, cv::Size(), 0.5, 0.5);
     }
 
     // ================================ Brightness Threshold ================================
@@ -75,8 +74,10 @@ void ArmorDetector::detect(const cv::Mat &img) {
     // ================================ Find Contours ================================
     vector<RotatedRect> lightRects;
     {
+#ifdef DEBUG
         // Make a colored copy since we need to draw rect onto it
-        cvtColor(imgLights, imgContours, COLOR_GRAY2BGR);
+        noteContours.convertFrom(imgLights, COLOR_GRAY2BGR);
+#endif
 
         vector<vector<Point>> contours;
         findContours(imgLights, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -84,9 +85,9 @@ void ArmorDetector::detect(const cv::Mat &img) {
         // Filter individual contours
         for (const auto &contour : contours) {
 
-            // Filter rect size
-            if (params.filterContourRectMinSize) {
-                if (contour.size() < params.contourRectMinSize) {
+            // Filter pixel count
+            if (params.filterContourPixelCount) {
+                if (contour.size() < params.contourPixelCount) {
                     continue;
                 }
             }
@@ -106,6 +107,8 @@ void ArmorDetector::detect(const cv::Mat &img) {
                     rect = minAreaRect(contour);
                     break;
                 case ELLIPSE:
+                    // There should be at least 5 points to fit the ellipse
+                    if (contour.size() < 5) continue;
                     rect = fitEllipse(contour);
                     break;
             }
@@ -128,7 +131,15 @@ void ArmorDetector::detect(const cv::Mat &img) {
 
             // Accept the rect
             lightRects.emplace_back(rect);
-            drawRotatedRect(imgContours, rect, Scalar(0, 255, 255));  // yellow
+#ifdef DEBUG
+            {
+                stringstream comment;
+                comment << "(" << rect.center.x << ", " << rect.center.y << ")    "
+                        << rect.size.width << " x " << rect.size.height << "    "
+                        << rect.angle << "°";
+                noteContours.annotate(rect, comment.str());
+            }
+#endif
         }
     }
     acceptedContourCount = lightRects.size();
@@ -151,11 +162,6 @@ void ArmorDetector::detect(const cv::Mat &img) {
     // ================================ Combine Lights to Armors ================================
     {
         imgOriginal.copyTo(imgArmors);
-
-        Point2f _pt[4], pt[4];
-        auto ptangle = [](const Point2f &p1, const Point2f &p2) {
-            return fabs(atan2(p2.y - p1.y, p2.x - p1.x) * 180.0 / CV_PI);
-        };
 
         Point2f armorPoints[4];
         /*

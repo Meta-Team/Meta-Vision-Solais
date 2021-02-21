@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QtWidgets/QLabel>
+#include "AnnotatedMatViewer.h"
 #include "ArmorDetector.h"
 #include "ValueUIBindings.hpp"
 
@@ -20,6 +21,10 @@ public:
 
     ~MainWindow();
 
+protected:
+
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private:
     Ui::MainWindow *ui;
 
@@ -31,6 +36,8 @@ private:
     void setUIFromResults() const;
 
     std::vector<ValueUIBinding *> bindings;
+
+    std::vector<AnnotatedMatViewer *> viewers;
 
 private slots:
 

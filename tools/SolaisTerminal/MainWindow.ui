@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1138</width>
-    <height>1553</height>
+    <height>2189</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -209,7 +209,7 @@
          <x>0</x>
          <y>0</y>
          <width>868</width>
-         <height>2081</height>
+         <height>2162</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -312,42 +312,7 @@
           <property name="title">
            <string>Brightness Threshold</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="3" rowspan="2">
-            <widget class="QLabel" name="brightnessThresholdImage">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>360</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>360</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Image</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>291</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
+          <layout class="QGridLayout" name="gridLayout_11">
            <item row="0" column="0">
             <widget class="QLabel" name="label">
              <property name="text">
@@ -365,6 +330,78 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="3" rowspan="2">
+            <widget class="QWidget" name="brightnessThresholdImageWidget" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_2">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="brightnessThresholdImage">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>360</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>360</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Image</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <spacer name="verticalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>366</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="2">
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>291</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
           </layout>
          </widget>
         </item>
@@ -374,23 +411,6 @@
            <string>Color Threshold</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
-           <item row="6" column="2">
-            <widget class="QDoubleSpinBox" name="colorDliateSpin">
-             <property name="decimals">
-              <number>0</number>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QDoubleSpinBox" name="rbChannelThresholdSpin">
-             <property name="decimals">
-              <number>0</number>
-             </property>
-             <property name="maximum">
-              <double>255.000000000000000</double>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="1" colspan="4">
             <widget class="QRadioButton" name="hsvRadio">
              <property name="text">
@@ -398,47 +418,10 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="2">
-            <widget class="QDoubleSpinBox" name="hsvRedHueMinSpin">
-             <property name="decimals">
-              <number>0</number>
-             </property>
-             <property name="minimum">
-              <double>90.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>180.000000000000000</double>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="3">
             <widget class="QLabel" name="label_3">
              <property name="text">
               <string>to</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="1">
-            <widget class="QCheckBox" name="colorDliateCheck">
-             <property name="text">
-              <string>Dliate</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="label_2">
-             <property name="text">
-              <string>Red hue from</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="4">
-            <widget class="QDoubleSpinBox" name="hsvBlueHueMaxSpin">
-             <property name="decimals">
-              <number>0</number>
-             </property>
-             <property name="maximum">
-              <double>180.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -459,13 +442,10 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="4">
-            <widget class="QDoubleSpinBox" name="hsvRedHueMaxSpin">
-             <property name="decimals">
-              <number>0</number>
-             </property>
-             <property name="maximum">
-              <double>90.000000000000000</double>
+           <item row="3" column="1" colspan="4">
+            <widget class="QRadioButton" name="rbChannelRadio">
+             <property name="text">
+              <string>R-B Channels</string>
              </property>
             </widget>
            </item>
@@ -483,10 +463,33 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="1" colspan="4">
-            <widget class="QRadioButton" name="rbChannelRadio">
+           <item row="4" column="2">
+            <widget class="QDoubleSpinBox" name="rbChannelThresholdSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <double>255.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QDoubleSpinBox" name="hsvRedHueMinSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="minimum">
+              <double>90.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>180.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>R-B Channels</string>
+              <string>Red hue from</string>
              </property>
             </widget>
            </item>
@@ -525,6 +528,40 @@
              </property>
             </widget>
            </item>
+           <item row="6" column="2">
+            <widget class="QDoubleSpinBox" name="colorDliateSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QCheckBox" name="colorDliateCheck">
+             <property name="text">
+              <string>Dliate</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="4">
+            <widget class="QDoubleSpinBox" name="hsvBlueHueMaxSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <double>180.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4">
+            <widget class="QDoubleSpinBox" name="hsvRedHueMaxSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <double>90.000000000000000</double>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -540,10 +577,34 @@
            <string>Contours</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_4">
-           <item row="3" column="0" colspan="3">
-            <widget class="QCheckBox" name="longEdgeMinLengthCheck">
+           <item row="4" column="2">
+            <widget class="QDoubleSpinBox" name="aspectRatioMinSpin">
+             <property name="maximum">
+              <double>360.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QDoubleSpinBox" name="contourPixelMinCountSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <double>999.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="3">
+            <widget class="QCheckBox" name="contourMinAreaCheck">
              <property name="text">
-              <string>Long edge min length</string>
+              <string>Contour pixel min area</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QDoubleSpinBox" name="contourMinAreaSpin">
+             <property name="maximum">
+              <double>999.000000000000000</double>
              </property>
             </widget>
            </item>
@@ -554,24 +615,10 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="3">
-            <widget class="QDoubleSpinBox" name="rectMinSizeSpin">
-             <property name="maximum">
-              <double>999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QDoubleSpinBox" name="aspectRatioMinSpin">
-             <property name="maximum">
-              <double>360.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0" colspan="2">
-            <widget class="QLabel" name="label_12">
+           <item row="1" column="0" colspan="3">
+            <widget class="QCheckBox" name="contourPixelMinCountCheck">
              <property name="text">
-              <string>Contour count:</string>
+              <string>Contour pixel min count</string>
              </property>
             </widget>
            </item>
@@ -587,6 +634,34 @@
               </size>
              </property>
             </spacer>
+           </item>
+           <item row="4" column="3">
+            <widget class="QDoubleSpinBox" name="aspectRatioMaxSpin">
+             <property name="maximum">
+              <double>360.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0" colspan="2">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>Contour count:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="3">
+            <widget class="QCheckBox" name="longEdgeMinLengthCheck">
+             <property name="text">
+              <string>Long edge min length</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="3">
+            <widget class="QDoubleSpinBox" name="longEdgeMinLengthSpin">
+             <property name="maximum">
+              <double>999.000000000000000</double>
+             </property>
+            </widget>
            </item>
            <item row="5" column="0">
             <spacer name="verticalSpacer">
@@ -604,41 +679,6 @@
              </property>
             </spacer>
            </item>
-           <item row="3" column="3">
-            <widget class="QDoubleSpinBox" name="longEdgeMinLengthSpin">
-             <property name="maximum">
-              <double>999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="3">
-            <widget class="QDoubleSpinBox" name="aspectRatioMaxSpin">
-             <property name="maximum">
-              <double>360.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="3">
-            <widget class="QDoubleSpinBox" name="contourMinAreaSpin">
-             <property name="maximum">
-              <double>999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" colspan="3">
-            <widget class="QCheckBox" name="rectMinSizeCheck">
-             <property name="text">
-              <string>Rect min size</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" colspan="3">
-            <widget class="QCheckBox" name="contourMinAreaCheck">
-             <property name="text">
-              <string>Area min size</string>
-             </property>
-            </widget>
-           </item>
            <item row="4" column="0" colspan="2">
             <widget class="QCheckBox" name="aspectRatioFilterCheck">
              <property name="text">
@@ -646,7 +686,53 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
+           <item row="0" column="6" rowspan="7">
+            <widget class="QWidget" name="contourImageWidget" native="true">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <layout class="QGridLayout" name="gridLayout_12">
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="contourImage">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>360</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>360</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Image</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="4">
             <widget class="QGroupBox" name="groupBox">
              <property name="title">
               <string>Fit Function</string>
@@ -669,28 +755,6 @@
              </layout>
             </widget>
            </item>
-           <item row="0" column="6" rowspan="7">
-            <widget class="QLabel" name="contourImage">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>360</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>360</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Image</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
           </layout>
          </widget>
         </item>
@@ -706,18 +770,67 @@
            <string>Armors</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
+           <item row="1" column="2">
+            <widget class="QDoubleSpinBox" name="lightXDiffMaxSpin"/>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <widget class="QCheckBox" name="lightLengthRatioCheck">
+             <property name="text">
+              <string>Long length / short length &lt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QCheckBox" name="lightAngleDiffCheck">
+             <property name="text">
+              <string>abs(Angle1 - Angle2) [deg] &lt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QDoubleSpinBox" name="lightAngleDiffMaxSpin"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QDoubleSpinBox" name="lightLengthRatioMaxSpin">
+             <property name="minimum">
+              <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="lightXDiffMinSpin"/>
+           </item>
+           <item row="4" column="2">
+            <widget class="QDoubleSpinBox" name="armorAspectRatioMaxSpin"/>
+           </item>
            <item row="2" column="2">
             <widget class="QDoubleSpinBox" name="lightYDiffMaxSpin"/>
            </item>
-           <item row="4" column="1">
-            <widget class="QDoubleSpinBox" name="armorAspectRatioMinSpin"/>
-           </item>
-           <item row="2" column="0">
-            <widget class="QCheckBox" name="lightYDiffCheck">
-             <property name="text">
-              <string>abs(Y1 - Y2) / avgL</string>
+           <item row="5" column="4">
+            <spacer name="horizontalSpacer_5">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
-            </widget>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>616</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
            <item row="1" column="5" rowspan="5">
             <widget class="QLabel" name="armorImage">
@@ -741,37 +854,11 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0">
-            <widget class="QCheckBox" name="lightXDiffCheck">
-             <property name="text">
-              <string>abs(X1 - X2) / avgL</string>
-             </property>
-            </widget>
+           <item row="4" column="1">
+            <widget class="QDoubleSpinBox" name="armorAspectRatioMinSpin"/>
            </item>
            <item row="2" column="1">
             <widget class="QDoubleSpinBox" name="lightYDiffMinSpin"/>
-           </item>
-           <item row="5" column="4">
-            <spacer name="horizontalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>616</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="lightXDiffMinSpin"/>
-           </item>
-           <item row="1" column="2">
-            <widget class="QDoubleSpinBox" name="lightXDiffMaxSpin"/>
-           </item>
-           <item row="3" column="2">
-            <widget class="QDoubleSpinBox" name="lightAngleDiffMaxSpin"/>
            </item>
            <item row="4" column="0">
             <widget class="QCheckBox" name="armorAspectRatioCheck">
@@ -780,40 +867,17 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
-            <spacer name="verticalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="4" column="2">
-            <widget class="QDoubleSpinBox" name="armorAspectRatioMaxSpin"/>
-           </item>
-           <item row="0" column="2">
-            <widget class="QDoubleSpinBox" name="lightLengthRatioMaxSpin">
-             <property name="minimum">
-              <double>1.000000000000000</double>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="lightYDiffCheck">
+             <property name="text">
+              <string>abs(Y1 - Y2) / avgL</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="0" colspan="2">
-            <widget class="QCheckBox" name="lightLengthRatioCheck">
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="lightXDiffCheck">
              <property name="text">
-              <string>Long length / short length &lt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0" colspan="2">
-            <widget class="QCheckBox" name="lightAngleDiffCheck">
-             <property name="text">
-              <string>abs(Angle1 - Angle2) [deg] &lt;</string>
+              <string>abs(X1 - X2) / avgL</string>
              </property>
             </widget>
            </item>
