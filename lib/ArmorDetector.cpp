@@ -8,7 +8,7 @@ using namespace cv;
 
 namespace meta {
 
-void ArmorDetector::detect(const cv::Mat &img) {
+vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
     /*
      * Note: in this mega function, steps are wrapped with {} to reduce local variable pollution and make it easier to
@@ -146,7 +146,7 @@ void ArmorDetector::detect(const cv::Mat &img) {
 
     // If there is less than two light contours, stop detection
     if (lightRects.size() < 2) {
-        return;
+        return {};
     }
 
     // Sort lights from left to right based on center X
@@ -160,6 +160,7 @@ void ArmorDetector::detect(const cv::Mat &img) {
      */
 
     // ================================ Combine Lights to Armors ================================
+    vector<Point2f> acceptedArmorCenters;
     {
         imgOriginal.copyTo(imgArmors);
 
@@ -257,14 +258,23 @@ void ArmorDetector::detect(const cv::Mat &img) {
                 }
 
                 // Accept the armor
+                Point2f center = {0, 0};
                 for (int i = 0; i < 4; i++) {
+                    center.x += armorPoints[i].x;
+                    center.y += armorPoints[i].y;
                     // Draw in red
                     cv::line(imgArmors, armorPoints[i], armorPoints[(i + 1) % 4], Scalar(0, 0, 255), 2);
                 }
+
+                // Just use the average X and Y coordinate for the four point
+                center.x /= 4;
+                center.y /= 4;
+                acceptedArmorCenters.emplace_back(center);
+                cv::circle(imgArmors, center, 2, Scalar(0, 0, 255), 2);
             }
         }
     }
-
+    return acceptedArmorCenters;
 }
 
 void ArmorDetector::drawRotatedRect(Mat &img, const RotatedRect &rect, const Scalar &boarderColor) {

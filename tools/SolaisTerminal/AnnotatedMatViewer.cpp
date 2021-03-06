@@ -19,7 +19,7 @@ AnnotatedMatViewer::AnnotatedMatViewer(const meta::AnnotatedMat &annotatedMat, Q
     ui->imageLabel->setPixmap(QPixmap::fromImage(img));
 
     this->setWindowTitle(QString::number(mat.cols) + " x " + QString::number(mat.rows));
-    ui->statusBar->showMessage("Press and move mouse to view coordinates and annotated RotatedRects")
+    ui->statusBar->showMessage("Press and move mouse to view coordinates and annotated RotatedRects");
 }
 
 AnnotatedMatViewer::~AnnotatedMatViewer() {

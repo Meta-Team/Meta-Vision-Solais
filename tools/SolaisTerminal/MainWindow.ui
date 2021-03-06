@@ -208,7 +208,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>868</width>
+         <width>874</width>
          <height>2162</height>
         </rect>
        </property>
@@ -770,25 +770,8 @@
            <string>Armors</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="1" column="2">
-            <widget class="QDoubleSpinBox" name="lightXDiffMaxSpin"/>
-           </item>
-           <item row="0" column="0" colspan="2">
-            <widget class="QCheckBox" name="lightLengthRatioCheck">
-             <property name="text">
-              <string>Long length / short length &lt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0" colspan="2">
-            <widget class="QCheckBox" name="lightAngleDiffCheck">
-             <property name="text">
-              <string>abs(Angle1 - Angle2) [deg] &lt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QDoubleSpinBox" name="lightAngleDiffMaxSpin"/>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="lightXDiffMinSpin"/>
            </item>
            <item row="0" column="2">
             <widget class="QDoubleSpinBox" name="lightLengthRatioMaxSpin">
@@ -810,14 +793,18 @@
              </property>
             </spacer>
            </item>
-           <item row="1" column="1">
-            <widget class="QDoubleSpinBox" name="lightXDiffMinSpin"/>
+           <item row="4" column="1">
+            <widget class="QDoubleSpinBox" name="armorAspectRatioMinSpin"/>
            </item>
-           <item row="4" column="2">
-            <widget class="QDoubleSpinBox" name="armorAspectRatioMaxSpin"/>
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="lightYDiffCheck">
+             <property name="text">
+              <string>abs(Y1 - Y2) / avgL</string>
+             </property>
+            </widget>
            </item>
-           <item row="2" column="2">
-            <widget class="QDoubleSpinBox" name="lightYDiffMaxSpin"/>
+           <item row="3" column="2">
+            <widget class="QDoubleSpinBox" name="lightAngleDiffMaxSpin"/>
            </item>
            <item row="5" column="4">
             <spacer name="horizontalSpacer_5">
@@ -832,7 +819,54 @@
              </property>
             </spacer>
            </item>
-           <item row="1" column="5" rowspan="5">
+           <item row="1" column="2">
+            <widget class="QDoubleSpinBox" name="lightXDiffMaxSpin"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="lightXDiffCheck">
+             <property name="text">
+              <string>abs(X1 - X2) / avgL</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QDoubleSpinBox" name="armorAspectRatioMaxSpin"/>
+           </item>
+           <item row="2" column="2">
+            <widget class="QDoubleSpinBox" name="lightYDiffMaxSpin"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QCheckBox" name="armorAspectRatioCheck">
+             <property name="text">
+              <string>Armor W/H ratio</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0" colspan="2">
+            <widget class="QCheckBox" name="lightLengthRatioCheck">
+             <property name="text">
+              <string>Long length / short length &lt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QCheckBox" name="lightAngleDiffCheck">
+             <property name="text">
+              <string>abs(Angle1 - Angle2) [deg] &lt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QDoubleSpinBox" name="lightYDiffMinSpin"/>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="armorResultLabel">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5" rowspan="7">
             <widget class="QLabel" name="armorImage">
              <property name="minimumSize">
               <size>
@@ -851,33 +885,6 @@
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QDoubleSpinBox" name="armorAspectRatioMinSpin"/>
-           </item>
-           <item row="2" column="1">
-            <widget class="QDoubleSpinBox" name="lightYDiffMinSpin"/>
-           </item>
-           <item row="4" column="0">
-            <widget class="QCheckBox" name="armorAspectRatioCheck">
-             <property name="text">
-              <string>Armor W/H ratio</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QCheckBox" name="lightYDiffCheck">
-             <property name="text">
-              <string>abs(Y1 - Y2) / avgL</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QCheckBox" name="lightXDiffCheck">
-             <property name="text">
-              <string>abs(X1 - X2) / avgL</string>
              </property>
             </widget>
            </item>

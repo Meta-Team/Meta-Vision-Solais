@@ -1,5 +1,7 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
+#include <QtWidgets/QLabel>
+#include <QTextStream>
 
 namespace meta {
 
@@ -102,7 +104,7 @@ void MainWindow::updateParamsFromUI() {
 void MainWindow::runSingleDetection() {
     updateParamsFromUI();
     detector.setParams(params);
-    detector.detect(cv::imread("/Users/liuzikai/Files/VOCdevkit/VOC/JPEGImages/305.jpg"));
+    armorCenters = detector.detect(cv::imread("/Users/liuzikai/Files/VOCdevkit/VOC/JPEGImages/3060.jpg"));
     setUIFromResults();
 }
 
@@ -113,6 +115,15 @@ void MainWindow::setUIFromResults() const {
     showCVMatInLabel(detector.noteContours.mat(), QImage::Format_BGR888, ui->contourImage);
     ui->contourCountLabel->setNum(detector.acceptedContourCount);
     showCVMatInLabel(detector.imgArmors, QImage::Format_BGR888, ui->armorImage);
+    QString armorResult;
+    QTextStream ss(&armorResult);
+    ss << "Detected " << armorCenters.size() << " armor";
+    if (armorCenters.size() > 1) ss << "s";
+    for (const auto &center : armorCenters) {
+        ss << "\n(" << center.x << ", " << center.y << ")";
+    }
+    ss.flush();
+    ui->armorResultLabel->setText(armorResult);
 }
 
 void MainWindow::showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label) {

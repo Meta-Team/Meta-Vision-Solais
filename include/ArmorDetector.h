@@ -93,7 +93,7 @@ public:
 
     void setParams(const ParameterSet &p) { params = p; }
 
-    void detect(const cv::Mat &img);
+    vector<cv::Point2f> detect(const cv::Mat &img);
 
 private:
 

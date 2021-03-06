@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QtWidgets/QLabel>
 #include "AnnotatedMatViewer.h"
 #include "ArmorDetector.h"
 #include "ValueUIBindings.hpp"
@@ -10,6 +9,8 @@
 namespace Ui {
 class MainWindow;
 }
+
+class QLabel;
 
 namespace meta {
 
@@ -30,6 +31,8 @@ private:
 
     ArmorDetector::ParameterSet params;
     ArmorDetector detector;
+
+    vector<cv::Point2f> armorCenters;
 
     static void showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label);
 
