@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "AnnotatedMatViewer.h"
 #include "ArmorDetector.h"
+#include "DetectorTuner.h"
 #include "ValueUIBindings.hpp"
 
 namespace Ui {
@@ -31,6 +32,8 @@ private:
 
     ArmorDetector::ParameterSet params;
     ArmorDetector detector;
+    DetectorTuner tuner;
+
 
     vector<cv::Point2f> armorCenters;
 
@@ -49,6 +52,8 @@ private slots:
     void updateUIFromParams();
 
     void updateParamsFromUI();
+
+    void loadSelectedDataSet();
 };
 
 }

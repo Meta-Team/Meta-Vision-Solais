@@ -15,186 +15,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="0">
-     <widget class="QGroupBox" name="dataSetGroup">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Data Sets</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_7">
-       <item row="0" column="2">
-        <widget class="QPushButton" name="deleteDataSetButton">
-         <property name="text">
-          <string>Del</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QPushButton" name="addDataSetButton">
-         <property name="text">
-          <string>Add</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="3">
-        <widget class="QListWidget" name="dataSetList">
-         <property name="maximumSize">
-          <size>
-           <width>200</width>
-           <height>200</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="renameDataSetButton">
-         <property name="text">
-          <string>R</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QGroupBox" name="imageGroup">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Images</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_8">
-       <item row="1" column="0">
-        <widget class="QListView" name="imageList">
-         <property name="maximumSize">
-          <size>
-           <width>200</width>
-           <height>16777215</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0">
-        <widget class="QPushButton" name="runSingleButton">
-         <property name="text">
-          <string>Run on Single Image</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QPushButton" name="addToBookmarkButton">
-         <property name="text">
-          <string>Add to Bookmark</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QGroupBox" name="paramSetGroup">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Parameter Sets</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_6">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="duplicateParamSetButton">
-         <property name="text">
-          <string>Dup</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="renameParamSetButton">
-         <property name="text">
-          <string>R</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="deleteParamSetButton">
-         <property name="text">
-          <string>Del</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="3">
-        <widget class="QListWidget" name="paramSetList">
-         <property name="minimumSize">
-          <size>
-           <width>150</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>200</width>
-           <height>200</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QGroupBox" name="evaluationGroup">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Evaluation</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_9">
-       <item row="3" column="0">
-        <widget class="QPushButton" name="showFailedImagesButton">
-         <property name="text">
-          <string>Show Failed Images</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="evalResultLabel">
-         <property name="text">
-          <string>Evaluation Result</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QPushButton" name="evalButton">
-         <property name="text">
-          <string>Evaluate on Data Set</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QPushButton" name="showSucceededImagesButton">
-         <property name="text">
-          <string>Show Succeeded Images</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
     <item row="0" column="1" rowspan="4">
      <widget class="QScrollArea" name="scrollArea">
       <property name="frameShape">
@@ -220,7 +40,7 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_10">
            <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="widthSpin">
+            <widget class="QDoubleSpinBox" name="imageWidthSpin">
              <property name="decimals">
               <number>0</number>
              </property>
@@ -237,7 +57,7 @@
             </widget>
            </item>
            <item row="0" column="3">
-            <widget class="QDoubleSpinBox" name="doubleSpinBox_8">
+            <widget class="QDoubleSpinBox" name="imageHeightSpin">
              <property name="decimals">
               <number>0</number>
              </property>
@@ -893,6 +713,193 @@
         </item>
        </layout>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QGroupBox" name="paramSetGroup">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="title">
+       <string>Parameter Sets</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_6">
+       <item row="0" column="0">
+        <widget class="QPushButton" name="duplicateParamSetButton">
+         <property name="text">
+          <string>Dup</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="renameParamSetButton">
+         <property name="text">
+          <string>R</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QPushButton" name="deleteParamSetButton">
+         <property name="text">
+          <string>Del</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="3">
+        <widget class="QListWidget" name="paramSetList">
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>100</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QGroupBox" name="evaluationGroup">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="title">
+       <string>Evaluation</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_9">
+       <item row="3" column="0">
+        <widget class="QPushButton" name="showFailedImagesButton">
+         <property name="text">
+          <string>Show Failed Images</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="evalResultLabel">
+         <property name="text">
+          <string>Evaluation Result</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QPushButton" name="evalButton">
+         <property name="text">
+          <string>Evaluate on Data Set</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="showSucceededImagesButton">
+         <property name="text">
+          <string>Show Succeeded Images</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="dataSetGroup">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="title">
+       <string>Data Sets</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="1" column="0" colspan="3">
+        <widget class="QListWidget" name="dataSetList">
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>150</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="renameDataSetButton">
+         <property name="text">
+          <string>R</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QPushButton" name="addDataSetButton">
+         <property name="text">
+          <string>Add</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <widget class="QPushButton" name="deleteDataSetButton">
+         <property name="text">
+          <string>Del</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="3">
+        <widget class="QPushButton" name="loadDataSetButton">
+         <property name="text">
+          <string>Load</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QGroupBox" name="imageGroup">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="title">
+       <string>Images</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_8">
+       <item row="2" column="0">
+        <widget class="QPushButton" name="addToBookmarkButton">
+         <property name="text">
+          <string>Add to Bookmark</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QListWidget" name="imageList">
+         <property name="maximumSize">
+          <size>
+           <width>200</width>
+           <height>16777215</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QPushButton" name="runSingleButton">
+         <property name="text">
+          <string>Run on Single Image</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
    </layout>

@@ -37,6 +37,9 @@ public:
          * for enabled rather than using special values to represent not enabled.
          */
 
+        int imageWidth = 1280;
+        int imageHeight = 720;
+
         TargetColor targetColor = BLUE;
 
         // ================================ Brightness Filter ================================
@@ -92,6 +95,8 @@ public:
     {}
 
     void setParams(const ParameterSet &p) { params = p; }
+
+    const ParameterSet &getParams() const { return params; }
 
     vector<cv::Point2f> detect(const cv::Mat &img);
 

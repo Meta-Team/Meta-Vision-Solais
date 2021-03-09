@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 project(Meta_Vision_Solais)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(QT_VERSION 5)
 set(QT_LIBS Core Gui Widgets)
@@ -18,10 +18,9 @@ find_package(Qt${QT_VERSION} COMPONENTS ${QT_LIBS} REQUIRED)
 find_package(OpenCV 4 REQUIRED)
 message("Found OpenCV")
 message("    Version: " ${OpenCV_VERSION})
-message("    Libraries: " ${OpenCV_LIBRARIES})
 message("    Includes: " ${OpenCV_INCLUDE_DIRS})
 
 include_directories(include)
 
-add_subdirectory(lib)
+add_subdirectory(src)
 add_subdirectory(tools)

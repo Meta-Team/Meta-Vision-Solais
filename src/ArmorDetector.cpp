@@ -18,8 +18,8 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
     // ================================ Setup ================================
     {
+        assert(img.cols == params.imageWidth && img.rows == params.imageHeight && "Input image size unmatched");
         img.copyTo(imgOriginal);
-        // resize(img, imgOriginal, cv::Size(), 0.5, 0.5);
     }
 
     // ================================ Brightness Threshold ================================
@@ -231,13 +231,13 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 }
 
                 auto leftVector = armorPoints[1] - armorPoints[0];   // up
-                assert(leftVector.y < 0 && "leftVector should be upward");
+                assert(leftVector.y <= 0 && "leftVector should be upward");
                 auto rightVector = armorPoints[2] - armorPoints[3];  // up
-                assert(rightVector.y < 0 && "rightVector should be upward");
+                assert(rightVector.y <= 0 && "rightVector should be upward");
                 auto topVector = armorPoints[2] - armorPoints[1];    // right
-                assert(topVector.x > 0 && "topVector should be rightward");
+                assert(topVector.x >= 0 && "topVector should be rightward");
                 auto bottomVector = armorPoints[3] - armorPoints[0];  // right
-                assert(bottomVector.x > 0 && "bottomVector should be rightward");
+                assert(bottomVector.x >= 0 && "bottomVector should be rightward");
 
                 // Filter angle difference
                 if (params.filterLightAngleDiff) {

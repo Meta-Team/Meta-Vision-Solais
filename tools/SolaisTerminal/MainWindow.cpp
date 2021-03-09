@@ -7,10 +7,20 @@ namespace meta {
 
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
-        ui(new Ui::MainWindow) {
+        ui(new Ui::MainWindow),
+        tuner(&detector) {
+
     ui->setupUi(this);
 
     bindings = {
+
+            // ================================ Input ================================
+
+            new ValueCheckSpinBinding<int>(nullptr, &params.imageWidth,
+                                           nullptr, ui->imageWidthSpin),
+
+            new ValueCheckSpinBinding<int>(nullptr, &params.imageHeight,
+                                           nullptr, ui->imageHeightSpin),
 
             // ================================ Brightness Filter ================================
 
@@ -79,6 +89,7 @@ MainWindow::MainWindow(QWidget *parent) :
     updateUIFromParams();
 
     connect(ui->runSingleButton, &QPushButton::clicked, this, &MainWindow::runSingleDetection);
+    connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
 
     ui->contourImageWidget->installEventFilter(this);
 }
@@ -101,10 +112,25 @@ void MainWindow::updateParamsFromUI() {
     }
 }
 
+void MainWindow::loadSelectedDataSet() {
+    tuner.loadImageDataSet("/Users/liuzikai/Files/VOCdevkit/VOC");
+    ui->imageList->clear();
+    for (const auto &image : tuner.getImages()) {
+        ui->imageList->addItem(image.c_str());
+    }
+}
+
 void MainWindow::runSingleDetection() {
     updateParamsFromUI();
-    detector.setParams(params);
-    armorCenters = detector.detect(cv::imread("/Users/liuzikai/Files/VOCdevkit/VOC/JPEGImages/3060.jpg"));
+    tuner.setDetectorParams(params);
+
+    DetectorTuner::RunEvaluation evaluation;
+    tuner.runOnSingleImage(ui->imageList->currentItem()->text().toStdString(), armorCenters, evaluation);
+
+    ui->evalResultLabel->setText(
+            "Count: " + QString::number(evaluation.imageCount) + "\n" +
+            "Time: " + QString::number(evaluation.timeEscapedMS) + " ms"
+    );
     setUIFromResults();
 }
 
