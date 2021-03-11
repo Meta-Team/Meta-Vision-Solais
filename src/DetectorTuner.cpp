@@ -3,6 +3,8 @@
 //
 
 #include "DetectorTuner.h"
+#include "Camera.h"
+#include "ArmorDetector.h"
 #include <iostream>
 #include <filesystem>
 #include <chrono>
@@ -52,8 +54,8 @@ void DetectorTuner::runOnSingleImage(const fs::path &imageName,
 
     auto img = cv::imread(imageFile);
 
-    if (img.cols != detector->getParams().imageWidth || img.rows != detector->getParams().imageHeight) {
-        cv::resize(img, img, cv::Size(detector->getParams().imageWidth, detector->getParams().imageHeight));
+    if (img.cols != sharedParams.imageWidth || sharedParams.imageHeight) {
+        cv::resize(img, img, cv::Size(sharedParams.imageWidth, sharedParams.imageHeight));
     }
 
     auto startTime = std::chrono::high_resolution_clock::now();

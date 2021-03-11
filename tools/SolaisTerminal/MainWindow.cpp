@@ -8,88 +8,96 @@ namespace meta {
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
-        tuner(&detector) {
+        tuner(&detector, &camera) {
 
     ui->setupUi(this);
 
     bindings = {
 
-            // ================================ Input ================================
+            // ================================ General ================================
 
-            new ValueCheckSpinBinding<int>(nullptr, &params.imageWidth,
+            new ValueCheckSpinBinding<int>(nullptr, &sharedParams.imageWidth,
                                            nullptr, ui->imageWidthSpin),
 
-            new ValueCheckSpinBinding<int>(nullptr, &params.imageHeight,
+            new ValueCheckSpinBinding<int>(nullptr, &sharedParams.imageHeight,
                                            nullptr, ui->imageHeightSpin),
+
+            // ================================ Camera ================================
+
+            new ValueCheckSpinBinding<int>(nullptr, &cameraParams.cameraID,
+                                           nullptr, ui->cameraIDSpin),
 
             // ================================ Brightness Filter ================================
 
             new ValueCheckSpinBinding<double>(
-                    nullptr, &params.brightnessThreshold,
+                    nullptr, &detectorParams.brightnessThreshold,
                     nullptr, ui->brightnessSpin),
 
             // ================================ Color Filter ================================
 
             new EnumRadioBinding<ArmorDetector::ColorThresholdMode>(
-                    &params.colorThresholdMode,
+                    &detectorParams.colorThresholdMode,
                     std::vector<std::pair<ArmorDetector::ColorThresholdMode, QRadioButton *>>{
                             {ArmorDetector::HSV,         ui->hsvRadio},
                             {ArmorDetector::RB_CHANNELS, ui->rbChannelRadio},
                     }),
             new RangeCheckSpinBinding<double>(
-                    nullptr, &params.hsvRedHue,
+                    nullptr, &detectorParams.hsvRedHue,
                     nullptr, ui->hsvRedHueMinSpin, ui->hsvRedHueMaxSpin),
             new RangeCheckSpinBinding<double>(
-                    nullptr, &params.hsvBlueHue,
+                    nullptr, &detectorParams.hsvBlueHue,
                     nullptr, ui->hsvBlueHueMinSpin, ui->hsvBlueHueMaxSpin),
             new ValueCheckSpinBinding<double>(
-                    nullptr, &params.rbChannelThreshold,
+                    nullptr, &detectorParams.rbChannelThreshold,
                     nullptr, ui->rbChannelThresholdSpin),
             new ValueCheckSpinBinding<int>(
-                    &params.enableColorDilate, &params.colorDilate,
+                    &detectorParams.enableColorDilate, &detectorParams.colorDilate,
                     ui->colorDliateCheck, ui->colorDliateSpin),
 
             // ================================ Contour Filter ================================
 
             new EnumRadioBinding<ArmorDetector::ContourFitFunction>(
-                    &params.contourFitFunction,
+                    &detectorParams.contourFitFunction,
                     std::vector<std::pair<ArmorDetector::ContourFitFunction, QRadioButton *>>{
                             {ArmorDetector::MIN_AREA_RECT, ui->minAreaRectRadio},
                             {ArmorDetector::ELLIPSE,       ui->fitEllipseRadio},
                     }),
             new ValueCheckSpinBinding<double>(
-                    &params.filterContourPixelCount, &params.contourPixelCount,
+                    &detectorParams.filterContourPixelCount, &detectorParams.contourPixelCount,
                     ui->contourPixelMinCountCheck, ui->contourPixelMinCountSpin),
             new ValueCheckSpinBinding<double>(
-                    &params.filterContourMinArea, &params.contourMinArea,
+                    &detectorParams.filterContourMinArea, &detectorParams.contourMinArea,
                     ui->contourMinAreaCheck, ui->contourMinAreaSpin),
             new ValueCheckSpinBinding<int>(
-                    &params.filterLongEdgeMinLength, &params.longEdgeMinLength,
+                    &detectorParams.filterLongEdgeMinLength, &detectorParams.longEdgeMinLength,
                     ui->longEdgeMinLengthCheck, ui->longEdgeMinLengthSpin),
-            new RangeCheckSpinBinding<double>(&params.filterLightAspectRatio, &params.lightAspectRatio,
+            new RangeCheckSpinBinding<double>(&detectorParams.filterLightAspectRatio, &detectorParams.lightAspectRatio,
                                               ui->aspectRatioFilterCheck, ui->aspectRatioMinSpin,
                                               ui->aspectRatioMaxSpin),
 
             // ================================ Armor Filter ================================
 
-            new ValueCheckSpinBinding<double>(&params.filterLightLengthRatio, &params.lightLengthMaxRatio,
+            new ValueCheckSpinBinding<double>(&detectorParams.filterLightLengthRatio, &detectorParams.lightLengthMaxRatio,
                                               ui->lightLengthRatioCheck, ui->lightLengthRatioMaxSpin),
-            new RangeCheckSpinBinding<double>(&params.filterLightXDistance, &params.lightXDistOverL,
+            new RangeCheckSpinBinding<double>(&detectorParams.filterLightXDistance, &detectorParams.lightXDistOverL,
                                               ui->lightXDiffCheck, ui->lightXDiffMinSpin, ui->lightXDiffMaxSpin),
 
-            new RangeCheckSpinBinding<double>(&params.filterLightYDistance, &params.lightYDistOverL,
+            new RangeCheckSpinBinding<double>(&detectorParams.filterLightYDistance, &detectorParams.lightYDistOverL,
                                               ui->lightYDiffCheck, ui->lightYDiffMinSpin, ui->lightYDiffMaxSpin),
-            new ValueCheckSpinBinding<double>(&params.filterLightAngleDiff, &params.lightAngleMaxDiff,
+            new ValueCheckSpinBinding<double>(&detectorParams.filterLightAngleDiff, &detectorParams.lightAngleMaxDiff,
                                               ui->lightAngleDiffCheck, ui->lightAngleDiffMaxSpin),
-            new RangeCheckSpinBinding<double>(&params.filterArmorAspectRatio, &params.armorAspectRatio,
+            new RangeCheckSpinBinding<double>(&detectorParams.filterArmorAspectRatio, &detectorParams.armorAspectRatio,
                                               ui->armorAspectRatioCheck, ui->armorAspectRatioMinSpin,
                                               ui->armorAspectRatioMaxSpin),
     };
 
+    camera.registerNewFrameCallBack(&MainWindow::updateCameraFrame, this);
+
     updateUIFromParams();
 
-    connect(ui->runSingleButton, &QPushButton::clicked, this, &MainWindow::runSingleDetection);
+    connect(ui->runSingleImageButton, &QPushButton::clicked, this, &MainWindow::runSingleDetectionOnImage);
     connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
+    connect(ui->switchCameraButton, &QPushButton::clicked, this, &MainWindow::switchCamera);
 
     ui->contourImageWidget->installEventFilter(this);
 }
@@ -115,14 +123,15 @@ void MainWindow::updateParamsFromUI() {
 void MainWindow::loadSelectedDataSet() {
     tuner.loadImageDataSet("/Users/liuzikai/Files/VOCdevkit/VOC");
     ui->imageList->clear();
-    for (const auto &image : tuner.getImages()) {
+    for (const auto &image : tuner.getDataSetImages()) {
         ui->imageList->addItem(image.c_str());
     }
 }
 
-void MainWindow::runSingleDetection() {
+void MainWindow::runSingleDetectionOnImage() {
     updateParamsFromUI();
-    tuner.setDetectorParams(params);
+    tuner.setSharedParams(sharedParams);
+    detector.setParams(sharedParams, detectorParams);
 
     DetectorTuner::RunEvaluation evaluation;
     tuner.runOnSingleImage(ui->imageList->currentItem()->text().toStdString(), armorCenters, evaluation);
@@ -132,6 +141,15 @@ void MainWindow::runSingleDetection() {
             "Time: " + QString::number(evaluation.timeEscapedMS) + " ms"
     );
     setUIFromResults();
+}
+
+void MainWindow::switchCamera() {
+    if (camera.isOpened()) {
+        camera.release();
+    } else {
+        updateParamsFromUI();
+        camera.open(sharedParams, cameraParams);
+    }
 }
 
 void MainWindow::setUIFromResults() const {
@@ -150,6 +168,11 @@ void MainWindow::setUIFromResults() const {
     }
     ss.flush();
     ui->armorResultLabel->setText(armorResult);
+}
+
+void MainWindow::updateCameraFrame(void *ptr) {
+    auto inst = static_cast<MainWindow *>(ptr);
+    showCVMatInLabel(inst->camera.getFrame(), QImage::Format_BGR888, inst->ui->cameraImage);
 }
 
 void MainWindow::showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label) {

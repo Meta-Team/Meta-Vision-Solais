@@ -5,6 +5,7 @@
 #include "AnnotatedMatViewer.h"
 #include "ArmorDetector.h"
 #include "DetectorTuner.h"
+#include "Camera.h"
 #include "ValueUIBindings.hpp"
 
 namespace Ui {
@@ -30,10 +31,15 @@ protected:
 private:
     Ui::MainWindow *ui;
 
-    ArmorDetector::ParameterSet params;
+    SharedParameters sharedParams;
+
+    ArmorDetector::ParameterSet detectorParams;
     ArmorDetector detector;
+
     DetectorTuner tuner;
 
+    Camera::ParameterSet cameraParams;
+    Camera camera;
 
     vector<cv::Point2f> armorCenters;
 
@@ -41,19 +47,23 @@ private:
 
     void setUIFromResults() const;
 
+    static void updateCameraFrame(void *ptr);
+
     std::vector<ValueUIBinding *> bindings;
 
     std::vector<AnnotatedMatViewer *> viewers;
 
 private slots:
 
-    void runSingleDetection();
+    void runSingleDetectionOnImage();
 
     void updateUIFromParams();
 
     void updateParamsFromUI();
 
     void loadSelectedDataSet();
+
+    void switchCamera();
 };
 
 }

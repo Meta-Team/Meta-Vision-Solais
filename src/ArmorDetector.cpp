@@ -18,7 +18,7 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
     // ================================ Setup ================================
     {
-        assert(img.cols == params.imageWidth && img.rows == params.imageHeight && "Input image size unmatched");
+        assert(img.cols == sharedParams.imageWidth && img.rows == sharedParams.imageHeight && "Input image size unmatched");
         img.copyTo(imgOriginal);
     }
 

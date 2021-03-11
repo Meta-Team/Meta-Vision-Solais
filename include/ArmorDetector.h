@@ -37,9 +37,6 @@ public:
          * for enabled rather than using special values to represent not enabled.
          */
 
-        int imageWidth = 1280;
-        int imageHeight = 720;
-
         TargetColor targetColor = BLUE;
 
         // ================================ Brightness Filter ================================
@@ -94,7 +91,10 @@ public:
             : noteContours(cv::Scalar(0, 255, 255)) // yellow
     {}
 
-    void setParams(const ParameterSet &p) { params = p; }
+    void setParams(const SharedParameters &shared, const ParameterSet &p) {
+        sharedParams = shared;
+        params = p;
+    }
 
     const ParameterSet &getParams() const { return params; }
 
@@ -102,6 +102,7 @@ public:
 
 private:
 
+    SharedParameters sharedParams;
     ParameterSet params;
 
     cv::Mat imgOriginal;
