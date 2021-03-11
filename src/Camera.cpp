@@ -11,31 +11,52 @@ bool Camera::open(const SharedParameters &shared, const Camera::ParameterSet &pa
     sharedParams = shared;
     capParams = params;
 
+    capInfoSS.clear();
+
     cap.open(params.cameraID, cv::CAP_ANY);
     if (!cap.isOpened()) {
-        std::cerr << "Failed to open camera " << params.cameraID << "\n";
+        capInfoSS << "Failed to open camera " << params.cameraID << "\n";
+        std::cerr << capInfoSS.rdbuf();
         return false;
     }
 
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, shared.imageWidth);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, shared.imageHeight);
+    // Set parameters
+    if (!cap.set(cv::CAP_PROP_FRAME_WIDTH, shared.imageWidth)) {
+        capInfoSS << "Failed to set width.\n";
+    }
+    if (!cap.set(cv::CAP_PROP_FRAME_HEIGHT, shared.imageHeight)) {
+        capInfoSS << "Failed to set height.\n";
+    }
+    if (!cap.set(cv::CAP_PROP_FPS, params.fps)) {
+        capInfoSS << "Failed to set fps.\n";
+    }
+    if (params.enableGamma) {
+        if (!cap.set(cv::CAP_PROP_GAMMA, params.gamma)) {
+            capInfoSS << "Failed to set gamma.\n";
+        }
+    }
 
     // Get a test frame
     cap.read(buffer[0]);
     if (buffer->empty()) {
-        std::cerr << "Failed to fetch test image from camera " << params.cameraID << "\n";
+        capInfoSS << "Failed to fetch test image from camera " << params.cameraID << "\n";
+        std::cerr << capInfoSS.rdbuf();
         return false;
     }
     if (buffer[0].cols != sharedParams.imageWidth || buffer[0].rows != shared.imageHeight) {
-        std::cerr << "Invalid frame size. "
+        capInfoSS << "Invalid frame size. "
                   << "Expected: " << sharedParams.imageWidth << "x" << sharedParams.imageHeight << ", "
                   << "Actual: " << buffer[0].cols << "x" << buffer[0].rows << "\n";
+        std::cerr << capInfoSS.rdbuf();
         return false;
     }
 
-    std::cout << "Camera " << params.cameraID << " "
+    // Report actual parameters
+    capInfoSS << "Camera " << params.cameraID << ", "
               << cap.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cap.get(cv::CAP_PROP_FRAME_HEIGHT)
-              << " @ " << cap.get(cv::CAP_PROP_FPS) << " fps\n";
+              << " @ " << cap.get(cv::CAP_PROP_FPS) << " fps\n"
+              << "Gamma: " << cap.get(cv::CAP_PROP_GAMMA) << "\n";
+    std::cout << capInfoSS.rdbuf();
 
     if (th) {
         release();

@@ -19,11 +19,18 @@ public:
 
     struct ParameterSet {
         int cameraID = 0;
+
+        int fps = 120;
+
+        bool enableGamma = false;
+        double gamma = 0;
     };
 
     bool open(const SharedParameters &shared, const ParameterSet &params);
 
     bool isOpened() const { return cap.isOpened(); }
+
+    string getCapInfo() const { return capInfoSS.str(); };
 
     void release();
 
@@ -42,6 +49,8 @@ private:
 
     cv::VideoCapture cap;
     ParameterSet capParams;
+
+    std::stringstream capInfoSS;
 
     // Double buffering
     std::atomic<int> lastBuffer = 0;

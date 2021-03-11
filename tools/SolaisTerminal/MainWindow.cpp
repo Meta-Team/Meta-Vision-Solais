@@ -24,8 +24,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
             // ================================ Camera ================================
 
+            new ValueCheckSpinBinding<int>(nullptr, &cameraParams.fps,
+                                           nullptr, ui->frameRateSpin),
+
             new ValueCheckSpinBinding<int>(nullptr, &cameraParams.cameraID,
                                            nullptr, ui->cameraIDSpin),
+
+            new ValueCheckSpinBinding<double>(&cameraParams.enableGamma, &cameraParams.gamma,
+                                              ui->gammaCheck, ui->gammaSpin),
 
             // ================================ Brightness Filter ================================
 
@@ -77,7 +83,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
             // ================================ Armor Filter ================================
 
-            new ValueCheckSpinBinding<double>(&detectorParams.filterLightLengthRatio, &detectorParams.lightLengthMaxRatio,
+            new ValueCheckSpinBinding<double>(&detectorParams.filterLightLengthRatio,
+                                              &detectorParams.lightLengthMaxRatio,
                                               ui->lightLengthRatioCheck, ui->lightLengthRatioMaxSpin),
             new RangeCheckSpinBinding<double>(&detectorParams.filterLightXDistance, &detectorParams.lightXDistOverL,
                                               ui->lightXDiffCheck, ui->lightXDiffMinSpin, ui->lightXDiffMaxSpin),
@@ -149,6 +156,7 @@ void MainWindow::switchCamera() {
     } else {
         updateParamsFromUI();
         camera.open(sharedParams, cameraParams);
+        ui->cameraInfoLabel->setText(QString::fromStdString(camera.getCapInfo()));
     }
 }
 

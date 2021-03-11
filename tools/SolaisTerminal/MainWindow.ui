@@ -31,8 +31,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>844</width>
-         <height>2566</height>
+         <width>838</width>
+         <height>2532</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -98,10 +98,30 @@
            <string>Camera</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_13">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_10">
+           <item row="4" column="3">
+            <spacer name="horizontalSpacer_8">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>568</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_11">
              <property name="text">
-              <string>Camera ID</string>
+              <string>FPS</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="3">
+            <widget class="QPushButton" name="switchCameraButton">
+             <property name="text">
+              <string>Open/Close Camera</string>
              </property>
             </widget>
            </item>
@@ -121,7 +141,34 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="4" rowspan="4">
+           <item row="4" column="0" colspan="2">
+            <spacer name="verticalSpacer_5">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>200</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="5" column="0" colspan="3">
+            <widget class="QLabel" name="cameraInfoLabel">
+             <property name="text">
+              <string>Info</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Camera ID</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4" rowspan="6">
             <widget class="QLabel" name="cameraImage">
              <property name="minimumSize">
               <size>
@@ -143,43 +190,27 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="0" colspan="3">
-            <widget class="QPushButton" name="switchCameraButton">
-             <property name="text">
-              <string>Open/Close</string>
+           <item row="1" column="1">
+            <widget class="QDoubleSpinBox" name="frameRateSpin">
+             <property name="decimals">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <double>999.000000000000000</double>
              </property>
             </widget>
            </item>
-           <item row="2" column="0" colspan="2">
-            <spacer name="verticalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>262</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="2" column="3">
-            <spacer name="horizontalSpacer_8">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>616</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="3" column="0" colspan="3">
-            <widget class="QLabel" name="cameraInfoLabel">
+           <item row="2" column="0">
+            <widget class="QCheckBox" name="gammaCheck">
              <property name="text">
-              <string>Info</string>
+              <string>Gamma</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QDoubleSpinBox" name="gammaSpin">
+             <property name="maximum">
+              <double>999.990000000000009</double>
              </property>
             </widget>
            </item>
@@ -192,7 +223,20 @@
            <string>Original</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_10">
-           <item row="2" column="0">
+           <item row="0" column="1" rowspan="2">
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>337</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="0">
             <spacer name="verticalSpacer_3">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
@@ -205,7 +249,7 @@
              </property>
             </spacer>
            </item>
-           <item row="1" column="3" rowspan="2">
+           <item row="0" column="2" rowspan="2">
             <widget class="QLabel" name="originalImage">
              <property name="minimumSize">
               <size>
@@ -226,46 +270,6 @@
               <set>Qt::AlignCenter</set>
              </property>
             </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QPushButton" name="runSingleImageButton">
-             <property name="text">
-              <string>Run on Single Data Set Image</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="runSingleFrameButton">
-             <property name="text">
-              <string>Run on Single Camera Frame</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1" rowspan="2" colspan="2">
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>337</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="0" column="2" colspan="2">
-            <spacer name="horizontalSpacer_6">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </widget>
@@ -914,24 +918,31 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Evaluation</string>
+          <string>Run/Evaluate</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_9">
-          <item row="1" column="0" colspan="2">
+          <item row="3" column="0" colspan="2">
            <widget class="QPushButton" name="evalOnImagesButton">
             <property name="text">
-             <string>Eval on Data Set</string>
+             <string>Evaluate on Data Set</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0" colspan="2">
+          <item row="4" column="0" colspan="2">
+           <widget class="QPushButton" name="evalOnCameraButton">
+            <property name="text">
+             <string>Evaluate on Camera</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
            <widget class="QLabel" name="evalResultLabel">
             <property name="text">
              <string>Evaluation Result</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
+          <item row="2" column="1">
            <widget class="QDoubleSpinBox" name="batchSizeSpin">
             <property name="decimals">
              <number>0</number>
@@ -944,17 +955,24 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
+          <item row="2" column="0">
            <widget class="QLabel" name="label_9">
             <property name="text">
-             <string>Batch size</string>
+             <string>Batch Size</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QPushButton" name="evalOnCameraButton">
+          <item row="0" column="0" colspan="2">
+           <widget class="QPushButton" name="runSingleImageButton">
             <property name="text">
-             <string>Eval on Camera</string>
+             <string>Run on Single Image</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QPushButton" name="runSingleFrameButton">
+            <property name="text">
+             <string>Run on Single Frame</string>
             </property>
            </widget>
           </item>
