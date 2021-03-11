@@ -13,6 +13,7 @@ bool Camera::open(const SharedParameters &shared, const Camera::ParameterSet &pa
 
     capInfoSS.clear();
 
+    // Open the camera
     cap.open(params.cameraID, cv::CAP_ANY);
     if (!cap.isOpened()) {
         capInfoSS << "Failed to open camera " << params.cameraID << "\n";
@@ -58,6 +59,7 @@ bool Camera::open(const SharedParameters &shared, const Camera::ParameterSet &pa
               << "Gamma: " << cap.get(cv::CAP_PROP_GAMMA) << "\n";
     std::cout << capInfoSS.rdbuf();
 
+    // Start the fetching thread
     if (th) {
         release();
     }

@@ -1100,12 +1100,12 @@
            </widget>
           </item>
           <item row="2" column="0" colspan="3">
-           <widget class="QPushButton" name="saveButton">
+           <widget class="QPushButton" name="saveParamButton">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="text">
-             <string>Autosave Enabled</string>
+             <string>Save Parameter</string>
             </property>
            </widget>
           </item>
@@ -1117,6 +1117,7 @@
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <resources/>
  <connections/>
