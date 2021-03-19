@@ -1,0 +1,2 @@
+add_executable(TerminalSocketUnitTest TerminalSocketUnitTest.cpp)
+target_link_libraries(TerminalSocketUnitTest ArmorDetector)
