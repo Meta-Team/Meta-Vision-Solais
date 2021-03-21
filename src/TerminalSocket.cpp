@@ -4,89 +4,86 @@
 
 #include "TerminalSocket.h"
 #include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+#include <boost/bind.hpp>
+#include <utility>
 
 namespace meta {
 
-// Get socket address, IPv4 or IPv6.
-// Put it as a local function here since I don't want to import socket headers in TerminalSocket.h
-static void *getClientAddr(struct sockaddr *sa) {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in *) sa)->sin_addr);
-    }
-    return &(((struct sockaddr_in6 *) sa)->sin6_addr);
-}
+TerminalSocketBase::TerminalSocketBase()
+        : recvBuf(RECEIVER_BUFFER_SIZE * 4, 0),
+          ioThread(&TerminalSocketBase::ioThreadBody, this) {
 
-static bool setSocketTimeout(int sock, const struct timeval *tv) {
-    if (::setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, tv, sizeof(struct timeval)) == -1) {
-        std::cerr << "TerminalSocketBase: setsockopt failed\n";
-        return false;
-    }
-    return true;
 }
 
 TerminalSocketBase::~TerminalSocketBase() {
-    closeSocket();
+    if (socket != nullptr) {
+        closeSocket();
+        // disconnectCallback will be triggered by handleRecv
+    }
+
+    ioContext.stop();
+
+    // Terminate io_context thread
+    ioThread.join();
 }
 
 bool TerminalSocketBase::sendSingleString(const string &name, const string &s) {
-    if (!connected) return false;
+    if (!isConnected()) return false;
 
-    vector<uint8_t> buf;
-    size_t bufSize = prepareHeader(buf, SINGLE_STRING, name, s.length() + 1);
+    auto buf = allocateBuffer(SINGLE_STRING, name, s.length() + 1);
 
     // The string itself
-    buf.insert(buf.end(), s.begin(), s.end());
-    buf.emplace_back('\0');
+    buf->insert(buf->end(), s.begin(), s.end());
+    buf->emplace_back('\0');
 
     // Send the data
-    auto bytesSent = ::send(sockfd, buf.data(), bufSize, 0);
-    if (bytesSent != bufSize) {
-        std::cerr << "TerminalSocketBase: only " << bytesSent << "/" << bufSize << " bytes are sent\n";
-        return false;
-    }
+    boost::asio::async_write(*socket,
+                             boost::asio::buffer(*buf),
+                             [this, buf](auto &error, auto numBytes) { handleSend(buf, error, numBytes); });
+    // buf will be deleted at handleSend
 
     return true;
 }
 
 bool TerminalSocketBase::sendSingleInt(const string &name, int32_t n) {
-    if (!connected) return false;
+    if (!isConnected()) return false;
 
-    vector<uint8_t> buf;
-    size_t bufSize = prepareHeader(buf, SINGLE_INT, name, 4);
+    auto buf = allocateBuffer(SINGLE_INT, name, 4);
 
     // The int itself
-    emplaceInt32(buf, (uint32_t) n);
+    emplaceInt32(*buf, (uint32_t) n);
 
     // Send the data
-    ::send(sockfd, buf.data(), bufSize, 0);
+    boost::asio::async_write(*socket,
+                             boost::asio::buffer(*buf),
+                             [this, buf](auto &error, auto numBytes) { handleSend(buf, error, numBytes); });
+    // buf will be deleted at handleSend
 
     return true;
 }
 
 bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t size) {
-    if (!connected) return false;
+    if (!isConnected()) return false;
 
-    vector<uint8_t> buf;
-    size_t bufSize = prepareHeader(buf, BYTES, name, size);
+    auto buf = allocateBuffer(BYTES, name, size);
 
     // Data
-    buf.resize(bufSize);
-    ::memcpy(buf.data() + (bufSize - size), data, size);
+    if (size != 0) {
+        buf->resize(buf->size() + size);
+        ::memcpy(buf->data() + (buf->size() - size), data, size);
+    }
 
     // Send the data
-    ::send(sockfd, buf.data(), bufSize, 0);
+    boost::asio::async_write(*socket,
+                             boost::asio::buffer(*buf),
+                             [this, buf](auto &error, auto numBytes) { handleSend(buf, error, numBytes); });
+    // buf will be deleted at handleSend
 
     return true;
 }
 
 bool TerminalSocketBase::sendListOfStrings(const string &name, const vector<string> &list) {
-    if (!connected) return false;
+    if (!isConnected()) return false;
 
     // Iterate through strings to count the size
     size_t contentSize = 0;
@@ -94,37 +91,43 @@ bool TerminalSocketBase::sendListOfStrings(const string &name, const vector<stri
         contentSize += s.length() + 1;  // include the NUL
     }
 
-    vector<uint8_t> buf;
-    size_t bufSize = prepareHeader(buf, LIST_OF_STRINGS, name, contentSize);
+    auto buf = allocateBuffer(LIST_OF_STRINGS, name, contentSize);
 
     // Emplace the strings
     for (const auto &s : list) {
-        buf.insert(buf.end(), s.begin(), s.end());
-        buf.emplace_back('\0');
+        buf->insert(buf->end(), s.begin(), s.end());
+        buf->emplace_back('\0');
     }
 
     // Send the data
-    ::send(sockfd, buf.data(), bufSize, 0);
+    boost::asio::async_write(*socket,
+                             boost::asio::buffer(*buf),
+                             [this, buf](auto &error, auto numBytes) { handleSend(buf, error, numBytes); });
+    // buf will be deleted at handleSend
 
     return true;
 }
 
-int TerminalSocketBase::prepareHeader(vector<uint8_t> &buf, TerminalSocketBase::PackageType type, const string &name,
-                                      size_t contentSize) {
-    size_t bufSize = 1 + (name.length() + 1) + 4 + contentSize;
-    buf.reserve(bufSize);
+vector<uint8_t> *TerminalSocketBase::allocateBuffer(PackageType type, const string &name, size_t contentSize) {
+    auto buf = new vector<uint8_t>();
+
+    size_t bufSize = 1 + 1 + (name.length() + 1) + 4 + contentSize;
+    buf->reserve(bufSize);
+
+    // Preamble, 1 byte
+    buf->emplace_back(PREAMBLE);
 
     // Type, 1 byte
-    buf.emplace_back((uint8_t) SINGLE_STRING);
+    buf->emplace_back((uint8_t) type);
 
     // NUL-terminated name
-    buf.insert(buf.end(), name.begin(), name.end());
-    buf.emplace_back('\0');
+    buf->insert(buf->end(), name.begin(), name.end());
+    buf->emplace_back('\0');
 
     // Size, 4 bytes, little endian
-    emplaceInt32(buf, contentSize);
+    emplaceInt32(*buf, contentSize);
 
-    return bufSize;
+    return buf;
 }
 
 void TerminalSocketBase::emplaceInt32(vector<uint8_t> &buf, int32_t n) {
@@ -135,166 +138,211 @@ void TerminalSocketBase::emplaceInt32(vector<uint8_t> &buf, int32_t n) {
     buf.emplace_back((uint8_t) ((n >> 24) & 0xFF));
 }
 
-void TerminalSocketBase::setupSocket(int fd, TerminalSocketBase::DisconnectCallback disconnected) {
-    if (connected || th != nullptr) {
+void TerminalSocketBase::handleSend(vector<uint8_t> *buf, const boost::system::error_code &error, size_t numBytes) {
+    if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset) {  // disconnected
         closeSocket();
+        // disconnectCallback will be triggered by handleRecv
+    }
+    assert(buf->size() == numBytes && "Unexpected # of bytes sent");
+    delete buf;
+}
+
+void TerminalSocketBase::setupSocket(std::shared_ptr<tcp::socket> newSocket, DisconnectCallback disconnected) {
+    // Clean up
+    if (isConnected()) {
+        closeSocket();
+        // disconnectCallback will be triggered by handleRecv
     }
 
-    sockfd = fd;
+    // Setup callback
     disconnectCallback = disconnected;
+
+    // Setup socket
+    socket = std::move(newSocket);
     connected = true;
 
-    threadShouldExit = false;
-    th = new std::thread(&TerminalSocketBase::receiverThreadBody, this);
+    // Start recv cycle
+    recvState = RECV_PREAMBLE;
+    recvOffset = 0;
+    boost::asio::async_read(*socket,
+                            boost::asio::buffer(&recvBuf[recvOffset], 1),
+                            boost::asio::transfer_exactly(1),
+                            [this](auto &error, auto numBytes) { handleRecv(error, numBytes); });
 }
 
 void TerminalSocketBase::closeSocket() {
-    if (th) {
-        threadShouldExit = true;
-        th->join();  // will trigger disconnect callback
-        delete th;
-        th = nullptr;
-    }
+    // Close socket and release
+    if (socket && socket->is_open() && isConnected()) {
 
-    connected = false;
-    disconnectCallback = nullptr;
-    sockfd = 0;
-}
-
-void TerminalSocketBase::receiverThreadBody() {
-
-    ReceiverState state = RECV_PREAMBLE;
-
-    vector<uint8_t> buf;  // use vector to ensure the support of large packages
-    buf.resize(RECEIVER_BUFFER_SIZE * 4);  // preallocate some space
-
-    size_t offset = 0;  // current buffer offset;
-
-    ssize_t recvSize;
-    size_t sizeRemainingByteCount;
-    size_t contentRemainingByteCount;
-
-    size_t contentSize;
-    size_t contentStartIndex;
-
-    if (!setSocketTimeout(sockfd, &RECV_TIMEOUT)) {
-        // return;
-    }
-
-    while (!threadShouldExit) {
-
-        if (state == RECV_PREAMBLE) {
-
-            recvSize = ::recv(sockfd, buf.data(), 1, 0);  // receive only one byte
-            if (recvSize == 0) {
-                // Timeout, continue and check RECV_PREAMBLE
-                continue;
-            } else if (recvSize == -1) {
-                // Error occurred
-                std::cerr << "TerminalSocketBase: recv error: " << ::strerror(recvSize) << " \n";
-                break;
-            }
-            if (buf[0] == PREAMBLE) {
-                state = RECV_PACKAGE_TYPE;  // transfer to receive package type
-                offset = 0;  // preamble not included in the buf, will be overwritten
-            }
-
-        } else {
-
-            if (offset + RECEIVER_BUFFER_SIZE > buf.size()) {
-                buf.resize(buf.size() * 2);  // enlarge the buffer to 2x
-            }
-
-            recvSize = ::recv(sockfd, buf.data() + offset, RECEIVER_BUFFER_SIZE, 0);
-            if (recvSize == 0) {
-                // Timeout, continue and check RECV_PREAMBLE
-                continue;
-            } else if (recvSize == -1) {
-                // Error occurred
-                std::cerr << "TerminalSocketBase: recv error: " << ::strerror(recvSize) << " \n";
-                break;
-            }
-
-            size_t i = offset;
-            offset += recvSize;  // move forward, may get overwritten below
-
-            for (; i < offset; i++) {
-                switch (state) {
-                    case RECV_PACKAGE_TYPE:
-                        assert(i == 0 && "Unexpected package handling at receiver. Package type should be at offset 0");
-                        if (buf[i] < PACKAGE_TYPE_COUNT) {  // valid
-                            state = RECV_NAME;  // transfer to receiving name
-                        } else {
-                            std::cerr << "Received invalid package type " << buf[i] << "\n";
-                            state = RECV_PREAMBLE;
-                            offset = 0;  // this will break the for loop (stop processing remaining bytes)
-                        }
-                        break;
-                    case RECV_NAME:
-                        if (buf[i] == '\0') {
-                            state = RECV_SIZE;  // transfer to receive 4-byte size
-                            sizeRemainingByteCount = 4;
-                        }
-                        break;
-                    case RECV_SIZE:
-                        sizeRemainingByteCount--;
-                        if (sizeRemainingByteCount == 0) {
-                            contentSize = contentRemainingByteCount = decodeInt32(buf.data() + (i - 3));
-                            state = RECV_CONTENT;  // transfer to receive content
-                            contentStartIndex = i + 1;
-                        }
-                        break;
-                    case RECV_CONTENT:
-                        contentRemainingByteCount--;
-                        if (contentRemainingByteCount == 0) {
-
-                            string name((char *) (buf.data() + 1));  // NUL will be found
-                            switch ((PackageType) buf[0]) {
-                                case SINGLE_STRING:
-                                    if (singleStringCallBack) {
-                                        singleStringCallBack(callBackParam, name,
-                                                             (char *) (buf.data() + contentStartIndex));
-                                    }
-                                    break;
-                                case SINGLE_INT:
-                                    if (singleIntCallBack) {
-                                        singleIntCallBack(callBackParam, name,
-                                                          decodeInt32(buf.data() + contentStartIndex));
-                                    }
-                                    break;
-                                case BYTES:
-                                    if (bytesCallBack) {
-                                        bytesCallBack(callBackParam, name, buf.data() + contentStartIndex, contentSize);
-                                    }
-                                    break;
-                                case LIST_OF_STRINGS:
-                                    if (listOfStringsCallBack) {
-                                        vector<string> list;
-                                        size_t strStart = contentStartIndex;
-                                        while (strStart < contentStartIndex + contentSize) {
-                                            list.emplace_back((char *) (buf.data() + strStart));
-                                            strStart += list.back().length() + 1;
-                                        }
-                                        listOfStringsCallBack(callBackParam, name, list);
-                                    }
-                                    break;
-                                default:
-                                    break;
-                            }
-
-                            state = RECV_PREAMBLE;  // transfer to receive preamble
-                            offset = 0;  // this will break the for loop
-                        }
-                        break;
-                    default:
-                        assert(!"Invalid receiver state");
-                }
-            }
+        boost::system::error_code error;
+        socket->shutdown(tcp::socket::shutdown_both, error);
+        if (error) {
+            std::cerr << "TerminalSocketBase: shutdown error: " << error.message() << "\n";
         }
 
+        connected = false;
+
+        // Do not reset socket as handleRecv may still be called
     }
 
-    if (disconnectCallback) disconnectCallback();
+    // disconnectCallback will be triggered by handleRecv
+}
+
+void TerminalSocketBase::ioThreadBody() {
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(ioContext.get_executor());
+    ioContext.run();
+}
+
+void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size_t numBytes) {
+
+    if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset) {
+
+        closeSocket();
+        if (disconnectCallback && isConnected()) {  // make sure it's called only once
+            disconnectCallback();
+        }
+
+        return;  // do not start next async_recv
+
+    } else if (error) {
+
+        std::cerr << "TerminalSocketBase: recv error: " << error.message() << "\n";
+        // Continue to process data and start next async_recv
+    }
+
+    // Otherwise, process data and continue next async_recv
+
+    /**
+     * To avoid copying, strings and bytes are passed as const pointers, which however requires data to be continuous
+     * in the memory.
+     *
+     * Here a vector is used as the buffer. All bytes are discarded at once if the end of the buffer is exactly the end
+     * of one package. Before starting the next async_recv, the buffer is extended as needed. It's possible that the
+     * buffer can grow large (if packages are always received partially), but if the data flow is not heavy, it may not
+     * occur at all. An warning message is printed everytime the buffer is enlarged. Pay close attention to these
+     * warnings.
+     */
+
+
+    ssize_t i = recvOffset;
+    recvOffset += numBytes;  // move forward
+
+    for (; i < recvOffset; i++) {
+        switch (recvState) {
+            case RECV_PREAMBLE:
+                if (recvBuf[i] == PREAMBLE) {
+                    recvState = RECV_PACKAGE_TYPE;  // transfer to receive package type
+                }  // otherwise keep in RECV_PREAMBLE state
+                break;
+            case RECV_PACKAGE_TYPE:
+                if (recvBuf[i] < PACKAGE_TYPE_COUNT) {  // valid
+                    recvCurrentPackageType = (PackageType) recvBuf[i];
+                    recvState = RECV_NAME;  // transfer to receiving name
+                    recvNameStart = i + 1;
+                } else {
+                    std::cerr << "Received invalid package type " << recvBuf[i] << "\n";
+                    recvState = RECV_PREAMBLE;
+                }
+                break;
+            case RECV_NAME:
+                if (recvBuf[i] == '\0') {
+                    recvState = RECV_SIZE;   // transfer to receive 4-byte size
+                    recvRemainingBytes = 4;  // for the 4 bytes of size
+                }
+                break;
+            case RECV_SIZE:
+                recvRemainingBytes--;
+                if (recvRemainingBytes == 0) {
+                    contentSize = decodeInt32(recvBuf.data() + (i - 3));
+                    recvRemainingBytes = contentSize;
+                    recvContentStart = i + 1;
+                    if (contentSize > 0) {
+                        recvState = RECV_CONTENT;  // transfer to receive content
+                    } else {
+                        // Empty content
+                        handlePackage();
+                        recvState = RECV_PREAMBLE;  // transfer to receive preamble
+                        if (i + 1 == recvOffset) {  // happen to be at the end of buffer
+                            recvOffset = 0;  // discard all received bytes
+                        }
+                    }
+                }
+                break;
+            case RECV_CONTENT:
+                recvRemainingBytes--;
+                if (recvRemainingBytes == 0) {
+                    handlePackage();
+
+                    recvState = RECV_PREAMBLE;  // transfer to receive preamble
+
+                    if (i + 1 == recvOffset) {  // happen to be at the end of buffer
+                        recvOffset = 0;  // discard all received bytes
+                    }
+                }
+                break;
+        }
+    }
+
+
+    if (recvOffset + RECEIVER_BUFFER_SIZE > recvBuf.size()) {
+        std::cerr << "Warning: TerminalSocketBase enlarges its receiver buffer to 2x" << std::endl;
+        recvBuf.resize(recvBuf.size() * 2);  // enlarge the buffer to 2x
+    }
+
+    boost::asio::async_read(*socket,
+                            boost::asio::buffer(&recvBuf[recvOffset], RECEIVER_BUFFER_SIZE),
+                            boost::asio::transfer_at_least(1),
+            // boost::asio::transfer_all doesn't work
+                            [this](auto &error, auto numBytes) { handleRecv(error, numBytes); });
+}
+
+void TerminalSocketBase::handlePackage() const {
+    switch (recvCurrentPackageType) {
+        case SINGLE_STRING:
+            if (singleStringCallBack) {
+                singleStringCallBack(callBackParam,
+                                     (const char *) (recvBuf.data() + recvNameStart),
+                                     (const char *) (recvBuf.data() + recvContentStart));
+            }
+            break;
+        case SINGLE_INT:
+            if (singleIntCallBack) {
+                singleIntCallBack(callBackParam,
+                                  (const char *) (recvBuf.data() + recvNameStart),
+                                  decodeInt32(recvBuf.data() + recvContentStart));
+            }
+            break;
+        case BYTES:
+            if (bytesCallBack) {
+                bytesCallBack(callBackParam,
+                              (const char *) (recvBuf.data() + recvNameStart),
+                              recvBuf.data() + recvContentStart,
+                              contentSize);
+            }
+            break;
+        case LIST_OF_STRINGS:
+            if (listOfStringsCallBack) {
+                vector<const char *> list;
+                size_t strStart = recvContentStart;
+                while (strStart < recvContentStart + contentSize) {
+                    list.emplace_back((const char *) (recvBuf.data() + strStart));
+
+                    // Find the end of the string
+                    while (strStart < recvContentStart + contentSize && recvBuf[strStart] != '\0') {
+                        strStart++;
+                    }
+
+                    // Move to the next start
+                    strStart++;
+                }
+                listOfStringsCallBack(callBackParam,
+                                      (char *) (recvBuf.data() + recvNameStart),
+                                      list);
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 int32_t TerminalSocketBase::decodeInt32(const uint8_t *start) {
@@ -302,167 +350,69 @@ int32_t TerminalSocketBase::decodeInt32(const uint8_t *start) {
     return (start[3] << 24) | (start[2] << 16) | (start[1] << 8) | start[0];
 }
 
-bool TerminalSocketServer::listen(int port, DisconnectCallback disconnected) {
+TerminalSocketServer::TerminalSocketServer(int port, DisconnectCallback disconnectCallback)
+        : port(port),
+          acceptor(ioContext, tcp::endpoint(tcp::v4(), port)),
+          disconnectCallback(disconnectCallback) {
 
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
-    int yes = 1;
+}
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;  // use my IP
+void TerminalSocketServer::startAccept() {
 
-    if ((rv = ::getaddrinfo(nullptr, std::to_string(port).c_str(), &hints, &servinfo)) != 0) {
-        std::cerr << "TerminalSocketServer: getaddrinfo failed: " << ::gai_strerror(rv) << "\n";
-        return false;
+    auto socket = std::make_shared<tcp::socket>(ioContext);
+    // shared_ptr is used to manage socket. If it doesn't reach handleAccept, the raw pointer will simply leak.
+
+    // ioContext is running as TerminalSocketBase instantiates
+    acceptor.listen();
+    acceptor.async_accept(*socket,
+                          [this, socket](const auto &error) { handleAccept(socket, error); });
+
+
+    std::cout << "TerminalSocketServer: listen on " << port << std::endl;
+}
+
+void TerminalSocketServer::handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code &error) {
+    if (!error) {
+        std::cout << "TerminalSocketServer: get connection from " << socket->remote_endpoint().address().to_string()
+                  << "\n";
+        setupSocket(std::move(socket), disconnectCallback);
+    } else {
+        std::cerr << "TerminalSocketServer: accept error " << error.message() << "\n";
     }
-
-    // Loop through all the results and bind to the first we can
-    for (p = servinfo; p != nullptr; p = p->ai_next) {
-        if ((listenerFD = ::socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            std::cerr << "TerminalSocketServer: socket failed\n";
-            continue;
-        }
-
-        if (::setsockopt(listenerFD, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-            std::cerr << "TerminalSocketServer: setsockopt failed\n";
-            return false;
-        }
-
-        if (::bind(listenerFD, p->ai_addr, p->ai_addrlen) == -1) {
-            ::close(listenerFD);
-            std::cerr << "TerminalSocketServer: bind failed\n";
-            continue;
-        }
-
-        // listenerFD ready
-        break;
-    }
-
-    if (p == nullptr) {
-        std::cerr << "TerminalSocketServer: failed to bind\n";
-        return false;
-    }
-
-    freeaddrinfo(servinfo); // all done with this structure
-
-    if (::listen(listenerFD, 10) == -1) {
-        std::cerr << "TerminalSocketServer: listen failed\n";
-        return false;
-    }
-
-    if (isConnected() || listenerThread != nullptr) {
-        closeSocket();
-    }
-
-    // Start a new thread to listen to connections
-    // listenerFD will be closed by the listenerThread
-    listenerThreadShouldExit = false;
-    listenerThread = new std::thread(&TerminalSocketServer::listenerThreadBody, this, port, disconnected);
-
-    return true;
 }
 
 void TerminalSocketServer::disconnect() {
     if (isConnected()) {
         closeSocket();
-    }
-    if (listenerThread) {
-        listenerThreadShouldExit = true;
-        listenerThread->join();
-        delete listenerThread;
-        listenerThread = nullptr;
+        // disconnectCallback will be triggered by handleRecv
     }
 }
 
-void TerminalSocketServer::listenerThreadBody(int port, DisconnectCallback disconnected) {
+bool TerminalSocketClient::connect(const string &server, const string &port, DisconnectCallback disconnectCallback_) {
 
-    std::cout << "TerminalSocketServer: listening on port " << port << "...\n";
+    disconnectCallback = disconnectCallback_;
 
-    struct sockaddr_storage clientAddr;  // client address information
-    socklen_t addrStructSize = sizeof(clientAddr);
-    int newFD;
-    char s[INET6_ADDRSTRLEN];
+    tcp::resolver::results_type endpoints = resolver.resolve(server, port);
+    auto socket = std::make_shared<tcp::socket>(ioContext);
+    boost::system::error_code err;
 
-    while (!listenerThreadShouldExit) {  // main accept() loop
+    boost::asio::connect(*socket, endpoints, err);
 
-        newFD = ::accept(listenerFD, (struct sockaddr *) &clientAddr, &addrStructSize);
-        if (newFD == -1) {
-            std::cerr << "TerminalSocketServer: accept failed\n";
-            continue;
-        }
-
-        // Get client address
-        ::inet_ntop(clientAddr.ss_family,
-                    getClientAddr((struct sockaddr *) &clientAddr),
-                    s, sizeof(s));
-        std::cout << "TerminalSocketServer: get connection from " << s << "\n";
-
-        // Setup socket
-        setupSocket(newFD, disconnected);  // new will be managed by TerminalSocketBase
-
-        // The listener thread will just accept one connection
-        break;
-    }
-
-    ::close(listenerFD);
-    listenerFD = 0;
-
-    // Listener thread exit
-    std::cout << "TerminalSocketServer: listener thread exit\n";
-}
-
-bool TerminalSocketClient::connect(const string &ip, int port, DisconnectCallback disconnected) {
-    int sockfd;
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
-    char s[INET6_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    if ((rv = ::getaddrinfo(ip.c_str(), std::to_string(port).c_str(), &hints, &servinfo)) != 0) {
-        std::cerr << "TerminalSocketClient: getaddrinfo failed: " << ::gai_strerror(rv) << "\n";
+    if (!err) {
+        setupSocket(socket, disconnectCallback);
+        std::cout << "TerminalSocketClient: connected to " << server << ":" << port << std::endl;
+        return true;
+    } else {
+        std::cerr << "TerminalSocketClient: connection to " << server << ":" << port
+                  << " failed:" << err.message() << std::endl;
         return false;
     }
-
-    // loop through all the results and connect to the first we can
-    for (p = servinfo; p != nullptr; p = p->ai_next) {
-        if ((sockfd = ::socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            std::cerr << "TerminalSocketClient: socket failed\n";
-            continue;
-        }
-
-        if (::connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            std::cerr << "TerminalSocketClient: connect failed\n";
-            continue;
-        }
-
-        // sockfd ready
-        break;
-    }
-
-    if (p == nullptr) {
-        std::cerr << "TerminalSocketClient: failed to connect\n";
-        return false;
-    }
-
-    ::inet_ntop(p->ai_family, getClientAddr((struct sockaddr *) p->ai_addr), s, sizeof(s));
-    std::cout << "TerminalSocketClient: connect to " << s << "\n";
-
-    ::freeaddrinfo(servinfo);  // all done with this structure
-
-    setupSocket(sockfd, disconnected);  // sockfd will be managed by TerminalSocketBase
-
-    return true;
 }
 
 void TerminalSocketClient::disconnect() {
     if (isConnected()) {
         closeSocket();
+        // disconnectCallback will be triggered by handleRecv
     }
 }
 

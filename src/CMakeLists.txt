@@ -1,4 +1,5 @@
 find_package(pugixml REQUIRED)
+find_package(Boost REQUIRED system)
 
 add_library(ArmorDetector
         ArmorDetector.cpp

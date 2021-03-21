@@ -6,3 +6,4 @@ TODO...
 # Dependencies
 * OpenCV 4
 * pugixml
+* Boost
