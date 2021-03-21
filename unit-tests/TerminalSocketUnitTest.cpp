@@ -20,7 +20,7 @@ void processSingleInt(void *param, const char *name, int n) {
 void processBytes(void *param, const char *name, const uint8_t *buf, size_t size) {
     std::cout << static_cast<const char *>(param) << " received bytes <" << name << "> ";
     for (size_t i = 0; i < size; i++) {
-        std::cout << std::hex << (int) buf[i] << "  ";
+        std::cout << std::hex << (int) buf[i] << std::dec << "  ";
     }
     std::cout << "\n";
 }
@@ -32,18 +32,29 @@ void processListOfString(void *param, const char *name, const vector<const char 
     }
 }
 
-TerminalSocketServer server(8800, [](){ std::cerr << "Server disconnected\n"; });
+TerminalSocketServer server(8800);
 TerminalSocketClient client;
 
 uint8_t testBytes1[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 uint8_t testBytes2[] = {0xFF};
 uint8_t testBytes3[] = {};
 
+void handleServerDisconnection(TerminalSocketServer* server) {
+    static int count = 0;
+    std::cerr << "Server disconnected " << ++count << std::endl;
+    server->startAccept(handleServerDisconnection);
+}
+
+void handleClientDisconnection(TerminalSocketClient* client) {
+    static int count = 0;
+    std::cerr << "Client disconnected " << ++count << std::endl;
+}
+
 int main() {
 
     std::cerr << "1. Setup server...\n";
 
-    server.startAccept();
+    server.startAccept(handleServerDisconnection);
     server.setCallbacks(serverName,
                         processSingleString,
                         processSingleInt,
@@ -55,7 +66,7 @@ int main() {
     std::cerr << "2. Press any key to continue setting up client...\n";
     std::cin.get();
 
-    client.connect("127.0.0.1", "8800", [](){ std::cerr << "Client disconnected\n"; });
+    client.connect("127.0.0.1", "8800", handleClientDisconnection);
     client.setCallbacks(clientName,
                         processSingleString,
                         processSingleInt,
@@ -102,11 +113,46 @@ int main() {
 
     std::cout.flush();
     std::cerr.flush();
-    std::cerr << "5. Press any key to disconnect...\n";
+    std::cerr << "5. Press any key to disconnect client...\n";
+    std::cin.get();
+
+    client.disconnect();
+
+    std::cout.flush();
+    std::cerr.flush();
+    std::cerr << "6. Press any key to reconnect client...\n";
+    std::cin.get();
+
+    client.connect("127.0.0.1", "8800", handleClientDisconnection);
+
+    std::cout.flush();
+    std::cerr.flush();
+    std::cerr << "7. Press any key to start tests server -> client (2nd)...\n";
+    std::cin.get();
+
+    server.sendSingleString("FirstString", "Hello world");
+    server.sendSingleString("SecondString", "Meta-Vision-Solais");
+
+    server.sendSingleInt("FirstInt", 2333);
+    server.sendSingleInt("SecondInt", 6666);
+
+    server.sendListOfStrings("FirstStringList", {"A", "B", "AA", "BBB", "CCC", "DDDD"});
+    server.sendListOfStrings("SecondStringList", {"AAAAAAAAAAAAAAA"});
+    server.sendListOfStrings("ThirdStringList", {""});
+
+    server.sendBytes("FirstBytes", testBytes1, sizeof(testBytes1));
+    server.sendBytes("SecondBytes", testBytes2, sizeof(testBytes2));
+    server.sendBytes("ThirdBytes", testBytes3, sizeof(testBytes3));
+
+    std::cout.flush();
+    std::cerr.flush();
+    std::cerr << "8. Press any key to disconnect server...\n";
     std::cin.get();
 
     server.disconnect();
-    client.disconnect();
 
+
+    std::cout.flush();
+    std::cerr.flush();
     return 0;
 }
