@@ -62,6 +62,7 @@ bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t siz
 
     // Data
     if (size != 0) {
+        assert(data != nullptr);
         buf->resize(buf->size() + size);
         ::memcpy(buf->data() + (buf->size() - size), data, size);
     }
@@ -145,7 +146,8 @@ void TerminalSocketBase::handleSend(std::shared_ptr<vector<uint8_t>> buf, const 
     }
 }
 
-void TerminalSocketBase::setupSocket(std::shared_ptr<tcp::socket> newSocket, DisconnectCallback disconnectCallback) {
+template<class T>
+void TerminalSocketBase::setupSocket(std::shared_ptr<tcp::socket> newSocket, std::function<void(T *)> disconnectCallback) {
     // As socket is replaced, previous socket will be released. Boost cleans things up well.
     // Here we just need to make sure current disconnectCallback is called before replacing with the new one
 
@@ -171,13 +173,14 @@ void TerminalSocketBase::ioThreadBody() {
     ioContext.run();  // this operation is blocking, until ioContext is deleted in the class.
 }
 
+template<class T>
 void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size_t numBytes,
-                                    DisconnectCallback disconnectCallback) {
+                                    std::function<void(T *)> disconnectCallback) {
 
     if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset ||
         error == boost::asio::error::operation_aborted || error == boost::asio::error::broken_pipe) {
 
-        if (disconnectCallback) disconnectCallback(this);
+        if (disconnectCallback) disconnectCallback(reinterpret_cast<T *>(this));
 
         socketDisconnected = true;
 
@@ -329,32 +332,32 @@ int32_t TerminalSocketBase::decodeInt32(const uint8_t *start) {
     return (start[3] << 24) | (start[2] << 16) | (start[1] << 8) | start[0];
 }
 
-TerminalSocketServer::TerminalSocketServer(int port)
+TerminalSocketServer::TerminalSocketServer(int port, ServerDisconnectionCallback disconnectionCallback)
         : port(port),
-          acceptor(ioContext, tcp::endpoint(tcp::v4(), port)) {
+          acceptor(ioContext, tcp::endpoint(tcp::v4(), port)),
+          disconnectionCallback(disconnectionCallback) {
 
     acceptor.listen();
 }
 
-void TerminalSocketServer::startAccept(ServerDisconnectionCallback disconnectionCallback) {
+void TerminalSocketServer::startAccept() {
 
     auto socket = std::make_shared<tcp::socket>(ioContext);
     // shared_ptr is used to manage socket. If the raw pointer is used and it doesn't reach handleAccept, memory leaks.
 
     // ioContext is running as TerminalSocketBase instantiates
     acceptor.async_accept(*socket,
-                          [this, socket, disconnectionCallback](const auto &error) { handleAccept(socket, error, disconnectionCallback); });
+                          [this, socket](const auto &error) { handleAccept(socket, error); });
 
 
     std::cout << "TerminalSocketServer: listen on " << port << std::endl;
 }
 
-void TerminalSocketServer::handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code &error,
-                                        ServerDisconnectionCallback disconnectionCallback) {
+void TerminalSocketServer::handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code &error) {
     if (!error) {
         std::cout << "TerminalSocketServer: get connection from " << socket->remote_endpoint().address().to_string()
                   << "\n";
-        setupSocket(std::move(socket), reinterpret_cast<DisconnectCallback>(disconnectionCallback));
+        setupSocket(std::move(socket), disconnectionCallback);
     } else if (error == boost::asio::error::operation_aborted) {
         // Ignore
     } else {
@@ -368,7 +371,7 @@ void TerminalSocketServer::disconnect() {
     }
 }
 
-bool TerminalSocketClient::connect(const string &server, const string &port, ClientDisconnectionCallback disconnectCallback) {
+bool TerminalSocketClient::connect(const string &server, const string &port) {
 
     tcp::resolver::results_type endpoints = resolver.resolve(server, port);
 
@@ -380,7 +383,7 @@ bool TerminalSocketClient::connect(const string &server, const string &port, Cli
     boost::asio::connect(*socket, endpoints, err);
 
     if (!err) {
-        setupSocket(socket, reinterpret_cast<DisconnectCallback>(disconnectCallback));
+        setupSocket(socket, disconnectionCallback);
         std::cout << "TerminalSocketClient: connected to " << server << ":" << port << std::endl;
         return true;
     } else {

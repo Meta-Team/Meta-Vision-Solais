@@ -8,6 +8,7 @@
 #include "Common.h"
 #include <thread>
 #include <boost/asio.hpp>
+#include <utility>
 
 using boost::asio::ip::tcp;
 
@@ -98,13 +99,13 @@ public:
     bool sendSingleInt(const string &name, int32_t n);
 
     /**
-     * Async send bytes.
+     * Async send bytes. Can be use to send only name (nullptr data and size 0).
      * @param name  Name of the package.
      * @param s     The start of the data. Doesn't need to be alive after this call (copied for async operation).
      * @param size  The number of bytes to send.
      * @return      Whether the operation succeeded.
      */
-    bool sendBytes(const string &name, uint8_t *data, size_t size);
+    bool sendBytes(const string &name, uint8_t *data = nullptr, size_t size = 0);
 
     /**
      * Async send a list of strings
@@ -156,11 +157,6 @@ public:
         listOfStringsCallBack = listOfStrings;
     }
 
-    /**
-     * Callback function type when the socket is disconnected.
-     */
-    using DisconnectCallback = void (*)(void *this_);
-
 protected:
 
     // Forbid creating TerminalSocketBase instances at outside world
@@ -173,7 +169,8 @@ protected:
      * @param newSocket           A socket that is already setup on ioContext.
      * @param disconnectCallback  Callback function when disconnected.
      */
-    void setupSocket(std::shared_ptr<tcp::socket> newSocket, DisconnectCallback disconnectCallback);
+    template<class T>
+    void setupSocket(std::shared_ptr<tcp::socket> newSocket, std::function<void(T *)> disconnectCallback);
 
     /**
      * Close the socket. disconnectCallback maybe triggered by handleRecv if the recv cycle is still running.
@@ -229,7 +226,8 @@ private:
     ssize_t recvContentSize = -1;
     ssize_t recvContentStart = -1;
 
-    void handleRecv(boost::system::error_code const& error, size_t numBytes, DisconnectCallback disconnectCallback);
+    template<class T>
+    void handleRecv(const boost::system::error_code &error, size_t numBytes, std::function<void(T *)> disconnectCallback);
 
     static int32_t decodeInt32(const uint8_t *start);
 
@@ -243,7 +241,7 @@ private:
 class TerminalSocketServer : public TerminalSocketBase {
 public:
 
-    using ServerDisconnectionCallback = void(*)(TerminalSocketServer *server);
+    using ServerDisconnectionCallback = std::function<void(TerminalSocketServer *)>;
 
     /**
      * Create a server listening on the given port. The server will not accept incoming connection until startAccept()
@@ -251,7 +249,7 @@ public:
      * @param port                   The port to listen on.
      * @param disconnectionCallback  Callback function when the socket is disconnected.
      */
-    TerminalSocketServer(int port);
+    explicit TerminalSocketServer(int port, ServerDisconnectionCallback disconnectionCallback = nullptr);
 
     /**
      * Start accepting incoming connection. A server can connect to at most one client concurrently. If this function
@@ -259,7 +257,7 @@ public:
      *
      * To restart acceptance after disconnection, call this function in the disconnect callback.
      */
-    void startAccept(ServerDisconnectionCallback disconnectionCallback = nullptr);
+    void startAccept();
 
     /**
      * Disconnect the socket.
@@ -270,9 +268,9 @@ protected:
 
     int port;
     tcp::acceptor acceptor;
+    ServerDisconnectionCallback disconnectionCallback;
 
-    void handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code& error,
-                      ServerDisconnectionCallback disconnectionCallback);
+    void handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code& error);
 
 };
 
@@ -282,21 +280,22 @@ protected:
 class TerminalSocketClient : public TerminalSocketBase {
 public:
 
-    using ClientDisconnectionCallback = void(*)(TerminalSocketClient *client);
+    using ClientDisconnectionCallback = std::function<void(TerminalSocketClient *)>;
 
     /**
      * Create a client.
      */
-    TerminalSocketClient() : resolver(ioContext) {}
+    explicit TerminalSocketClient(ClientDisconnectionCallback disconnectionCallback = nullptr)
+                                  : resolver(ioContext),
+                                    disconnectionCallback(std::move(disconnectionCallback)) {}
 
     /**
      * Try to connect to a server. This function is sync.
      * @param server              The server IP or name (will be resolved).
      * @param port                The server port.
-     * @param disconnectCallback  Callback function when the socket is disconnected.
      * @return                    Whether the connection success. This function is sync.
      */
-    bool connect(const string &server, const string &port, ClientDisconnectionCallback disconnectCallback);
+    bool connect(const string &server, const string &port);
 
     /**
      * Disconnect the socket.
@@ -306,6 +305,8 @@ public:
 protected:
 
     tcp::resolver resolver;
+
+    ClientDisconnectionCallback disconnectionCallback;
 
 };
 

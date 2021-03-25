@@ -5,7 +5,7 @@
 #include <iostream>
 #include <unistd.h>
 #include "TerminalSocket.h"
-#define INTERACTIVE_MODE  0
+#define INTERACTIVE_MODE  1
 using namespace meta;
 
 static char serverName[] = "Server";
@@ -34,8 +34,11 @@ void processListOfString(void *param, const char *name, const vector<const char 
     }
 }
 
-TerminalSocketServer server(8800);
-TerminalSocketClient client;
+void handleServerDisconnection(TerminalSocketServer* s);
+void handleClientDisconnection(TerminalSocketClient* c);
+
+TerminalSocketServer server(8800, handleServerDisconnection);
+TerminalSocketClient client(handleClientDisconnection);
 
 uint8_t testBytes1[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
 uint8_t testBytes2[] = {0xFF};
@@ -44,7 +47,7 @@ uint8_t testBytes3[] = {};
 void handleServerDisconnection(TerminalSocketServer* s) {
     static int count = 0;
     std::cerr << "Server disconnected " << ++count << std::endl;
-    s->startAccept(handleServerDisconnection);
+    s->startAccept();
 }
 
 void handleClientDisconnection(TerminalSocketClient* c) {
@@ -60,7 +63,7 @@ int main() {
 
     std::cerr << "1. Setup server...\n";
 
-    server.startAccept(handleServerDisconnection);
+    server.startAccept();
     server.setCallbacks(serverName,
                         processSingleString,
                         processSingleInt,
@@ -74,7 +77,7 @@ int main() {
     std::cin.get();
 #endif
 
-    client.connect("127.0.0.1", "8800", handleClientDisconnection);
+    client.connect("127.0.0.1", "8800");
     client.setCallbacks(clientName,
                         processSingleString,
                         processSingleInt,
@@ -139,7 +142,7 @@ int main() {
     std::cin.get();
 #endif
 
-    client.connect("127.0.0.1", "8800", handleClientDisconnection);
+    client.connect("127.0.0.1", "8800");
 
     std::cout.flush();
     std::cerr.flush();

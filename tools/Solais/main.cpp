@@ -18,7 +18,11 @@ SharedParameters sharedParams;
 ArmorDetector::ParameterSet detectorParams;
 Camera::ParameterSet cameraParams;
 
-TerminalSocketServer socketServer(8800);
+// Setup a server with automatic acceptance
+TerminalSocketServer socketServer(8800, [](auto s) {
+    std::cout << "TerminalSocketServer: disconnected" << std::endl;
+    s->startAccept();
+});
 
 void handleCameraFrame(void *) {
     if (socketServer.connected()) {
@@ -35,15 +39,9 @@ void handleCameraFrame(void *) {
     }
 }
 
-void handleServerDisconnection(TerminalSocketServer* s) {
-    std::cout << "TerminalSocketServer: disconnected" << std::endl;
-    s->startAccept(handleServerDisconnection);
-}
-
-
 int main(int argc, char *argv[]) {
 
-    socketServer.startAccept(handleServerDisconnection);
+    socketServer.startAccept();
 
     camera.registerNewFrameCallBack(handleCameraFrame, nullptr);
     camera.open(sharedParams, cameraParams);

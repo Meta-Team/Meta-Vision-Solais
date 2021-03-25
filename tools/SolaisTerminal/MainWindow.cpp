@@ -9,9 +9,12 @@ namespace meta {
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
-        tuner(&detector, &camera) {
+        tuner(&detector, &camera),
+        socketClient([this](auto c){ handleClientDisconnection(c); }){
 
     ui->setupUi(this);
+
+    connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
 
     bindings = {
 
@@ -112,9 +115,28 @@ MainWindow::MainWindow(QWidget *parent) :
     socketClient.setCallbacks(this, nullptr, nullptr, MainWindow::handleRecvBytes, nullptr);
 }
 
-void MainWindow::handleClientDisconnection(TerminalSocketClient *client) {
-    std::cout << "TerminalSocketClient: disconnected" << std::endl;
-    client->connect("127.0.0.1", "8800", MainWindow::handleClientDisconnection);
+void MainWindow::connectToServer() {
+    if (ui->connectButton->text() == "Connect") {
+        if (socketClient.connect(ui->serverAddressCombo->currentText().toStdString(),
+                                 ui->serverPortEdit->toPlainText().toStdString())) {
+
+            ui->statusBar->showMessage("Connected to " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
+
+            // Update UI
+            ui->serverAddressCombo->setEnabled(false);
+            ui->serverPortEdit->setEnabled(false);
+            ui->connectButton->setText("Disconnect");
+        }
+    } else {
+        socketClient.disconnect();  // update UI at handleClientDisconnection
+    }
+}
+
+void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
+    ui->statusBar->showMessage("Disconnected from " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
+    ui->serverAddressCombo->setEnabled(true);
+    ui->serverPortEdit->setEnabled(true);
+    ui->connectButton->setText("Connect");
 }
 
 void MainWindow::handleRecvBytes(void *ptr, const char *name, const uint8_t *buf, size_t size) {
@@ -122,7 +144,8 @@ void MainWindow::handleRecvBytes(void *ptr, const char *name, const uint8_t *buf
     if (strcmp(name, "camera") == 0) {
         QPixmap pixmap;
         pixmap.loadFromData(buf, size);
-        inst->ui->cameraImage->setPixmap(pixmap.scaledToHeight(inst->ui->cameraImage->height(), Qt::SmoothTransformation));
+        inst->ui->cameraImage->setPixmap(
+                pixmap.scaledToHeight(inst->ui->cameraImage->height(), Qt::SmoothTransformation));
 
     } else {
         std::cerr << "Unknown Bytes package named \"" << name << "\"" << std::endl;
@@ -153,7 +176,6 @@ void MainWindow::loadSelectedDataSet() {
     for (const auto &image : tuner.getDataSetImages()) {
         ui->imageList->addItem(image.c_str());
     }
-    socketClient.connect("127.0.0.1", "8800", MainWindow::handleClientDisconnection);
 }
 
 void MainWindow::runSingleDetectionOnImage() {
