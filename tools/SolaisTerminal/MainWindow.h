@@ -54,11 +54,13 @@ private:
 
     std::vector<AnnotatedMatViewer *> viewers;
 
-    TerminalSocketClient socketClient;
+    TerminalSocketClient socket;
 
     void handleClientDisconnection(TerminalSocketClient *client);
 
-    void handleRecvBytes(const char *name, const uint8_t *buf, size_t size);
+    void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size);
+
+    void handleRecvSingleString(std::string_view name, std::string_view s);
 
 private slots:
 

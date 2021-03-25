@@ -119,25 +119,25 @@ public:
      * Callback function type for arrival of a single string. The name and the string are read-only and not persistent
      * (need to be copied if they are to be used later).
      */
-    using SingleStringCallback = std::function<void(const char *name, const char *s)>;
+    using SingleStringCallback = std::function<void(std::string_view name, std::string_view s)>;
 
     /**
      * Callback function type for arrival of a single integer. The name is read-only and not persistent (need to be
      * copied if it is to be used later).
      */
-    using SingleIntCallback = std::function<void(const char *name, int32_t n)>;
+    using SingleIntCallback = std::function<void(std::string_view name, int32_t n)>;
 
     /**
      * Callback function type for arrival of bytes. The name and the data are read-only and not persistent (need to be
      * copied if they are to be used later).
      */
-    using BytesCallback = std::function<void(const char *name, const uint8_t *buf, size_t size)>;
+    using BytesCallback = std::function<void(std::string_view name, const uint8_t *buf, size_t size)>;
 
     /**
      * Callback function type for arrival of a list of strings. The name and the strings are read-only and not
      * persistent (need to be copied if they are to be used later).
      */
-    using ListOfStringsCallback = std::function<void(const char *name, const vector<const char *> &list)>;
+    using ListOfStringsCallback = std::function<void(std::string_view name, const vector<const char *> &list)>;
 
     /**
      * Set callback functions for arrivals of data.

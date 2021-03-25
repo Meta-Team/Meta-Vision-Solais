@@ -10,16 +10,17 @@ MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
         tuner(&detector, &camera),
-        socketClient([this](auto c){ handleClientDisconnection(c); }){
+        socket([this](auto c) { handleClientDisconnection(c); }) {
 
     ui->setupUi(this);
 
-    socketClient.setCallbacks(nullptr,
-                              nullptr,
-                              [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
-                              nullptr);
+    socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
+                        nullptr,
+                        [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
+                        nullptr);
 
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
+    connect(ui->switchCameraButton, &QPushButton::clicked, [this] { socket.sendSingleString("camera", "toggle"); });
 
     bindings = {
 
@@ -113,7 +114,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->runSingleImageButton, &QPushButton::clicked, this, &MainWindow::runSingleDetectionOnImage);
     connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
-    connect(ui->switchCameraButton, &QPushButton::clicked, this, &MainWindow::switchCamera);
+
 
     ui->contourImageWidget->installEventFilter(this);
 
@@ -122,38 +123,62 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::connectToServer() {
     if (ui->connectButton->text() == "Connect") {
-        if (socketClient.connect(ui->serverAddressCombo->currentText().toStdString(),
-                                 ui->serverPortEdit->toPlainText().toStdString())) {
+        if (socket.connect(ui->serverAddressCombo->currentText().toStdString(),
+                           ui->serverPortEdit->toPlainText().toStdString())) {
 
-            ui->statusBar->showMessage("Connected to " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
+            ui->statusBar->showMessage(
+                    "Connected to " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
 
             // Update UI
             ui->serverAddressCombo->setEnabled(false);
             ui->serverPortEdit->setEnabled(false);
             ui->connectButton->setText("Disconnect");
+
+        } else {
+            ui->statusBar->showMessage("Failed to connected to " + ui->serverAddressCombo->currentText() + ":" +
+                                       ui->serverPortEdit->toPlainText());
         }
     } else {
-        socketClient.disconnect();  // update UI at handleClientDisconnection
+        socket.disconnect();  // update UI at handleClientDisconnection
     }
 }
 
 void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
-    ui->statusBar->showMessage("Disconnected from " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
+    ui->statusBar->showMessage(
+            "Disconnected from " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
     ui->serverAddressCombo->setEnabled(true);
     ui->serverPortEdit->setEnabled(true);
     ui->connectButton->setText("Connect");
 }
 
-void MainWindow::handleRecvBytes(const char *name, const uint8_t *buf, size_t size) {
-    if (strcmp(name, "camera") == 0) {
+void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
+    if (name == "cameraImage") {
+
+        // Camera frame
         QPixmap pixmap;
         pixmap.loadFromData(buf, size);
-        ui->cameraImage->setPixmap(
-                pixmap.scaledToHeight(ui->cameraImage->height(), Qt::SmoothTransformation));
+        ui->cameraImage->setPixmap(pixmap);
+
+        // Request for next frame
+        socket.sendSingleString("camera", "fetch");
 
     } else {
-        std::cerr << "Unknown Bytes package named \"" << name << "\"" << std::endl;
+        ui->statusBar->showMessage("Unknown bytes package <" + QString(name.data()) + ">");
     }
+}
+
+void MainWindow::handleRecvSingleString(std::string_view name, std::string_view s) {
+    if (name == "message") {
+        ui->statusBar->showMessage(QString(s.data()));
+    } else if (name == "cameraInfo") {
+        // Camera info
+        ui->cameraInfoLabel->setText(QString(s.data()));
+    } else goto INVALID_PACKAGE;
+
+    return;
+    INVALID_PACKAGE:
+    ui->statusBar->showMessage(
+            "Invalid single-string package <" + QString(name.data()) + ">\"" + QString(s.data()) + "\"");
 }
 
 MainWindow::~MainWindow() {
@@ -198,13 +223,7 @@ void MainWindow::runSingleDetectionOnImage() {
 }
 
 void MainWindow::switchCamera() {
-    if (camera.isOpened()) {
-        camera.release();
-    } else {
-        updateParamsFromUI();
-        camera.open(sharedParams, cameraParams);
-        ui->cameraInfoLabel->setText(QString::fromStdString(camera.getCapInfo()));
-    }
+
 }
 
 void MainWindow::setUIFromResults() const {

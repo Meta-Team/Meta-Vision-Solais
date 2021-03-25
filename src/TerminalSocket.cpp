@@ -4,7 +4,6 @@
 
 #include "TerminalSocket.h"
 #include <iostream>
-#include <boost/bind.hpp>
 #include <utility>
 
 namespace meta {
@@ -388,7 +387,7 @@ bool TerminalSocketClient::connect(const string &server, const string &port) {
         return true;
     } else {
         std::cerr << "TerminalSocketClient: connection to " << server << ":" << port
-                  << " failed:" << err.message() << std::endl;
+                  << " failed :" << err.message() << std::endl;
         return false;
     }
 }

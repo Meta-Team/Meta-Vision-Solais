@@ -11,7 +11,7 @@ bool Camera::open(const SharedParameters &shared, const Camera::ParameterSet &pa
     sharedParams = shared;
     capParams = params;
 
-    capInfoSS.clear();
+    capInfoSS.str(std::string());
 
     // Open the camera
     cap.open(params.cameraID, cv::CAP_ANY);
