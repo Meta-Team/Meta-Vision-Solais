@@ -119,48 +119,47 @@ public:
      * Callback function type for arrival of a single string. The name and the string are read-only and not persistent
      * (need to be copied if they are to be used later).
      */
-    using SingleStringCallback = void (*)(void *param, const char *name, const char *s);
+    using SingleStringCallback = std::function<void(const char *name, const char *s)>;
 
     /**
      * Callback function type for arrival of a single integer. The name is read-only and not persistent (need to be
      * copied if it is to be used later).
      */
-    using SingleIntCallback = void (*)(void *param, const char *name, int32_t n);
+    using SingleIntCallback = std::function<void(const char *name, int32_t n)>;
 
     /**
      * Callback function type for arrival of bytes. The name and the data are read-only and not persistent (need to be
      * copied if they are to be used later).
      */
-    using BytesCallback = void (*)(void *param, const char *name, const uint8_t *buf, size_t size);
+    using BytesCallback = std::function<void(const char *name, const uint8_t *buf, size_t size)>;
 
     /**
      * Callback function type for arrival of a list of strings. The name and the strings are read-only and not
      * persistent (need to be copied if they are to be used later).
      */
-    using ListOfStringsCallback = void (*)(void *param, const char *name, const vector<const char *> &list);
+    using ListOfStringsCallback = std::function<void(const char *name, const vector<const char *> &list)>;
 
     /**
      * Set callback functions for arrivals of data.
-     * @param callBackFirstParameter  The first param to be passed to the callback functions.
      * @param singleString            Callback for arrival of a single string. Can be nullptr.
      * @param singleInt               Callback for arrival of a single integer. Can be nullptr.
      * @param bytes                   Callback for arrival of bytes. Can be nullptr.
      * @param listOfStrings           Callback for a list of strings. Can be nullptr.
      */
-    void setCallbacks(void *callBackFirstParameter,
-                      SingleStringCallback singleString = nullptr, SingleIntCallback singleInt = nullptr,
-                      BytesCallback bytes = nullptr, ListOfStringsCallback listOfStrings = nullptr) {
-        callBackParam = callBackFirstParameter;
-        singleStringCallBack = singleString;
-        singleIntCallBack = singleInt;
-        bytesCallBack = bytes;
-        listOfStringsCallBack = listOfStrings;
+    void setCallbacks(SingleStringCallback singleString = nullptr,
+                      SingleIntCallback singleInt = nullptr,
+                      BytesCallback bytes = nullptr,
+                      ListOfStringsCallback listOfStrings = nullptr) {
+        singleStringCallBack = std::move(singleString);
+        singleIntCallBack = std::move(singleInt);
+        bytesCallBack = std::move(bytes);
+        listOfStringsCallBack = std::move(listOfStrings);
     }
 
 protected:
 
     // Forbid creating TerminalSocketBase instances at outside world
-    TerminalSocketBase();
+    explicit TerminalSocketBase();
 
     static constexpr uint8_t PREAMBLE = 0xCE;
 
@@ -199,7 +198,6 @@ private:
 
     // ================================ Receiving ================================
 
-    void *callBackParam = nullptr;
     SingleStringCallback singleStringCallBack = nullptr;
     SingleIntCallback singleIntCallBack = nullptr;
     BytesCallback bytesCallBack = nullptr;

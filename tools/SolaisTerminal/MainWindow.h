@@ -58,7 +58,7 @@ private:
 
     void handleClientDisconnection(TerminalSocketClient *client);
 
-    static void handleRecvBytes(void *ptr, const char *name, const uint8_t *buf, size_t size);
+    void handleRecvBytes(const char *name, const uint8_t *buf, size_t size);
 
 private slots:
 

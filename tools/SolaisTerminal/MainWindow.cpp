@@ -14,6 +14,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->setupUi(this);
 
+    socketClient.setCallbacks(nullptr,
+                              nullptr,
+                              [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
+                              nullptr);
+
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
 
     bindings = {
@@ -112,7 +117,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->contourImageWidget->installEventFilter(this);
 
-    socketClient.setCallbacks(this, nullptr, nullptr, MainWindow::handleRecvBytes, nullptr);
+
 }
 
 void MainWindow::connectToServer() {
@@ -139,13 +144,12 @@ void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
     ui->connectButton->setText("Connect");
 }
 
-void MainWindow::handleRecvBytes(void *ptr, const char *name, const uint8_t *buf, size_t size) {
-    auto inst = static_cast<MainWindow *>(ptr);
+void MainWindow::handleRecvBytes(const char *name, const uint8_t *buf, size_t size) {
     if (strcmp(name, "camera") == 0) {
         QPixmap pixmap;
         pixmap.loadFromData(buf, size);
-        inst->ui->cameraImage->setPixmap(
-                pixmap.scaledToHeight(inst->ui->cameraImage->height(), Qt::SmoothTransformation));
+        ui->cameraImage->setPixmap(
+                pixmap.scaledToHeight(ui->cameraImage->height(), Qt::SmoothTransformation));
 
     } else {
         std::cerr << "Unknown Bytes package named \"" << name << "\"" << std::endl;

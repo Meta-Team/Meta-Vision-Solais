@@ -271,33 +271,34 @@ void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size
         recvBuf.resize(recvBuf.size() * 2);  // enlarge the buffer to 2x
     }
 
-    boost::asio::async_read(*socket,
-                            boost::asio::buffer(&recvBuf[recvOffset], RECV_BUFFER_SIZE),
-                            boost::asio::transfer_at_least(1),
-                            // boost::asio::transfer_all doesn't work
-                            [this, disconnectCallback](auto &error, auto numBytes) { handleRecv(error, numBytes, disconnectCallback); });
+    if (socket != nullptr) {
+        // socket may have been released due to async operation
+        boost::asio::async_read(*socket,
+                                boost::asio::buffer(&recvBuf[recvOffset], RECV_BUFFER_SIZE),
+                                boost::asio::transfer_at_least(1),  // boost::asio::transfer_all doesn't work
+                                [this, disconnectCallback](auto &error, auto numBytes) {
+                                    handleRecv(error, numBytes, disconnectCallback);
+                                });
+    }
 }
 
 void TerminalSocketBase::handlePackage() const {
     switch (recvCurrentPackageType) {
         case SINGLE_STRING:
             if (singleStringCallBack) {
-                singleStringCallBack(callBackParam,
-                                     (const char *) (recvBuf.data() + recvNameStart),
+                singleStringCallBack((const char *) (recvBuf.data() + recvNameStart),
                                      (const char *) (recvBuf.data() + recvContentStart));
             }
             break;
         case SINGLE_INT:
             if (singleIntCallBack) {
-                singleIntCallBack(callBackParam,
-                                  (const char *) (recvBuf.data() + recvNameStart),
+                singleIntCallBack((const char *) (recvBuf.data() + recvNameStart),
                                   decodeInt32(recvBuf.data() + recvContentStart));
             }
             break;
         case BYTES:
             if (bytesCallBack) {
-                bytesCallBack(callBackParam,
-                              (const char *) (recvBuf.data() + recvNameStart),
+                bytesCallBack((const char *) (recvBuf.data() + recvNameStart),
                               recvBuf.data() + recvContentStart,
                               recvContentSize);
             }
@@ -317,8 +318,7 @@ void TerminalSocketBase::handlePackage() const {
                     // Move to the next start
                     strStart++;
                 }
-                listOfStringsCallBack(callBackParam,
-                                      (char *) (recvBuf.data() + recvNameStart),
+                listOfStringsCallBack((char *) (recvBuf.data() + recvNameStart),
                                       list);
             }
             break;
@@ -335,7 +335,7 @@ int32_t TerminalSocketBase::decodeInt32(const uint8_t *start) {
 TerminalSocketServer::TerminalSocketServer(int port, ServerDisconnectionCallback disconnectionCallback)
         : port(port),
           acceptor(ioContext, tcp::endpoint(tcp::v4(), port)),
-          disconnectionCallback(disconnectionCallback) {
+          disconnectionCallback(std::move(disconnectionCallback)) {
 
     acceptor.listen();
 }

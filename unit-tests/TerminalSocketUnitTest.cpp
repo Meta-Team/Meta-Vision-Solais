@@ -11,24 +11,24 @@ using namespace meta;
 static char serverName[] = "Server";
 static char clientName[] = "Client";
 
-void processSingleString(void *param, const char *name, const char *s) {
-    std::cout << static_cast<const char *>(param) << " received a string <" << name << "> \"" << s << "\"\n";
+void processSingleString(const char *param, const char *name, const char *s) {
+    std::cout << param << " received a string <" << name << "> \"" << s << "\"\n";
 }
 
-void processSingleInt(void *param, const char *name, int n) {
-    std::cout << static_cast<const char *>(param) << " received a int <" << name << "> " << n << "\n";
+void processSingleInt(const char *param, const char *name, int n) {
+    std::cout << param << " received a int <" << name << "> " << n << "\n";
 }
 
-void processBytes(void *param, const char *name, const uint8_t *buf, size_t size) {
-    std::cout << static_cast<const char *>(param) << " received bytes <" << name << "> ";
+void processBytes(const char *param, const char *name, const uint8_t *buf, size_t size) {
+    std::cout << param << " received bytes <" << name << "> ";
     for (size_t i = 0; i < size; i++) {
         std::cout << std::hex << (int) buf[i] << std::dec << "  ";
     }
     std::cout << "\n";
 }
 
-void processListOfString(void *param, const char *name, const vector<const char *> &list) {
-    std::cout << static_cast<const char *>(param) << " received list of strings <" << name << ">\n";
+void processListOfString(const char *param, const char *name, const vector<const char *> &list) {
+    std::cout << param << " received list of strings <" << name << ">\n";
     for (const auto &s : list) {
         std::cout << "  \"" << s << "\"\n";
     }
@@ -64,11 +64,10 @@ int main() {
     std::cerr << "1. Setup server...\n";
 
     server.startAccept();
-    server.setCallbacks(serverName,
-                        processSingleString,
-                        processSingleInt,
-                        processBytes,
-                        processListOfString);
+    server.setCallbacks([](auto name, auto s) { processSingleString(serverName, name, s); },
+                        [](auto name, auto n) { processSingleInt(serverName, name, n); },
+                        [](auto name, auto buf, auto size) { processBytes(serverName, name, buf, size); },
+                        [](auto name, const auto &list) { processListOfString(serverName, name, list); });
 
     std::cout.flush();
     std::cerr.flush();
@@ -78,11 +77,10 @@ int main() {
 #endif
 
     client.connect("127.0.0.1", "8800");
-    client.setCallbacks(clientName,
-                        processSingleString,
-                        processSingleInt,
-                        processBytes,
-                        processListOfString);
+    client.setCallbacks([](auto name, auto s) { processSingleString(clientName, name, s); },
+                        [](auto name, auto n) { processSingleInt(clientName, name, n); },
+                        [](auto name, auto buf, auto size) { processBytes(clientName, name, buf, size); },
+                        [](auto name, const auto &list) { processListOfString(clientName, name, list); });
 
     std::cout.flush();
     std::cerr.flush();
