@@ -2,6 +2,7 @@
 #include "ui_MainWindow.h"
 #include <QtWidgets/QLabel>
 #include <QTextStream>
+#include <iostream>
 
 namespace meta {
 
@@ -107,6 +108,25 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->switchCameraButton, &QPushButton::clicked, this, &MainWindow::switchCamera);
 
     ui->contourImageWidget->installEventFilter(this);
+
+    socketClient.setCallbacks(this, nullptr, nullptr, MainWindow::handleRecvBytes, nullptr);
+}
+
+void MainWindow::handleClientDisconnection(TerminalSocketClient *client) {
+    std::cout << "TerminalSocketClient: disconnected" << std::endl;
+    client->connect("127.0.0.1", "8800", MainWindow::handleClientDisconnection);
+}
+
+void MainWindow::handleRecvBytes(void *ptr, const char *name, const uint8_t *buf, size_t size) {
+    auto inst = static_cast<MainWindow *>(ptr);
+    if (strcmp(name, "camera") == 0) {
+        QPixmap pixmap;
+        pixmap.loadFromData(buf, size);
+        inst->ui->cameraImage->setPixmap(pixmap.scaledToHeight(inst->ui->cameraImage->height(), Qt::SmoothTransformation));
+
+    } else {
+        std::cerr << "Unknown Bytes package named \"" << name << "\"" << std::endl;
+    }
 }
 
 MainWindow::~MainWindow() {
@@ -133,6 +153,7 @@ void MainWindow::loadSelectedDataSet() {
     for (const auto &image : tuner.getDataSetImages()) {
         ui->imageList->addItem(image.c_str());
     }
+    socketClient.connect("127.0.0.1", "8800", MainWindow::handleClientDisconnection);
 }
 
 void MainWindow::runSingleDetectionOnImage() {

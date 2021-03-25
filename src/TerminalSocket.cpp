@@ -23,7 +23,7 @@ TerminalSocketBase::~TerminalSocketBase() {
 }
 
 bool TerminalSocketBase::sendSingleString(const string &name, const string &s) {
-    if (!isConnected()) return false;
+    if (!connected()) return false;
 
     auto buf = allocateBuffer(SINGLE_STRING, name, s.length() + 1);
 
@@ -40,7 +40,7 @@ bool TerminalSocketBase::sendSingleString(const string &name, const string &s) {
 }
 
 bool TerminalSocketBase::sendSingleInt(const string &name, int32_t n) {
-    if (!isConnected()) return false;
+    if (!connected()) return false;
 
     auto buf = allocateBuffer(SINGLE_INT, name, 4);
 
@@ -56,7 +56,7 @@ bool TerminalSocketBase::sendSingleInt(const string &name, int32_t n) {
 }
 
 bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t size) {
-    if (!isConnected()) return false;
+    if (!connected()) return false;
 
     auto buf = allocateBuffer(BYTES, name, size);
 
@@ -75,7 +75,7 @@ bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t siz
 }
 
 bool TerminalSocketBase::sendListOfStrings(const string &name, const vector<string> &list) {
-    if (!isConnected()) return false;
+    if (!connected()) return false;
 
     // Iterate through strings to count the size
     size_t contentSize = 0;
@@ -133,9 +133,10 @@ void TerminalSocketBase::emplaceInt32(vector<uint8_t> &buf, int32_t n) {
 void TerminalSocketBase::handleSend(std::shared_ptr<vector<uint8_t>> buf, const boost::system::error_code &error,
                                     size_t numBytes) {
     if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset ||
-        error == boost::asio::error::operation_aborted) {  // disconnected or socket released
+        error == boost::asio::error::operation_aborted || error == boost::asio::error::broken_pipe) {
+        // Disconnected or socket released
 
-        // Do nothing
+        socketDisconnected = true;
 
     } else if (error) {
         std::cerr << "TerminalSocketBase: send error: " << error.message() << "\n";
@@ -149,6 +150,7 @@ void TerminalSocketBase::setupSocket(std::shared_ptr<tcp::socket> newSocket, Dis
     // Here we just need to make sure current disconnectCallback is called before replacing with the new one
 
     // Setup socket
+    socketDisconnected = false;
     socket = std::move(newSocket);
 
     // Start recv cycle
@@ -173,9 +175,11 @@ void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size
                                     DisconnectCallback disconnectCallback) {
 
     if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset ||
-        error == boost::asio::error::operation_aborted) {
+        error == boost::asio::error::operation_aborted || error == boost::asio::error::broken_pipe) {
 
         if (disconnectCallback) disconnectCallback(this);
+
+        socketDisconnected = true;
 
         return;  // do not start next async_recv
 
@@ -215,7 +219,7 @@ void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size
                     recvState = RECV_NAME;  // transfer to receiving name
                     recvNameStart = i + 1;
                 } else {
-                    std::cerr << "Received invalid package type " << recvBuf[i] << "\n";
+                    std::cerr << "Received invalid package type " << (int) recvBuf[i] << "\n";
                     recvState = RECV_PREAMBLE;
                 }
                 break;
@@ -249,13 +253,13 @@ void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size
                     handlePackage();
 
                     recvState = RECV_PREAMBLE;  // transfer to receive preamble
-
-                    if (i + 1 == recvOffset) {  // happen to be at the end of buffer
-                        recvOffset = 0;  // discard all received bytes
-                    }
                 }
                 break;
         }
+    }
+
+    if (recvState == RECV_PREAMBLE) {
+        recvOffset = 0;  // discard all received bytes
     }
 
 
@@ -359,7 +363,7 @@ void TerminalSocketServer::handleAccept(std::shared_ptr<tcp::socket> socket, con
 }
 
 void TerminalSocketServer::disconnect() {
-    if (isConnected()) {
+    if (connected()) {
         closeSocket();
     }
 }
@@ -387,7 +391,7 @@ bool TerminalSocketClient::connect(const string &server, const string &port, Cli
 }
 
 void TerminalSocketClient::disconnect() {
-    if (isConnected()) {
+    if (connected()) {
         closeSocket();
     }
 }

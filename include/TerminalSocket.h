@@ -79,7 +79,7 @@ protected:
 
 public:
 
-    bool isConnected() const { return (socket != nullptr); }
+    bool connected() const { return (socket != nullptr && socket->is_open() && !socketDisconnected); }
 
     /**
      * Async send a single string.
@@ -187,6 +187,7 @@ private:
     // ================================ Socket and IO Context ================================
 
     std::shared_ptr<tcp::socket> socket = nullptr;
+    std::atomic<bool> socketDisconnected = false;
 
     std::thread ioThread;  // thread for ioService
     void ioThreadBody();

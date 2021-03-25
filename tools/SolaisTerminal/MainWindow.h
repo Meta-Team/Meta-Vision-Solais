@@ -6,6 +6,7 @@
 #include "ArmorDetector.h"
 #include "DetectorTuner.h"
 #include "Camera.h"
+#include "TerminalSocket.h"
 #include "ValueUIBindings.hpp"
 
 namespace Ui {
@@ -52,6 +53,12 @@ private:
     std::vector<ValueUIBinding *> bindings;
 
     std::vector<AnnotatedMatViewer *> viewers;
+
+    TerminalSocketClient socketClient;
+
+    static void handleClientDisconnection(TerminalSocketClient *client);
+
+    static void handleRecvBytes(void *ptr, const char *name, const uint8_t *buf, size_t size);
 
 private slots:
 

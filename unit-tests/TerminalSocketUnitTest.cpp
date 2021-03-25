@@ -3,7 +3,9 @@
 //
 
 #include <iostream>
+#include <unistd.h>
 #include "TerminalSocket.h"
+#define INTERACTIVE_MODE  0
 using namespace meta;
 
 static char serverName[] = "Server";
@@ -39,18 +41,22 @@ uint8_t testBytes1[] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0x
 uint8_t testBytes2[] = {0xFF};
 uint8_t testBytes3[] = {};
 
-void handleServerDisconnection(TerminalSocketServer* server) {
+void handleServerDisconnection(TerminalSocketServer* s) {
     static int count = 0;
     std::cerr << "Server disconnected " << ++count << std::endl;
-    server->startAccept(handleServerDisconnection);
+    s->startAccept(handleServerDisconnection);
 }
 
-void handleClientDisconnection(TerminalSocketClient* client) {
+void handleClientDisconnection(TerminalSocketClient* c) {
     static int count = 0;
     std::cerr << "Client disconnected " << ++count << std::endl;
 }
 
 int main() {
+
+#if !INTERACTIVE_MODE
+    usleep(5000000);
+#endif
 
     std::cerr << "1. Setup server...\n";
 
@@ -64,7 +70,9 @@ int main() {
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "2. Press any key to continue setting up client...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     client.connect("127.0.0.1", "8800", handleClientDisconnection);
     client.setCallbacks(clientName,
@@ -76,7 +84,9 @@ int main() {
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "3. Press any key to start tests server -> client...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     server.sendSingleString("FirstString", "Hello world");
     server.sendSingleString("SecondString", "Meta-Vision-Solais");
@@ -95,7 +105,9 @@ int main() {
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "4. Press any key to start tests client -> server...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     client.sendSingleString("FirstString", "Hello world");
     client.sendSingleString("SecondString", "Meta-Vision-Solais");
@@ -114,21 +126,27 @@ int main() {
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "5. Press any key to disconnect client...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     client.disconnect();
 
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "6. Press any key to reconnect client...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     client.connect("127.0.0.1", "8800", handleClientDisconnection);
 
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "7. Press any key to start tests server -> client (2nd)...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     server.sendSingleString("FirstString", "Hello world");
     server.sendSingleString("SecondString", "Meta-Vision-Solais");
@@ -147,7 +165,9 @@ int main() {
     std::cout.flush();
     std::cerr.flush();
     std::cerr << "8. Press any key to disconnect server...\n";
+#if INTERACTIVE_MODE
     std::cin.get();
+#endif
 
     server.disconnect();
 
