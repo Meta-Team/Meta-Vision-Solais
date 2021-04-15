@@ -2,6 +2,7 @@
 #include "ui_MainWindow.h"
 #include <QtWidgets/QLabel>
 #include <QTextStream>
+#include <QTimer>
 #include <iostream>
 
 namespace meta {
@@ -9,15 +10,23 @@ namespace meta {
 MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
+        statsUpdateTimer(new QTimer(this)),
         tuner(&detector, &camera),
-        socket([this](auto c) { handleClientDisconnection(c); }) {
+        ioThread([this] {
+            boost::asio::executor_work_guard<boost::asio::io_context::executor_type> guard(ioContext.get_executor());
+            ioContext.run();  // this operation is blocking, until ioContext is deleted
+        }),
+        socket(ioContext, [this](auto c) { handleClientDisconnection(c); }) {
 
     ui->setupUi(this);
 
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
                         nullptr,
                         [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
-                        nullptr);
+                        [this](auto name, auto list) { handleRecvListOfStrings(name, list); });
+    connect(statsUpdateTimer, &QTimer::timeout, this, &MainWindow::updateSocketStats);
+    statsUpdateTimer->setSingleShot(false);
+    statsUpdateTimer->start(1000);  // update socket stats per second
 
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->switchCameraButton, &QPushButton::clicked, [this] { socket.sendSingleString("camera", "toggle"); });
@@ -181,6 +190,10 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
             "Invalid single-string package <" + QString(name.data()) + ">\"" + QString(s.data()) + "\"");
 }
 
+void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
+
+}
+
 MainWindow::~MainWindow() {
     for (auto &binding : bindings) delete binding;
     for (auto &viewer : viewers) delete viewer;
@@ -200,7 +213,7 @@ void MainWindow::updateParamsFromUI() {
 }
 
 void MainWindow::loadSelectedDataSet() {
-    tuner.loadImageDataSet("/Users/liuzikai/Files/VOCdevkit/VOC");
+
     ui->imageList->clear();
     for (const auto &image : tuner.getDataSetImages()) {
         ui->imageList->addItem(image.c_str());
@@ -220,10 +233,6 @@ void MainWindow::runSingleDetectionOnImage() {
             "Time: " + QString::number(evaluation.timeEscapedMS) + " ms"
     );
     setUIFromResults();
-}
-
-void MainWindow::switchCamera() {
-
 }
 
 void MainWindow::setUIFromResults() const {
@@ -262,6 +271,21 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
         }
     }
     return QObject::eventFilter(obj, event);
+}
+
+void MainWindow::updateSocketStats() {
+    std::pair<unsigned, unsigned> stats = socket.getAndClearStats();  // {sent, received}
+    ui->sentBytesLabel->setText(bytesToDateRate(stats.first));
+    ui->recvBytesLabel->setText(bytesToDateRate(stats.second));
+}
+
+QString MainWindow::bytesToDateRate(unsigned int n) {
+    n /= 1024;
+    if (n < 1024) {
+        return QString::number(n) + " KB/s";
+    } else {
+        return QString::number(((double) n / 1024.0), 'g', 2) + " MB/s";
+    }
 }
 
 }

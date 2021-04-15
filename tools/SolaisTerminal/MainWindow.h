@@ -14,6 +14,7 @@ class MainWindow;
 }
 
 class QLabel;
+class QTimer;
 
 namespace meta {
 
@@ -31,6 +32,10 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+    QTimer *statsUpdateTimer;
+
+    boost::asio::io_context ioContext;
+    std::thread ioThread;
 
     SharedParameters sharedParams;
 
@@ -62,6 +67,10 @@ private:
 
     void handleRecvSingleString(std::string_view name, std::string_view s);
 
+    void handleRecvListOfStrings(std::string_view name, const vector<const char *> &list);
+
+    static QString bytesToDateRate(unsigned bytes);
+
 private slots:
 
     void runSingleDetectionOnImage();
@@ -72,9 +81,9 @@ private slots:
 
     void loadSelectedDataSet();
 
-    void switchCamera();
-
     void connectToServer();
+
+    void updateSocketStats();
 };
 
 }

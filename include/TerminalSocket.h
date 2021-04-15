@@ -27,9 +27,7 @@ namespace meta {
  * to be sent. A separate thread (ioThread) is launched as this class instantiates, which processes the actual I/O
  * operations (io_context.run()). Received data is processed and sent back through four callback functions.
  *
- * Since we are using a separate thread for io_context, a work guard is created so that io_context.run() doesn't return
- * but waits for more work (therefore there is no loop in the ioThreadBody()). When this class destructs, the
- * io_context is destroyed, which make io_context.run() return and therefore the ioThread exits.
+ * The class accepted a running io_context from outside.
  *
  * Async operations need careful memory management. All the resource used should be alive when the operations are
  * actually performed and there should not be any memory leak after the operations are performed or cancelled.
@@ -54,8 +52,6 @@ namespace meta {
  */
 class TerminalSocketBase {
 protected:
-
-    ~TerminalSocketBase();
 
     /**
      * Types of packages that can be sent and received.
@@ -156,10 +152,19 @@ public:
         listOfStringsCallBack = std::move(listOfStrings);
     }
 
+    /**
+     * Get the number of bytes sent/received since last clear.
+     * @return {sent bytes, received bytes}
+     */
+    std::pair<unsigned, unsigned> getAndClearStats();
+
 protected:
 
-    // Forbid creating TerminalSocketBase instances at outside world
-    explicit TerminalSocketBase();
+    /**
+     * Initialize a TerminalSocketBase. This constructor is set as protected to avoid instantiation from outside.
+     * @param ioContext  A running io_context object.
+     */
+    explicit TerminalSocketBase(boost::asio::io_context &ioContext);
 
     static constexpr uint8_t PREAMBLE = 0xCE;
 
@@ -176,7 +181,10 @@ protected:
      */
     void closeSocket();
 
-    boost::asio::io_context ioContext;  // open to derive classes to create sockets
+    boost::asio::io_context &ioContext;
+
+    std::atomic<unsigned> uploadBytes = 0;
+    std::atomic<unsigned> downloadBytes = 0;
 
 private:
 
@@ -184,9 +192,6 @@ private:
 
     std::shared_ptr<tcp::socket> socket = nullptr;
     std::atomic<bool> socketDisconnected = false;
-
-    std::thread ioThread;  // thread for ioService
-    void ioThreadBody();
 
     // ================================ Sending ================================
 
@@ -225,7 +230,8 @@ private:
     ssize_t recvContentStart = -1;
 
     template<class T>
-    void handleRecv(const boost::system::error_code &error, size_t numBytes, std::function<void(T *)> disconnectCallback);
+    void
+    handleRecv(const boost::system::error_code &error, size_t numBytes, std::function<void(T *)> disconnectCallback);
 
     static int32_t decodeInt32(const uint8_t *start);
 
@@ -247,7 +253,8 @@ public:
      * @param port                   The port to listen on.
      * @param disconnectionCallback  Callback function when the socket is disconnected.
      */
-    explicit TerminalSocketServer(int port, ServerDisconnectionCallback disconnectionCallback = nullptr);
+    explicit TerminalSocketServer(boost::asio::io_context &ioContext,
+                                  int port, ServerDisconnectionCallback disconnectionCallback = nullptr);
 
     /**
      * Start accepting incoming connection. A server can connect to at most one client concurrently. If this function
@@ -268,7 +275,7 @@ protected:
     tcp::acceptor acceptor;
     ServerDisconnectionCallback disconnectionCallback;
 
-    void handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code& error);
+    void handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code &error);
 
 };
 
@@ -283,9 +290,11 @@ public:
     /**
      * Create a client.
      */
-    explicit TerminalSocketClient(ClientDisconnectionCallback disconnectionCallback = nullptr)
-                                  : resolver(ioContext),
-                                    disconnectionCallback(std::move(disconnectionCallback)) {}
+    explicit TerminalSocketClient(boost::asio::io_context &ioContext,
+                                  ClientDisconnectionCallback disconnectionCallback = nullptr)
+            : TerminalSocketBase(ioContext),
+              resolver(ioContext),
+              disconnectionCallback(std::move(disconnectionCallback)) {}
 
     /**
      * Try to connect to a server. This function is sync.

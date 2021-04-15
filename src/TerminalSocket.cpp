@@ -8,17 +8,9 @@
 
 namespace meta {
 
-TerminalSocketBase::TerminalSocketBase()
-        : recvBuf(RECV_BUFFER_SIZE * 4, 0),
-          ioThread(&TerminalSocketBase::ioThreadBody, this) {
+TerminalSocketBase::TerminalSocketBase(boost::asio::io_context &ioContext)
+        : ioContext(ioContext), recvBuf(RECV_BUFFER_SIZE * 4, 0) {
 
-}
-
-TerminalSocketBase::~TerminalSocketBase() {
-    ioContext.stop();
-
-    // Terminate io_context thread
-    ioThread.join();
 }
 
 bool TerminalSocketBase::sendSingleString(const string &name, const string &s) {
@@ -143,6 +135,8 @@ void TerminalSocketBase::handleSend(std::shared_ptr<vector<uint8_t>> buf, const 
     } else {
         assert(buf->size() == numBytes && "Unexpected # of bytes sent");
     }
+
+    uploadBytes += numBytes;
 }
 
 template<class T>
@@ -165,11 +159,6 @@ void TerminalSocketBase::setupSocket(std::shared_ptr<tcp::socket> newSocket, std
 
 void TerminalSocketBase::closeSocket() {
     socket.reset();
-}
-
-void TerminalSocketBase::ioThreadBody() {
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(ioContext.get_executor());
-    ioContext.run();  // this operation is blocking, until ioContext is deleted in the class.
 }
 
 template<class T>
@@ -207,6 +196,7 @@ void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size
 
     ssize_t i = recvOffset;
     recvOffset += numBytes;  // move forward
+    downloadBytes += numBytes;
 
     for (; i < recvOffset; i++) {
         switch (recvState) {
@@ -331,8 +321,16 @@ int32_t TerminalSocketBase::decodeInt32(const uint8_t *start) {
     return (start[3] << 24) | (start[2] << 16) | (start[1] << 8) | start[0];
 }
 
-TerminalSocketServer::TerminalSocketServer(int port, ServerDisconnectionCallback disconnectionCallback)
-        : port(port),
+std::pair<unsigned, unsigned> TerminalSocketBase::getAndClearStats() {
+    std::pair<unsigned, unsigned> ret{uploadBytes, downloadBytes};
+    uploadBytes = 0;
+    downloadBytes = 0;
+    return ret;
+}
+
+TerminalSocketServer::TerminalSocketServer(boost::asio::io_context &ioContext, int port,
+                                           ServerDisconnectionCallback disconnectionCallback)
+        : TerminalSocketBase(ioContext), port(port),
           acceptor(ioContext, tcp::endpoint(tcp::v4(), port)),
           disconnectionCallback(std::move(disconnectionCallback)) {
 

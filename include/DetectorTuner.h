@@ -6,12 +6,9 @@
 #define META_VISION_SOLAIS_DETECTORTUNER_H
 
 #include "Common.h"
-#include <filesystem>
 #include <opencv2/highgui/highgui.hpp>
 
 namespace meta {
-
-namespace fs = std::filesystem;
 
 class Camera;
 class ArmorDetector;
@@ -26,9 +23,9 @@ public:
      */
     explicit DetectorTuner(ArmorDetector *detector, Camera *camera) : detector(detector) {}
 
-    int loadImageDataSet(const fs::path &path);
+    int loadImageDataSet(const string &path);
 
-    const vector<fs::path> &getDataSetImages() const { return imageNames; }
+    const vector<string> &getDataSetImages() const { return imageNames; }
 
     struct RunEvaluation {
         int imageCount = 0;
@@ -37,7 +34,7 @@ public:
 
     void setSharedParams (const SharedParameters &shared) { sharedParams = shared; }
 
-    void runOnSingleImage(const fs::path &imageName, vector<cv::Point2f> &armorCenters, RunEvaluation &evaluation);
+    void runOnSingleImage(const string &imageName, vector<cv::Point2f> &armorCenters, RunEvaluation &evaluation);
 
     void runOnAllImages(RunEvaluation &evaluation);
 
@@ -45,8 +42,8 @@ public:
 
 private:
 
-    fs::path dataSetPath;
-    vector<fs::path> imageNames;
+    string dataSetPath;
+    vector<string> imageNames;
 
     SharedParameters sharedParams;
 

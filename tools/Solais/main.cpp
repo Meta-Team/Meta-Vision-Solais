@@ -19,8 +19,10 @@ SharedParameters sharedParams;
 ArmorDetector::ParameterSet detectorParams;
 Camera::ParameterSet cameraParams;
 
+boost::asio::io_context ioContext;
+
 // Setup a server with automatic acceptance
-TerminalSocketServer socketServer(8800, [](auto s) {
+TerminalSocketServer socketServer(ioContext, 8800, [](auto s) {
     std::cout << "TerminalSocketServer: disconnected" << std::endl;
     s->startAccept();
 });
@@ -38,13 +40,12 @@ void sendCameraFrame() {
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
     if (name == "camera") {
-        if (s == "toggle") {
-            // Toggle camera
-            if (camera.isOpened()) {
 
+        if (s == "toggle") {  // toggle camera
+
+            if (camera.isOpened()) {
                 camera.release();
                 socketServer.sendSingleString("message", "Camera closed");
-
             } else {
                 camera.open(sharedParams, cameraParams);
 
@@ -56,16 +57,20 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
                 // Send a frame to start the fetching cycle
                 sendCameraFrame();
             }
-        } else if (s == "fetch") {
 
-            // Fetch a frame from the camera
+        } else if (s == "fetch") {  // fetch a frame from the camera
+
             sendCameraFrame();
 
         } else goto INVALID_COMMAND;
+
+    } else if (name == "") {
+        // TODO: ignore the argument and hardcode the path for now
+        detectorTuner.loadImageDataSet("/Users/liuzikai/Files/VOCdevkit/VOC");
     }
 
     return;
-INVALID_COMMAND:
+    INVALID_COMMAND:
     std::cerr << "Invalid single-string package <" << name << "> \"" << s << "\"" << std::endl;
 }
 
@@ -77,7 +82,8 @@ int main(int argc, char *argv[]) {
                               nullptr,
                               nullptr);
 
-    while(true) {}
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(ioContext.get_executor());
+    ioContext.run();  // this operation is blocking, until ioContext is deleted
 
     return 0;
 }

@@ -6,29 +6,29 @@
 #include "Camera.h"
 #include "ArmorDetector.h"
 #include <iostream>
-#include <filesystem>
 #include <chrono>
 #include <pugixml.hpp>
+#include <boost/filesystem.hpp>
 
-namespace fs = std::filesystem;
+namespace fs = boost::filesystem;
 
 namespace meta {
 
-int DetectorTuner::loadImageDataSet(const std::filesystem::path &path) {
+int DetectorTuner::loadImageDataSet(const string &path) {
     dataSetPath = path;
     imageNames.clear();
 
     std::cout << "Loading data set " << path << "...\n";
 
     int imageCount = 0;
-    for (const auto &entry : std::filesystem::directory_iterator(path / "JPEGImages")) {
+    for (const auto &entry : fs::directory_iterator(fs::path(path) / "JPEGImages")) {
 
         /* if (strcasecmp(entry.path().extension().c_str(), ".jpg") != 0) {
             std::cerr << "Non-image file: " << entry.path().filename() << "\n";
             continue;
         } */
 
-        fs::path xmlFile = path / "Annotations" / entry.path().stem();
+        fs::path xmlFile = fs::path(path) / "Annotations" / entry.path().stem();
         xmlFile += ".xml";
 
         if (!fs::exists(xmlFile)) {
@@ -36,7 +36,7 @@ int DetectorTuner::loadImageDataSet(const std::filesystem::path &path) {
             continue;
         }
 
-        imageNames.emplace_back(entry.path().filename());
+        imageNames.emplace_back(entry.path().filename().string());
 
         imageCount++;
     }
@@ -46,13 +46,13 @@ int DetectorTuner::loadImageDataSet(const std::filesystem::path &path) {
     return imageCount;
 }
 
-void DetectorTuner::runOnSingleImage(const fs::path &imageName,
+void DetectorTuner::runOnSingleImage(const string &imageName,
                                      vector<cv::Point2f> &armorCenters,
                                      DetectorTuner::RunEvaluation &evaluation) {
 
-    fs::path imageFile = dataSetPath / "JPEGImages" / imageName;
+    fs::path imageFile = fs::path(dataSetPath) / "JPEGImages" / imageName;
 
-    auto img = cv::imread(imageFile);
+    auto img = cv::imread(imageFile.string());
 
     if (img.cols != sharedParams.imageWidth || sharedParams.imageHeight) {
         cv::resize(img, img, cv::Size(sharedParams.imageWidth, sharedParams.imageHeight));

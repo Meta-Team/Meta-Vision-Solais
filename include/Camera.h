@@ -7,6 +7,7 @@
 
 #include "Common.h"
 #include <thread>
+#include <atomic>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/videoio.hpp>
 
@@ -14,6 +15,8 @@ namespace meta {
 
 class Camera {
 public:
+
+    explicit Camera() : lastBuffer(0) {}
 
     ~Camera();
 
@@ -53,12 +56,12 @@ private:
     std::stringstream capInfoSS;
 
     // Double buffering
-    std::atomic<int> lastBuffer = 0;
+    std::atomic<int> lastBuffer;
     cv:: Mat buffer[2];
     unsigned int bufferFrameID[2] = {0, 0};
 
     std::thread *th = nullptr;
-    std::atomic<bool> threadShouldExit = false;
+    std::atomic<bool> threadShouldExit;
 
     std::vector<std::pair<NewFrameCallBack, void *>> callbacks;
 
