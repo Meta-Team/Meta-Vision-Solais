@@ -3,9 +3,6 @@
 
 #include <QMainWindow>
 #include "AnnotatedMatViewer.h"
-#include "ArmorDetector.h"
-#include "DetectorTuner.h"
-#include "Camera.h"
 #include "TerminalSocket.h"
 #include "ValueUIBindings.hpp"
 
@@ -17,6 +14,8 @@ class QLabel;
 class QTimer;
 
 namespace meta {
+
+class PhaseController;
 
 class MainWindow : public QMainWindow {
 Q_OBJECT
@@ -32,22 +31,11 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+    PhaseController* phases;
     QTimer *statsUpdateTimer;
 
     boost::asio::io_context ioContext;
     std::thread ioThread;
-
-    SharedParameters sharedParams;
-
-    ArmorDetector::ParameterSet detectorParams;
-    ArmorDetector detector;
-
-    DetectorTuner tuner;
-
-    Camera::ParameterSet cameraParams;
-    Camera camera;
-
-    vector<cv::Point2f> armorCenters;
 
     static void showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label);
 

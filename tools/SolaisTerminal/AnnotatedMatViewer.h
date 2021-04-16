@@ -17,7 +17,7 @@ public:
 
     AnnotatedMatViewer(const AnnotatedMat &mat, QImage::Format format, QWidget *parent = nullptr);
 
-    ~AnnotatedMatViewer();
+    ~AnnotatedMatViewer() override;
 
 protected:
 

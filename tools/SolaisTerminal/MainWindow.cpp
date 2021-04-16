@@ -4,6 +4,7 @@
 #include <QTextStream>
 #include <QTimer>
 #include <iostream>
+#include "Parameters.ui.h"
 
 namespace meta {
 
@@ -11,7 +12,6 @@ MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
         statsUpdateTimer(new QTimer(this)),
-        tuner(&detector, &camera),
         ioThread([this] {
             boost::asio::executor_work_guard<boost::asio::io_context::executor_type> guard(ioContext.get_executor());
             ioContext.run();  // this operation is blocking, until ioContext is deleted
@@ -19,6 +19,8 @@ MainWindow::MainWindow(QWidget *parent) :
         socket(ioContext, [this](auto c) { handleClientDisconnection(c); }) {
 
     ui->setupUi(this);
+
+    phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout);
 
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
                         nullptr,
@@ -29,9 +31,9 @@ MainWindow::MainWindow(QWidget *parent) :
     statsUpdateTimer->start(1000);  // update socket stats per second
 
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
-    connect(ui->switchCameraButton, &QPushButton::clicked, [this] { socket.sendSingleString("camera", "toggle"); });
+//    connect(ui->switchCameraButton, &QPushButton::clicked, [this] { socket.sendSingleString("camera", "toggle"); });
 
-    bindings = {
+    /*bindings = {
 
             // ================================ General ================================
 
@@ -115,9 +117,8 @@ MainWindow::MainWindow(QWidget *parent) :
             new RangeCheckSpinBinding<double>(&detectorParams.filterArmorAspectRatio, &detectorParams.armorAspectRatio,
                                               ui->armorAspectRatioCheck, ui->armorAspectRatioMinSpin,
                                               ui->armorAspectRatioMaxSpin),
-    };
+    };*/
 
-    camera.registerNewFrameCallBack(&MainWindow::updateCameraFrame, this);
 
     updateUIFromParams();
 
@@ -125,7 +126,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
 
 
-    ui->contourImageWidget->installEventFilter(this);
+//    ui->contourImageWidget->installEventFilter(this);
 
 
 }
@@ -166,7 +167,7 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
         // Camera frame
         QPixmap pixmap;
         pixmap.loadFromData(buf, size);
-        ui->cameraImage->setPixmap(pixmap);
+//        ui->cameraImage->setPixmap(pixmap);
 
         // Request for next frame
         socket.sendSingleString("camera", "fetch");
@@ -181,7 +182,7 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
         ui->statusBar->showMessage(QString(s.data()));
     } else if (name == "cameraInfo") {
         // Camera info
-        ui->cameraInfoLabel->setText(QString(s.data()));
+//        ui->cameraInfoLabel->setText(QString(s.data()));
     } else goto INVALID_PACKAGE;
 
     return;
@@ -197,6 +198,7 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<con
 MainWindow::~MainWindow() {
     for (auto &binding : bindings) delete binding;
     for (auto &viewer : viewers) delete viewer;
+    delete phases;
     delete ui;
 }
 
@@ -214,14 +216,14 @@ void MainWindow::updateParamsFromUI() {
 
 void MainWindow::loadSelectedDataSet() {
 
-    ui->imageList->clear();
+    /*ui->imageList->clear();
     for (const auto &image : tuner.getDataSetImages()) {
         ui->imageList->addItem(image.c_str());
-    }
+    }*/
 }
 
 void MainWindow::runSingleDetectionOnImage() {
-    updateParamsFromUI();
+    /*updateParamsFromUI();
     tuner.setSharedParams(sharedParams);
     detector.setParams(sharedParams, detectorParams);
 
@@ -232,11 +234,11 @@ void MainWindow::runSingleDetectionOnImage() {
             "Count: " + QString::number(evaluation.imageCount) + "\n" +
             "Time: " + QString::number(evaluation.timeEscapedMS) + " ms"
     );
-    setUIFromResults();
+    setUIFromResults();*/
 }
 
 void MainWindow::setUIFromResults() const {
-    showCVMatInLabel(detector.imgOriginal, QImage::Format_BGR888, ui->originalImage);
+    /*showCVMatInLabel(detector.imgOriginal, QImage::Format_BGR888, ui->originalImage);
     showCVMatInLabel(detector.imgBrightnessThreshold, QImage::Format_Indexed8, ui->brightnessThresholdImage);
     showCVMatInLabel(detector.imgColorThreshold, QImage::Format_Indexed8, ui->colorThresholdImage);
     showCVMatInLabel(detector.noteContours.mat(), QImage::Format_BGR888, ui->contourImage);
@@ -250,12 +252,7 @@ void MainWindow::setUIFromResults() const {
         ss << "\n(" << center.x << ", " << center.y << ")";
     }
     ss.flush();
-    ui->armorResultLabel->setText(armorResult);
-}
-
-void MainWindow::updateCameraFrame(void *ptr) {
-    auto inst = static_cast<MainWindow *>(ptr);
-    showCVMatInLabel(inst->camera.getFrame(), QImage::Format_BGR888, inst->ui->cameraImage);
+    ui->armorResultLabel->setText(armorResult);*/
 }
 
 void MainWindow::showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label) {
@@ -264,12 +261,12 @@ void MainWindow::showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLa
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
-    if (obj == ui->contourImageWidget) {
+    /*if (obj == ui->contourImageWidget) {
         if (event->type() == QEvent::MouseButtonDblClick) {
-            viewers.emplace_back(new AnnotatedMatViewer(detector.noteContours, QImage::Format_BGR888));
+//            viewers.emplace_back(new AnnotatedMatViewer(detector.noteContours, QImage::Format_BGR888));
             viewers.back()->show();
         }
-    }
+    }*/
     return QObject::eventFilter(obj, event);
 }
 

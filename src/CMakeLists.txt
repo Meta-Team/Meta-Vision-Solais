@@ -1,13 +1,27 @@
 find_package(pugixml REQUIRED)
-find_package(Boost REQUIRED system filesystem)
 
-add_library(ArmorDetector
+# FIXME: AnnotatedMat.cpp
+add_library(libTerminalSocket TerminalSocket.cpp AnnotatedMat.cpp)
+target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY} ${OpenCV_LIBRARIES})
+
+add_library(libSolais
         ArmorDetector.cpp
         AnnotatedMat.cpp
         DetectorTuner.cpp
         Camera.cpp
         TerminalSocket.cpp
         Serial.cpp)
-target_link_libraries(ArmorDetector ${OpenCV_LIBRARIES} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} pugixml pthread)
-target_include_directories(ArmorDetector PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_compile_definitions(ArmorDetector PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
+target_link_libraries(libSolais
+        ${OpenCV_LIBRARIES}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${Protobuf_LIBRARIES}
+        pugixml
+        pthread
+        libParameters
+        libTerminalSocket)
+target_include_directories(libSolais
+        PUBLIC ${OpenCV_INCLUDE_DIRS}
+        PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_definitions(libSolais
+        PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")

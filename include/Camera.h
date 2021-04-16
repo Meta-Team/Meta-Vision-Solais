@@ -10,6 +10,7 @@
 #include <atomic>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/videoio.hpp>
+#include "Parameters.pb.h"
 
 namespace meta {
 
@@ -20,16 +21,7 @@ public:
 
     ~Camera();
 
-    struct ParameterSet {
-        int cameraID = 0;
-
-        int fps = 120;
-
-        bool enableGamma = false;
-        double gamma = 0;
-    };
-
-    bool open(const SharedParameters &shared, const ParameterSet &params);
+    bool open(const param::ParamSet &params);
 
     bool isOpened() const { return cap.isOpened(); }
 
@@ -48,10 +40,7 @@ public:
 
 private:
 
-    SharedParameters sharedParams;
-
     cv::VideoCapture cap;
-    ParameterSet capParams;
 
     std::stringstream capInfoSS;
 

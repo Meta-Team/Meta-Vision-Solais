@@ -21,11 +21,6 @@ struct Range {
     bool contains(const T &value) const { return min <= value && value <= max; }
 };
 
-struct SharedParameters {
-    int imageWidth = 1280;
-    int imageHeight = 720;
-};
-
 }
 
 #endif //META_VISION_SOLAIS_COMMON_H
