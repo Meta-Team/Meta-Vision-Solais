@@ -26,15 +26,11 @@ public:
 
 TAIL = """
 
-    param::ParamSet getParamSet() const {
+    package::ParamSet getParamSet() const {
     
     }
     
-    void applyParamSet(const param::ParamSet &p) const {
-    
-    }
-    
-    void applyResult(const param::Result &p) const {
+    void applyParamSet(const package::ParamSet &p) {
     
     }
 
@@ -297,23 +293,64 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
     return pointers
 
 
-def generate_fields(pointers: [(str, str)]) -> None:
+def generate_apply_results_code(groups: [Group]) -> None:
+    global print_line_prefix
+
+    print_line_prefix = "    "
+    print_line("void applyResults(const package::Result &results) {")
+
+    print_line_prefix = "        "
+    print_line()
+    for group in groups:
+
+        print_line(f"// GROUP {group.name}")
+
+        # Set the info label
+        if group.info_label is not None:
+            info_obj = f'{group.info_label}Label'
+            print_line('if (results.has_%s()) {' % group.info_label)
+            print_line_prefix = "            "
+            print_line(f'{info_obj}->setText(QString::fromStdString(results.{group.info_label}()));')
+            print_line_prefix = "        "
+            print_line('}')
+
+        # Set the image label
+        if group.image is not None:
+            image_obj = f'{group.image}Label'
+            print_line('if (results.has_%s()) {' % group.image)
+            print_line_prefix = "            "
+            print_line('QPixmap pixmap;')
+            print_line(f'pixmap.loadFromData((const uint8_t *) results.{group.image}().data().c_str(), results.{group.image}().data().size());')
+            print_line(f'{image_obj}->setPixmap(pixmap);')
+            print_line_prefix = "        "
+            print_line('}')
+
+    print_line_prefix = "    "
+    print_line("}")
+    print_line()
+
+
+def generate_member_variables(pointers: [(str, str)]) -> None:
     global print_line_prefix
     print_line_prefix = "    "
     for kind, field in pointers:
         print_line(f'{kind} *{field};')
 
 
+def generate_all(proto_file: str) -> None:
+    groups = parse_groups(proto_file)
+
+    print(HEAD)
+    pointers = generate_ui_creation_code(groups)
+    generate_apply_results_code(groups)
+    print("private:")
+    print()
+    generate_member_variables(pointers)
+    print(TAIL)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("proto", help="Input proto file")
     args = parser.parse_args()
-
-    groups = parse_groups(args.proto)
-
-    print(HEAD)
-    pointers = generate_ui_creation_code(groups)
-    print("private:")
-    print()
-    generate_fields(pointers)
-    print(TAIL)
+    generate_all(args.proto)

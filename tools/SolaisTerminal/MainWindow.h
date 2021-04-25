@@ -5,6 +5,7 @@
 #include "AnnotatedMatViewer.h"
 #include "TerminalSocket.h"
 #include "ValueUIBindings.hpp"
+#include "Parameters.pb.h"
 
 namespace Ui {
 class MainWindow;
@@ -48,6 +49,9 @@ private:
     std::vector<AnnotatedMatViewer *> viewers;
 
     TerminalSocketClient socket;
+
+    // Reuse message objects: developers.google.com/protocol-buffers/docs/cpptutorial#optimization-tips
+    package::Result resultMessage;
 
     void handleClientDisconnection(TerminalSocketClient *client);
 

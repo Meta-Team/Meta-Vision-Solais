@@ -1,16 +1,14 @@
 find_package(pugixml REQUIRED)
 
-# FIXME: AnnotatedMat.cpp
-add_library(libTerminalSocket TerminalSocket.cpp AnnotatedMat.cpp)
-target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY} ${OpenCV_LIBRARIES})
+add_library(libTerminalSocket TerminalSocket.cpp)
+target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY})
 
 add_library(libSolais
-        ArmorDetector.cpp
-        AnnotatedMat.cpp
-        DetectorTuner.cpp
+#        ArmorDetector.cpp
+#        DetectorTuner.cpp
         Camera.cpp
-        TerminalSocket.cpp
-        Serial.cpp)
+        Serial.cpp
+        Executor.cpp)
 target_link_libraries(libSolais
         ${OpenCV_LIBRARIES}
         ${Boost_FILESYSTEM_LIBRARY}
@@ -20,8 +18,5 @@ target_link_libraries(libSolais
         pthread
         libParameters
         libTerminalSocket)
-target_include_directories(libSolais
-        PUBLIC ${OpenCV_INCLUDE_DIRS}
-        PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(libSolais
         PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")

@@ -144,6 +144,9 @@ void MainWindow::connectToServer() {
             ui->serverPortEdit->setEnabled(false);
             ui->connectButton->setText("Disconnect");
 
+            // Start fetching cycle
+            socket.sendSingleString("camera", "fetch");
+
         } else {
             ui->statusBar->showMessage("Failed to connected to " + ui->serverAddressCombo->currentText() + ":" +
                                        ui->serverPortEdit->toPlainText());
@@ -162,15 +165,18 @@ void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
 }
 
 void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
-    if (name == "cameraImage") {
+    if (name == "result") {
 
-        // Camera frame
-        QPixmap pixmap;
-        pixmap.loadFromData(buf, size);
-//        ui->cameraImage->setPixmap(pixmap);
+        if (!resultMessage.ParseFromArray(buf, size)) {
+            ui->statusBar->showMessage("Received an invalid result package");
+        } else {
+            phases->applyResults(resultMessage);
+        }
 
-        // Request for next frame
-        socket.sendSingleString("camera", "fetch");
+        if (resultMessage.has_camera_image()) {
+            // Request for next frame
+            socket.sendSingleString("camera", "fetch");
+        }
 
     } else {
         ui->statusBar->showMessage("Unknown bytes package <" + QString(name.data()) + ">");

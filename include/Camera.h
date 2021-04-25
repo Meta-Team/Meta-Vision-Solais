@@ -21,7 +21,7 @@ public:
 
     ~Camera();
 
-    bool open(const param::ParamSet &params);
+    bool open(const package::ParamSet &params);
 
     bool isOpened() const { return cap.isOpened(); }
 

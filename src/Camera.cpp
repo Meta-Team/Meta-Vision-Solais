@@ -7,7 +7,7 @@
 
 namespace meta {
 
-bool Camera::open(const param::ParamSet &params) {
+bool Camera::open(const package::ParamSet &params) {
     capInfoSS.str(std::string());
 
     // Open the camera

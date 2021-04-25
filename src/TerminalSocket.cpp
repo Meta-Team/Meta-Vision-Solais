@@ -66,6 +66,24 @@ bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t siz
     return true;
 }
 
+bool TerminalSocketBase::sendBytes(const string &name, google::protobuf::Message &message) {
+    if (!connected()) return false;
+
+    size_t size = message.ByteSizeLong();
+    auto buf = allocateBuffer(BYTES, name, size);
+
+    // Data
+    buf->resize(buf->size() + size);
+    message.SerializeWithCachedSizesToArray(buf->data() + (buf->size() - size));
+
+    // Send the data
+    boost::asio::async_write(*socket,
+                             boost::asio::buffer(*buf),
+                             [this, buf](auto &error, auto numBytes) { handleSend(buf, error, numBytes); });
+
+    return true;
+}
+
 bool TerminalSocketBase::sendListOfStrings(const string &name, const vector<string> &list) {
     if (!connected()) return false;
 

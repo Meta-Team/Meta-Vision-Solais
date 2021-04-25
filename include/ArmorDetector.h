@@ -6,7 +6,6 @@
 #define META_VISION_SOLAIS_ARMORDETECTOR_H
 
 #include "Common.h"
-#include "AnnotatedMat.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 

@@ -12,10 +12,12 @@ if (QT_ENABLED)
             MainWindow.ui
             MainWindow.cpp
             ValueUIBindings.hpp
+            AnnotatedMat.cpp
             AnnotatedMatViewer.ui
             AnnotatedMatViewer.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/Parameters.ui.h)
     target_link_libraries(SolarisTerminal
+            ${OpenCV_LIBRARIES}
             ${QT_LIBS_QUALIFIED}
             ${Boost_FILESYSTEM_LIBRARY}
             ${Boost_SYSTEM_LIBRARY}

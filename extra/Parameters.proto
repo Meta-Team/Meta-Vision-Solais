@@ -1,5 +1,5 @@
 syntax = "proto3";
-package param;
+package package;
 
 // ============================================== Data Structures ================================================
 
@@ -103,19 +103,19 @@ message Result {
 
   // GROUP: Input
   optional string camera_info = 1;  // Camera info
-  optional Image camera_image = 2;  // Camera image
+  Image camera_image = 2;  // Camera image
 
   // GROUP: Brightness
-  optional Image brightness_threshold_image = 3;  // Brightness threshold image
+  Image brightness_threshold_image = 3;  // Brightness threshold image
 
   // GROUP: Color
-  optional Image color_threshold_image = 4;  // Color threshold image
+  Image color_threshold_image = 4;  // Color threshold image
 
   // GROUP: Contours
   optional string contour_info = 5;  // Contour info
-  optional Image contour_image = 6;  // Contour image
+  Image contour_image = 6;  // Contour image
 
   // GROUP: Armors
   optional string armor_info = 7;  // Armor info
-  optional Image armor_image = 8;  // Armor image
+  Image armor_image = 8;  // Armor image
 }

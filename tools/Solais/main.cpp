@@ -3,21 +3,21 @@
 //
 
 #include "Camera.h"
-#include "ArmorDetector.h"
-#include "DetectorTuner.h"
+//#include "ArmorDetector.h"
+//#include "DetectorTuner.h"
 #include "TerminalSocket.h"
 #include "TerminalParameters.h"
+#include "Parameters.pb.h"
 #include <iostream>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace meta;
+using namespace package;
+
+ParamSet params;
 
 Camera camera;
-ArmorDetector armorDetector;
-DetectorTuner detectorTuner(&armorDetector, &camera);
-
-SharedParameters sharedParams;
-ArmorDetector::ParameterSet detectorParams;
-Camera::ParameterSet cameraParams;
 
 boost::asio::io_context ioContext;
 
@@ -27,46 +27,31 @@ TerminalSocketServer socketServer(ioContext, 8800, [](auto s) {
     s->startAccept();
 });
 
-void sendCameraFrame() {
+package::Image *allocateProtoImage(const cv::Mat &mat) {
     cv::Mat outImage;
     std::vector<uchar> buf;
-    float ratio = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / (float) camera.getFrame().rows;
+    float ratio = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / (float) mat.rows;
 
-    cv::resize(camera.getFrame(), outImage, cv::Size(), ratio, ratio);
+    cv::resize(mat, outImage, cv::Size(), ratio, ratio);
     cv::imencode(".jpg", outImage, buf, {cv::IMWRITE_JPEG_QUALITY, 80});
 
-    socketServer.sendBytes("cameraImage", buf.data(), buf.size());
+    auto image = new package::Image;
+    image->set_format(package::Image::JPEG);
+    image->set_data(buf.data(), buf.size());
+    return image;
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
     if (name == "camera") {
 
-        if (s == "toggle") {  // toggle camera
+        if (s == "fetch") {  // fetch a frame from the camera
 
-            if (camera.isOpened()) {
-                camera.release();
-                socketServer.sendSingleString("message", "Camera closed");
-            } else {
-                camera.open(sharedParams, cameraParams);
-
-                socketServer.sendSingleString("message", "Camera opened");
-
-                // Send camera information
-                socketServer.sendSingleString("cameraInfo", camera.getCapInfo());
-
-                // Send a frame to start the fetching cycle
-                sendCameraFrame();
-            }
-
-        } else if (s == "fetch") {  // fetch a frame from the camera
-
-            sendCameraFrame();
+            package::Result result;
+            result.set_allocated_camera_image(allocateProtoImage(camera.getFrame()));
+            socketServer.sendBytes("result", result);
 
         } else goto INVALID_COMMAND;
 
-    } else if (name == "") {
-        // TODO: ignore the argument and hardcode the path for now
-        detectorTuner.loadImageDataSet("/Users/liuzikai/Files/VOCdevkit/VOC");
     }
 
     return;
@@ -75,6 +60,15 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
 }
 
 int main(int argc, char *argv[]) {
+
+    params.set_camera_id(0);
+    params.set_image_width(1280);
+    params.set_image_height(720);
+    params.set_fps(120);
+    auto gamma = new ToggledDouble;
+    gamma->set_enabled(false);
+    params.set_allocated_gamma(gamma);
+    camera.open(params);
 
     socketServer.startAccept();
     socketServer.setCallbacks(handleRecvSingleString,

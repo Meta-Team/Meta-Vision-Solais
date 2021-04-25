@@ -9,6 +9,7 @@
 #include <thread>
 #include <boost/asio.hpp>
 #include <utility>
+#include <google/protobuf/message.h>
 
 using boost::asio::ip::tcp;
 
@@ -102,6 +103,14 @@ public:
      * @return      Whether the operation succeeded.
      */
     bool sendBytes(const string &name, uint8_t *data = nullptr, size_t size = 0);
+
+    /**
+     * Async send bytes. Can be use to send only name (nullptr data and size 0).
+     * @param name     Name of the package.
+     * @param message  A protobuf message.
+     * @return      Whether the operation succeeded.
+     */
+    bool sendBytes(const string &name, google::protobuf::Message &message);
 
     /**
      * Async send a list of strings
