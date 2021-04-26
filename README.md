@@ -45,14 +45,13 @@ sudo make install
 ## Terminal -> Core
 | Name   | Type   | Argument         |Note|
 |--------|--------|------------------|----|
-| camera | String | "toggle" | A frame will be sent if the camera opens |
-| camera | String | "fetch"  | |
-| loadDataSet | String | Data set name  | |
+| fetch | Bytes | nullptr  | Fetch result |
+| stop | Bytes | nullptr | Stop execution |
+| runCamera | Bytes | nullptr | Start execution on camera |
+
 
 ## Core -> Terminal
 | Name   | Type   | Argument         |
 |--------|--------|------------------|
-| message | String | Message to be shown in the status bar |
-| cameraInfo | String | Camera info |
-| cameraImage | Bytes | JPEG bytes  |
-| imageList | ListOfStrings | Image filenames |
+| msg | String | Message to be shown in the status bar |
+| res | Bytes | Result protobuf message |

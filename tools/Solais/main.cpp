@@ -3,7 +3,8 @@
 //
 
 #include "Camera.h"
-//#include "ArmorDetector.h"
+#include "Executor.h"
+#include "ArmorDetector.h"
 //#include "DetectorTuner.h"
 #include "TerminalSocket.h"
 #include "TerminalParameters.h"
@@ -11,13 +12,14 @@
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
 using namespace meta;
 using namespace package;
 
 ParamSet params;
 
-Camera camera;
+std::unique_ptr<Camera> camera;
+std::unique_ptr<ArmorDetector> detector;
+std::unique_ptr<Executor> executor;
 
 boost::asio::io_context ioContext;
 
@@ -27,7 +29,10 @@ TerminalSocketServer socketServer(ioContext, 8800, [](auto s) {
     s->startAccept();
 });
 
-package::Image *allocateProtoImage(const cv::Mat &mat) {
+// Reuse message objects: developers.google.com/protocol-buffers/docs/cpptutorial#optimization-tips
+Result resultPackage;
+
+Image *allocateProtoJPEGImage(const cv::Mat &mat) {
     cv::Mat outImage;
     std::vector<uchar> buf;
     float ratio = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / (float) mat.rows;
@@ -42,21 +47,44 @@ package::Image *allocateProtoImage(const cv::Mat &mat) {
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
-    if (name == "camera") {
+    if (name == "") {
 
-        if (s == "fetch") {  // fetch a frame from the camera
-
-            package::Result result;
-            result.set_allocated_camera_image(allocateProtoImage(camera.getFrame()));
-            socketServer.sendBytes("result", result);
-
-        } else goto INVALID_COMMAND;
-
-    }
+    } else goto INVALID_COMMAND;
 
     return;
     INVALID_COMMAND:
     std::cerr << "Invalid single-string package <" << name << "> \"" << s << "\"" << std::endl;
+}
+
+void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
+    if (name == "fetch") {
+
+        // Send camera image
+        resultPackage.Clear();
+        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(camera->getFrame()));
+        socketServer.sendBytes("res", resultPackage);
+
+        if (executor->getCurrentAction() != Executor::NONE) {
+            // Send processing image
+            resultPackage.Clear();
+            resultPackage.set_allocated_brightness_threshold_image(allocateProtoJPEGImage(detector->getImgBrightnessThreshold()));
+            // TODO: more image to send
+            socketServer.sendBytes("res", resultPackage);
+        }
+
+    } else if (name == "stop") {
+
+        executor->setAction(Executor::NONE);
+
+    } else if (name == "runCamera") {
+
+        executor->setAction(Executor::REAL_TIME_DETECTION);
+
+    } else {
+
+        std::cerr << "Unknown bytes package <" << name << ">" << std::endl;
+
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -68,7 +96,7 @@ int main(int argc, char *argv[]) {
     auto gamma = new ToggledDouble;
     gamma->set_enabled(false);
     params.set_allocated_gamma(gamma);
-    camera.open(params);
+    camera->open(params);
 
     socketServer.startAccept();
     socketServer.setCallbacks(handleRecvSingleString,

@@ -50,7 +50,7 @@ message ParamSet {
       RED = 0;
       BLUE = 1;
   };
-  EnemyColor enemyColor = 3;  // Enemy color
+  EnemyColor enemy_color = 3;  // Enemy color
 
   // GROUP: Input
   int32 camera_id = 4;        // Camera ID
@@ -58,7 +58,7 @@ message ParamSet {
   ToggledDouble gamma = 6;    // Gamma
 
   // GROUP: Brightness
-  double brightnessThreshold = 7;  // Threshold
+  double brightness_threshold = 7;  // Threshold
 
   // GROUP: Color
   enum ColorThresholdMode {
@@ -71,7 +71,7 @@ message ParamSet {
   DoubleRange hsv_blue_bue = 10;                // Blue hue range
   double rb_channel_threshold = 11;             // RB channel threshold
 
-  ToggledInt colorDilate = 12;                  // Dilate
+  ToggledInt color_dilate = 12;                  // Dilate
 
   // GROUP: Contours
   enum ContourFitFunction {

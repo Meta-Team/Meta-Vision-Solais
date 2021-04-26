@@ -12,15 +12,4 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-namespace meta {
-
-template<typename T>
-struct Range {
-    T min;  // inclusive
-    T max;  // inclusive
-    bool contains(const T &value) const { return min <= value && value <= max; }
-};
-
-}
-
 #endif //META_VISION_SOLAIS_COMMON_H

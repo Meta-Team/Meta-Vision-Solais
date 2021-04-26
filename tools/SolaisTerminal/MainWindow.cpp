@@ -18,17 +18,24 @@ MainWindow::MainWindow(QWidget *parent) :
         }),
         socket(ioContext, [this](auto c) { handleClientDisconnection(c); }) {
 
+    // Setup UI
     ui->setupUi(this);
-
     phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout);
 
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
                         nullptr,
                         [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
                         [this](auto name, auto list) { handleRecvListOfStrings(name, list); });
+
+    // Setup update timer
     connect(statsUpdateTimer, &QTimer::timeout, this, &MainWindow::updateSocketStats);
     statsUpdateTimer->setSingleShot(false);
     statsUpdateTimer->start(1000);  // update socket stats per second
+
+
+    connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); })
+    connect(ui->startCameraButton, &QPushButton::clicked, [this] { socket.sendBytes("startCamera"); })
+
 
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
 //    connect(ui->switchCameraButton, &QPushButton::clicked, [this] { socket.sendSingleString("camera", "toggle"); });
@@ -165,8 +172,8 @@ void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
 }
 
 void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
-    if (name == "result") {
 
+    if (name == "res") {
         if (!resultMessage.ParseFromArray(buf, size)) {
             ui->statusBar->showMessage("Received an invalid result package");
         } else {
@@ -174,8 +181,7 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
         }
 
         if (resultMessage.has_camera_image()) {
-            // Request for next frame
-            socket.sendSingleString("camera", "fetch");
+            socket.sendBytes("fetch");  // request for next frame
         }
 
     } else {
@@ -184,17 +190,15 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
 }
 
 void MainWindow::handleRecvSingleString(std::string_view name, std::string_view s) {
-    if (name == "message") {
+
+    if (name == "msg") {
         ui->statusBar->showMessage(QString(s.data()));
-    } else if (name == "cameraInfo") {
-        // Camera info
-//        ui->cameraInfoLabel->setText(QString(s.data()));
     } else goto INVALID_PACKAGE;
 
     return;
     INVALID_PACKAGE:
-    ui->statusBar->showMessage(
-            "Invalid single-string package <" + QString(name.data()) + ">\"" + QString(s.data()) + "\"");
+    ui->statusBar->showMessage("Invalid single-string package <" +
+                               QString(name.data()) + ">\"" + QString(s.data()) + "\"");
 }
 
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {

@@ -18,32 +18,33 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
     // ================================ Setup ================================
     {
-        assert(img.cols == sharedParams.imageWidth && img.rows == sharedParams.imageHeight && "Input image size unmatched");
+        assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
         img.copyTo(imgOriginal);
     }
 
     // ================================ Brightness Threshold ================================
     {
         cvtColor(imgOriginal, imgGray, COLOR_BGR2GRAY);
-        threshold(imgGray, imgBrightnessThreshold, params.brightnessThreshold, 255, THRESH_BINARY);
+        threshold(imgGray, imgBrightnessThreshold, params.brightness_threshold(), 255, THRESH_BINARY);
     }
 
     // ================================ Color Threshold ================================
     {
-        if (params.colorThresholdMode == HSV) {
+        if (params.color_threshold_mode() == ParamSet::HSV) {
 
             // Convert to HSV color space
             Mat hsvImg;
             cvtColor(imgOriginal, hsvImg, COLOR_BGR2HSV);
 
-            if (params.targetColor == RED) {
+            if (params.enemy_color() == ParamSet::RED) {
                 // Red color spreads over the 0 (180) boundary, so combine them
                 Mat thresholdImg0, thresholdImg1;
-                inRange(hsvImg, Scalar(0, 0, 0), Scalar(params.hsvRedHue.max, 255, 255), thresholdImg0);
-                inRange(hsvImg, Scalar(params.hsvRedHue.min, 0, 0), Scalar(180, 255, 255), thresholdImg1);
+                inRange(hsvImg, Scalar(0, 0, 0), Scalar(params.hsv_red_hue().max(), 255, 255), thresholdImg0);
+                inRange(hsvImg, Scalar(params.hsv_red_hue().min(), 0, 0), Scalar(180, 255, 255), thresholdImg1);
                 imgColorThreshold = thresholdImg0 | thresholdImg1;
             } else {
-                inRange(hsvImg, Scalar(params.hsvBlueHue.min, 0, 0), Scalar(params.hsvBlueHue.max, 255, 255),
+                inRange(hsvImg, Scalar(params.hsv_blue_bue().min(), 0, 0),
+                        Scalar(params.hsv_blue_bue().max(), 255, 255),
                         imgColorThreshold);
             }
 
@@ -53,17 +54,18 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
             split(imgOriginal, channels);
 
             // Filter using channel subtraction
-            int mainChannel = (params.targetColor == RED ? 2 : 0);
-            int oppositeChannel = (params.targetColor == RED ? 0 : 2);
+            int mainChannel = (params.enemy_color() == ParamSet::RED ? 2 : 0);
+            int oppositeChannel = (params.enemy_color() == ParamSet::RED ? 0 : 2);
             subtract(channels[mainChannel], channels[oppositeChannel], imgColorThreshold);
-            threshold(imgColorThreshold, imgColorThreshold, params.rbChannelThreshold, 255, THRESH_BINARY);
+            threshold(imgColorThreshold, imgColorThreshold, params.rb_channel_threshold(), 255, THRESH_BINARY);
 
         }
 
         // Color filter dilate
-        if (params.enableColorDilate) {
-            Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE,
-                                                    cv::Size(params.colorDilate, params.colorDilate));
+        if (params.color_dilate().enabled()) {
+            Mat element = cv::getStructuringElement(
+                    cv::MORPH_ELLIPSE,
+                    cv::Size(params.color_dilate().val(), params.color_dilate().val()));
             dilate(imgColorThreshold, imgColorThreshold, element);
         }
 
@@ -86,27 +88,27 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
         for (const auto &contour : contours) {
 
             // Filter pixel count
-            if (params.filterContourPixelCount) {
-                if (contour.size() < params.contourPixelCount) {
+            if (params.contour_pixel_count().enabled()) {
+                if (contour.size() < params.contour_pixel_count().val()) {
                     continue;
                 }
             }
 
             // Filter area size
-            if (params.filterContourMinArea) {
+            if (params.contour_min_area().enabled()) {
                 double area = contourArea(contour);
-                if (area < params.contourMinArea) {
+                if (area < params.contour_min_area().val()) {
                     continue;
                 }
             }
 
             // Fit contour using a rotated rect
             RotatedRect rect;
-            switch (params.contourFitFunction) {
-                case MIN_AREA_RECT:
+            switch (params.contour_fit_function()) {
+                case ParamSet::MIN_AREA_RECT:
                     rect = minAreaRect(contour);
                     break;
-                case ELLIPSE:
+                case ParamSet::ELLIPSE:
                     // There should be at least 5 points to fit the ellipse
                     if (contour.size() < 5) continue;
                     rect = fitEllipse(contour);
@@ -116,30 +118,21 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
             // Filter long edge min length
             double longEdgeLength = max(rect.size.width, rect.size.height);
-            if (params.filterLongEdgeMinLength && longEdgeLength < params.longEdgeMinLength) {
+            if (params.long_edge_min_length().enabled() && longEdgeLength < params.long_edge_min_length().val()) {
                 continue;
             }
 
             // Filter aspect ratio
             double shortEdgeLength = min(rect.size.width, rect.size.height);
-            if (params.filterLightAspectRatio) {
+            if (params.light_aspect_ratio().enabled()) {
                 double aspectRatio = longEdgeLength / shortEdgeLength;
-                if (!params.lightAspectRatio.contains(aspectRatio)) {
+                if (!inRange(aspectRatio, params.light_aspect_ratio())) {
                     continue;
                 }
             }
 
             // Accept the rect
             lightRects.emplace_back(rect);
-#ifdef DEBUG
-            {
-                stringstream comment;
-                comment << "(" << rect.center.x << ", " << rect.center.y << ")    "
-                        << rect.size.width << " x " << rect.size.height << "    "
-                        << rect.angle << "°";
-                noteContours.annotate(rect, comment.str());
-            }
-#endif
         }
     }
     acceptedContourCount = lightRects.size();

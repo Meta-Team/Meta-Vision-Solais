@@ -4,7 +4,7 @@ add_library(libTerminalSocket TerminalSocket.cpp)
 target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY})
 
 add_library(libSolais
-#        ArmorDetector.cpp
+        ArmorDetector.cpp
 #        DetectorTuner.cpp
         Camera.cpp
         Serial.cpp
