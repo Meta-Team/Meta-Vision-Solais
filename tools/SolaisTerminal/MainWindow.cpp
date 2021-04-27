@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <iostream>
 #include "Parameters.ui.h"
+#include "TerminalParameters.h"
 
 namespace meta {
 
@@ -14,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
         statsUpdateTimer(new QTimer(this)),
         ioThread([this] {
             boost::asio::executor_work_guard<boost::asio::io_context::executor_type> guard(ioContext.get_executor());
-            ioContext.run();  // this operation is blocking, until ioContext is deleted
+            ioContext.run();  // this operation is blocking, until ioContext is reset
         }),
         socket(ioContext, [this](auto c) { handleClientDisconnection(c); }) {
 
@@ -23,114 +24,26 @@ MainWindow::MainWindow(QWidget *parent) :
     phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout);
 
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
-                        nullptr,
+                        [this](auto name, auto val) { handleRecvSingleInt(name, val); },
                         [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
                         [this](auto name, auto list) { handleRecvListOfStrings(name, list); });
 
     // Setup update timer
-    connect(statsUpdateTimer, &QTimer::timeout, this, &MainWindow::updateSocketStats);
+    connect(statsUpdateTimer, &QTimer::timeout, this, &MainWindow::updateStats);
     statsUpdateTimer->setSingleShot(false);
     statsUpdateTimer->start(1000);  // update socket stats per second
 
 
-    connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); })
-    connect(ui->startCameraButton, &QPushButton::clicked, [this] { socket.sendBytes("startCamera"); })
+    connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); });
+    connect(ui->startCameraButton, &QPushButton::clicked, [this] { socket.sendBytes("runCamera"); });
 
 
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
 //    connect(ui->switchCameraButton, &QPushButton::clicked, [this] { socket.sendSingleString("camera", "toggle"); });
 
-    /*bindings = {
 
-            // ================================ General ================================
-
-            new ValueCheckSpinBinding<int>(nullptr, &sharedParams.imageWidth,
-                                           nullptr, ui->imageWidthSpin),
-
-            new ValueCheckSpinBinding<int>(nullptr, &sharedParams.imageHeight,
-                                           nullptr, ui->imageHeightSpin),
-
-            // ================================ Camera ================================
-
-            new ValueCheckSpinBinding<int>(nullptr, &cameraParams.fps,
-                                           nullptr, ui->frameRateSpin),
-
-            new ValueCheckSpinBinding<int>(nullptr, &cameraParams.cameraID,
-                                           nullptr, ui->cameraIDSpin),
-
-            new ValueCheckSpinBinding<double>(&cameraParams.enableGamma, &cameraParams.gamma,
-                                              ui->gammaCheck, ui->gammaSpin),
-
-            // ================================ Brightness Filter ================================
-
-            new ValueCheckSpinBinding<double>(
-                    nullptr, &detectorParams.brightnessThreshold,
-                    nullptr, ui->brightnessSpin),
-
-            // ================================ Color Filter ================================
-
-            new EnumRadioBinding<ArmorDetector::ColorThresholdMode>(
-                    &detectorParams.colorThresholdMode,
-                    std::vector<std::pair<ArmorDetector::ColorThresholdMode, QRadioButton *>>{
-                            {ArmorDetector::HSV,         ui->hsvRadio},
-                            {ArmorDetector::RB_CHANNELS, ui->rbChannelRadio},
-                    }),
-            new RangeCheckSpinBinding<double>(
-                    nullptr, &detectorParams.hsvRedHue,
-                    nullptr, ui->hsvRedHueMinSpin, ui->hsvRedHueMaxSpin),
-            new RangeCheckSpinBinding<double>(
-                    nullptr, &detectorParams.hsvBlueHue,
-                    nullptr, ui->hsvBlueHueMinSpin, ui->hsvBlueHueMaxSpin),
-            new ValueCheckSpinBinding<double>(
-                    nullptr, &detectorParams.rbChannelThreshold,
-                    nullptr, ui->rbChannelThresholdSpin),
-            new ValueCheckSpinBinding<int>(
-                    &detectorParams.enableColorDilate, &detectorParams.colorDilate,
-                    ui->colorDliateCheck, ui->colorDliateSpin),
-
-            // ================================ Contour Filter ================================
-
-            new EnumRadioBinding<ArmorDetector::ContourFitFunction>(
-                    &detectorParams.contourFitFunction,
-                    std::vector<std::pair<ArmorDetector::ContourFitFunction, QRadioButton *>>{
-                            {ArmorDetector::MIN_AREA_RECT, ui->minAreaRectRadio},
-                            {ArmorDetector::ELLIPSE,       ui->fitEllipseRadio},
-                    }),
-            new ValueCheckSpinBinding<double>(
-                    &detectorParams.filterContourPixelCount, &detectorParams.contourPixelCount,
-                    ui->contourPixelMinCountCheck, ui->contourPixelMinCountSpin),
-            new ValueCheckSpinBinding<double>(
-                    &detectorParams.filterContourMinArea, &detectorParams.contourMinArea,
-                    ui->contourMinAreaCheck, ui->contourMinAreaSpin),
-            new ValueCheckSpinBinding<int>(
-                    &detectorParams.filterLongEdgeMinLength, &detectorParams.longEdgeMinLength,
-                    ui->longEdgeMinLengthCheck, ui->longEdgeMinLengthSpin),
-            new RangeCheckSpinBinding<double>(&detectorParams.filterLightAspectRatio, &detectorParams.lightAspectRatio,
-                                              ui->aspectRatioFilterCheck, ui->aspectRatioMinSpin,
-                                              ui->aspectRatioMaxSpin),
-
-            // ================================ Armor Filter ================================
-
-            new ValueCheckSpinBinding<double>(&detectorParams.filterLightLengthRatio,
-                                              &detectorParams.lightLengthMaxRatio,
-                                              ui->lightLengthRatioCheck, ui->lightLengthRatioMaxSpin),
-            new RangeCheckSpinBinding<double>(&detectorParams.filterLightXDistance, &detectorParams.lightXDistOverL,
-                                              ui->lightXDiffCheck, ui->lightXDiffMinSpin, ui->lightXDiffMaxSpin),
-
-            new RangeCheckSpinBinding<double>(&detectorParams.filterLightYDistance, &detectorParams.lightYDistOverL,
-                                              ui->lightYDiffCheck, ui->lightYDiffMinSpin, ui->lightYDiffMaxSpin),
-            new ValueCheckSpinBinding<double>(&detectorParams.filterLightAngleDiff, &detectorParams.lightAngleMaxDiff,
-                                              ui->lightAngleDiffCheck, ui->lightAngleDiffMaxSpin),
-            new RangeCheckSpinBinding<double>(&detectorParams.filterArmorAspectRatio, &detectorParams.armorAspectRatio,
-                                              ui->armorAspectRatioCheck, ui->armorAspectRatioMinSpin,
-                                              ui->armorAspectRatioMaxSpin),
-    };*/
-
-
-    updateUIFromParams();
-
-    connect(ui->runSingleImageButton, &QPushButton::clicked, this, &MainWindow::runSingleDetectionOnImage);
-    connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
+//    connect(ui->runSingleImageButton, &QPushButton::clicked, this, &MainWindow::runSingleDetectionOnImage);
+//    connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
 
 
 //    ui->contourImageWidget->installEventFilter(this);
@@ -140,23 +53,22 @@ MainWindow::MainWindow(QWidget *parent) :
 
 void MainWindow::connectToServer() {
     if (ui->connectButton->text() == "Connect") {
-        if (socket.connect(ui->serverAddressCombo->currentText().toStdString(),
-                           ui->serverPortEdit->toPlainText().toStdString())) {
+        if (socket.connect(ui->serverCombo->currentText().toStdString(),
+                           TCP_SOCKET_PORT_STR)) {
 
             ui->statusBar->showMessage(
-                    "Connected to " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
+                    "Connected to " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
 
             // Update UI
-            ui->serverAddressCombo->setEnabled(false);
-            ui->serverPortEdit->setEnabled(false);
+            ui->serverCombo->setEnabled(false);
             ui->connectButton->setText("Disconnect");
 
             // Start fetching cycle
-            socket.sendSingleString("camera", "fetch");
+            socket.sendBytes("fetch");
 
         } else {
-            ui->statusBar->showMessage("Failed to connected to " + ui->serverAddressCombo->currentText() + ":" +
-                                       ui->serverPortEdit->toPlainText());
+            ui->statusBar->showMessage("Failed to connected to " + ui->serverCombo->currentText() + ":" +
+                                               TCP_SOCKET_PORT_STR);
         }
     } else {
         socket.disconnect();  // update UI at handleClientDisconnection
@@ -165,9 +77,8 @@ void MainWindow::connectToServer() {
 
 void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
     ui->statusBar->showMessage(
-            "Disconnected from " + ui->serverAddressCombo->currentText() + ":" + ui->serverPortEdit->toPlainText());
-    ui->serverAddressCombo->setEnabled(true);
-    ui->serverPortEdit->setEnabled(true);
+            "Disconnected from " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
+    ui->serverCombo->setEnabled(true);
     ui->connectButton->setText("Connect");
 }
 
@@ -201,27 +112,25 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
                                QString(name.data()) + ">\"" + QString(s.data()) + "\"");
 }
 
+void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
+    if (name == "fps") {
+        ui->fpsLabel->setText(QString::number(val) + " frame/s");
+    } else {
+        ui->statusBar->showMessage("Unknown int package <" + QString(name.data()) + ">");
+    }
+}
+
+
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
 
 }
 
 MainWindow::~MainWindow() {
-    for (auto &binding : bindings) delete binding;
+    ioContext.stop();  // this will cause ioThread to exit
+    ioThread.join();
     for (auto &viewer : viewers) delete viewer;
     delete phases;
     delete ui;
-}
-
-void MainWindow::updateUIFromParams() {
-    for (auto &binding : bindings) {
-        binding->param2UI();
-    }
-}
-
-void MainWindow::updateParamsFromUI() {
-    for (auto &binding : bindings) {
-        binding->ui2Params();
-    }
 }
 
 void MainWindow::loadSelectedDataSet() {
@@ -280,10 +189,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
     return QObject::eventFilter(obj, event);
 }
 
-void MainWindow::updateSocketStats() {
+void MainWindow::updateStats() {
     std::pair<unsigned, unsigned> stats = socket.getAndClearStats();  // {sent, received}
     ui->sentBytesLabel->setText(bytesToDateRate(stats.first));
     ui->recvBytesLabel->setText(bytesToDateRate(stats.second));
+    socket.sendBytes("fps");  // request for FPS
 }
 
 QString MainWindow::bytesToDateRate(unsigned int n) {

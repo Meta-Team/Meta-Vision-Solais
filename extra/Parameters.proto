@@ -68,7 +68,7 @@ message ParamSet {
   ColorThresholdMode color_threshold_mode = 8;  // Mode
 
   DoubleRange hsv_red_hue = 9;                  // Red hue range
-  DoubleRange hsv_blue_bue = 10;                // Blue hue range
+  DoubleRange hsv_blue_hue = 10;                // Blue hue range
   double rb_channel_threshold = 11;             // RB channel threshold
 
   ToggledInt color_dilate = 12;                  // Dilate

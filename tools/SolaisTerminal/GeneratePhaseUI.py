@@ -144,7 +144,7 @@ def print_line(s: str = ""):
 def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
     global print_line_prefix
 
-    pointers = []
+    variables = []
 
     print_line_prefix = "    "
     print_line("explicit PhaseController(QScrollArea *area, QVBoxLayout *areaLayout) {")
@@ -156,24 +156,24 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
 
         # Group container
         group_obj = f"group{group.name}"
-        pointers.append(("QGroupBox", group_obj))
+        variables.append(("QGroupBox*", group_obj))
         print_line(f'{group_obj} = new QGroupBox(area);')
         print_line(f'{group_obj}->setTitle(QString::fromUtf8("{group.name}"));')
 
         # Horizontal layout of the group container
         h_layout_obj = f'hLayout{group.name}'
-        pointers.append(("QHBoxLayout", h_layout_obj))
+        variables.append(("QHBoxLayout*", h_layout_obj))
         print_line(f'{h_layout_obj} = new QHBoxLayout({group_obj});')
 
         # Left-side container
         left_container_obj = f'leftContainer{group.name}'
-        pointers.append(("QWidget", left_container_obj))
+        variables.append(("QWidget*", left_container_obj))
         print_line(f'{left_container_obj} = new QWidget({group_obj});')
         print_line(f'{h_layout_obj}->addWidget({left_container_obj});')
 
         # Grid layout for the left-side container
         g_layout_obj = f'gLayout{group.name}'
-        pointers.append(("QGridLayout", g_layout_obj))
+        variables.append(("QGridLayout*", g_layout_obj))
         print_line(f'{g_layout_obj} = new QGridLayout({left_container_obj});')
         print_line(f'{g_layout_obj}->setContentsMargins(0, 0, 0, 0);')
 
@@ -189,13 +189,13 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
 
                 # Checkbox
                 label_obj = f'{param.name}Check'
-                pointers.append(("QCheckBox", label_obj))
+                variables.append(("QCheckBox*", label_obj))
                 print_line(f'{label_obj} = new QCheckBox({left_container_obj});')
 
             else:
                 # Label
                 label_obj = f'{param.name}Label'
-                pointers.append(("QLabel", label_obj))
+                variables.append(("QLabel*", label_obj))
                 print_line(f'{label_obj} = new QLabel({left_container_obj});')
 
             print_line(f'{label_obj}->setText(QString::fromUtf8("{param.label}"));')
@@ -204,7 +204,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
             # Get data type
             if type_str == "Enum":
                 combo_obj = f'{param.name}Combo'
-                pointers.append(("QComboBox", combo_obj))
+                variables.append(("QComboBox*", combo_obj))
                 print_line(f'{combo_obj} = new QComboBox({left_container_obj});')
                 for option in param.options:
                     print_line(f'{combo_obj}->addItem(QString::fromUtf8("{option}"));')
@@ -224,7 +224,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                 if len(type_str) == 0:
                     # No keyword "Range", single spin box
                     spin_obj = f'{param.name}Spin'
-                    pointers.append(("QDoubleSpinBox", spin_obj))
+                    variables.append(("QDoubleSpinBox*", spin_obj))
                     print_line(f'{spin_obj} = new QDoubleSpinBox({left_container_obj});')
                     print_line(f'{spin_obj}->setDecimals({decimal});')
                     print_line(f'{spin_obj}->setMaximum(999);')
@@ -232,13 +232,13 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                 elif type_str == "Range":
                     # Two spin boxes
                     min_spin_obj = f'{param.name}MinSpin'
-                    pointers.append(("QDoubleSpinBox", min_spin_obj))
+                    variables.append(("QDoubleSpinBox*", min_spin_obj))
                     print_line(f'{min_spin_obj} = new QDoubleSpinBox({left_container_obj});')
                     print_line(f'{min_spin_obj}->setDecimals({decimal});')
                     print_line(f'{min_spin_obj}->setMaximum(999);')
                     print_line(f'{g_layout_obj}->addWidget({min_spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
                     max_spin_obj = f'{param.name}MaxSpin'
-                    pointers.append(("QDoubleSpinBox", max_spin_obj))
+                    variables.append(("QDoubleSpinBox*", max_spin_obj))
                     print_line(f'{max_spin_obj} = new QDoubleSpinBox({left_container_obj});')
                     print_line(f'{max_spin_obj}->setDecimals({decimal});')
                     print_line(f'{max_spin_obj}->setMaximum(999);')
@@ -251,7 +251,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
 
         # Add vertical spacer
         v_spacer_obj = f'{group.name}VSpacer'
-        pointers.append(("QSpacerItem", v_spacer_obj))
+        variables.append(("QSpacerItem*", v_spacer_obj))
         print_line(f'{v_spacer_obj} = new QSpacerItem(229, 89, QSizePolicy::Minimum, QSizePolicy::Expanding);')
         print_line(f'{g_layout_obj}->addItem({v_spacer_obj}, {row_count}, 0, 1, 3);')  # span column 0 to 2
         row_count += 1
@@ -259,7 +259,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
         # Add info label if required
         if group.info_label is not None:
             info_obj = f'{group.info_label}Label'
-            pointers.append(("QLabel", info_obj))
+            variables.append(("QLabel*", info_obj))
             print_line(f'{info_obj} = new QLabel({left_container_obj});')
             print_line(f'{info_obj}->setText(QString::fromUtf8("{group.info_label}"));')
             print_line(f'{g_layout_obj}->addWidget({info_obj}, {row_count}, 0, 1, 3);')  # span column 0 to 2
@@ -268,14 +268,14 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
         # Finish the left part
         # Add the horizontal spacer of the group
         h_spacer_obj = f'{group.name}HSpacer'
-        pointers.append(("QSpacerItem", h_spacer_obj))
+        variables.append(("QSpacerItem*", h_spacer_obj))
         print_line(f'{h_spacer_obj} = new QSpacerItem(446, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);')
         print_line(f'{h_layout_obj}->addItem({h_spacer_obj});')
 
         # Add the image label if required
         if group.image is not None:
             image_obj = f'{group.image}Label'
-            pointers.append(("QLabel", image_obj))
+            variables.append(("QLabel*", image_obj))
             print_line(f'{image_obj} = new QLabel({group_obj});')
             print_line(f'{image_obj}->setMinimumSize(QSize(0, 360));')
             print_line(f'{image_obj}->setMaximumSize(QSize(16777215, 360));')
@@ -290,11 +290,13 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
     print_line_prefix = "    "
     print_line("}")
     print_line()
-    return pointers
+    return variables
 
 
-def generate_apply_results_code(groups: [Group]) -> None:
+def generate_apply_results_code(groups: [Group]) -> [(str, str)]:
     global print_line_prefix
+
+    variables = []
 
     print_line_prefix = "    "
     print_line("void applyResults(const package::Result &results) {")
@@ -317,11 +319,12 @@ def generate_apply_results_code(groups: [Group]) -> None:
         # Set the image label
         if group.image is not None:
             image_obj = f'{group.image}Label'
+            qimage_obj = f'{group.image}Image'
+            variables.append(("QImage", qimage_obj))
             print_line('if (results.has_%s()) {' % group.image)
             print_line_prefix = "            "
-            print_line('QPixmap pixmap;')
-            print_line(f'pixmap.loadFromData((const uint8_t *) results.{group.image}().data().c_str(), results.{group.image}().data().size());')
-            print_line(f'{image_obj}->setPixmap(pixmap);')
+            print_line(f'{qimage_obj} = QImage::fromData((const uint8_t *) results.{group.image}().data().c_str(), results.{group.image}().data().size());')
+            print_line(f'{image_obj}->setPixmap(QPixmap::fromImage({qimage_obj}));')
             print_line_prefix = "        "
             print_line('}')
 
@@ -329,23 +332,25 @@ def generate_apply_results_code(groups: [Group]) -> None:
     print_line("}")
     print_line()
 
+    return variables
+
 
 def generate_member_variables(pointers: [(str, str)]) -> None:
     global print_line_prefix
     print_line_prefix = "    "
     for kind, field in pointers:
-        print_line(f'{kind} *{field};')
+        print_line(f'{kind} {field};')
 
 
 def generate_all(proto_file: str) -> None:
     groups = parse_groups(proto_file)
 
     print(HEAD)
-    pointers = generate_ui_creation_code(groups)
-    generate_apply_results_code(groups)
+    variables = generate_ui_creation_code(groups)
+    variables += generate_apply_results_code(groups)
     print("private:")
     print()
-    generate_member_variables(pointers)
+    generate_member_variables(variables)
     print(TAIL)
 
 

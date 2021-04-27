@@ -72,13 +72,21 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
             socketServer.sendBytes("res", resultPackage);
         }
 
+    } else if (name == "fps") {
+
+        socketServer.sendSingleInt("fps", executor->fetchAndClearFrameCounter());
+
     } else if (name == "stop") {
 
-        executor->setAction(Executor::NONE);
+            if (!executor->setAction(Executor::NONE)) {
+                socketServer.sendSingleString("msg", "Failed to set executor action NONE");
+            }
 
     } else if (name == "runCamera") {
 
-        executor->setAction(Executor::REAL_TIME_DETECTION);
+        if (!executor->setAction(Executor::REAL_TIME_DETECTION)) {
+            socketServer.sendSingleString("msg", "Failed to set executor action REAL_TIME_DETECTION");
+        }
 
     } else {
 
@@ -89,19 +97,42 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
 int main(int argc, char *argv[]) {
 
+    camera = std::make_unique<Camera>();
+    detector = std::make_unique<ArmorDetector>();
+    executor = std::make_unique<Executor>(camera.get(), detector.get());
+
     params.set_camera_id(0);
     params.set_image_width(1280);
     params.set_image_height(720);
     params.set_fps(120);
-    auto gamma = new ToggledDouble;
-    gamma->set_enabled(false);
-    params.set_allocated_gamma(gamma);
-    camera->open(params);
+    params.set_allocated_gamma(allocToggledDouble(false));
+
+    params.set_enemy_color(ParamSet::BLUE);
+    params.set_brightness_threshold(155);
+    params.set_color_threshold_mode(ParamSet::RB_CHANNELS);
+    params.set_allocated_hsv_red_hue(allocDoubleRange(150, 30));  // across the 0 (180) point
+    params.set_allocated_hsv_blue_hue(allocDoubleRange(90, 150));
+    params.set_rb_channel_threshold(55);
+    params.set_allocated_color_dilate(allocToggledInt(true, 6));
+
+    params.set_contour_fit_function(ParamSet::ELLIPSE);
+    params.set_allocated_contour_pixel_count(allocToggledDouble(true, 15));
+    params.set_allocated_contour_min_area(allocToggledDouble(false, 3));
+    params.set_allocated_long_edge_min_length(allocToggledInt(true, 30));
+    params.set_allocated_light_aspect_ratio(allocToggledDoubleRange(true, 2, 30));
+
+    params.set_allocated_light_length_max_ratio(allocToggledDouble(true, 1.5));
+    params.set_allocated_light_x_dist_over_l(allocToggledDoubleRange(false, 1, 3));
+    params.set_allocated_light_y_dist_over_l(allocToggledDoubleRange(false, 0, 1));
+    params.set_allocated_light_angle_max_diff(allocToggledDouble(true, 10));
+    params.set_allocated_armor_aspect_ratio(allocToggledDoubleRange(true, 1.25, 5));
+
+    executor->applyParams(params);
 
     socketServer.startAccept();
     socketServer.setCallbacks(handleRecvSingleString,
                               nullptr,
-                              nullptr,
+                              handleRecvBytes,
                               nullptr);
 
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(ioContext.get_executor());

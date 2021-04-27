@@ -6,6 +6,7 @@
 #define META_VISION_SOLAIS_EXECUTOR_H
 
 #include "Common.h"
+#include "Parameters.h"
 #include <thread>
 
 namespace meta {
@@ -24,7 +25,9 @@ public:
 
     explicit Executor(Camera *camera, ArmorDetector *detector);
 
-    void setAction(Action action);
+    void applyParams(const ParamSet &params);
+
+    bool setAction(Action action);
 
     Action getCurrentAction() const { return curAction; }
 

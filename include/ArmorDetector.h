@@ -47,17 +47,8 @@ private:
      * Canonicalize a non-square rotated rect from cv::minAreaRect and make:
      *  width: the short edge
      *  height: the long edge
-     *  angle: in [-90, 90). The angle is then the angle between the long edge and the vertical axis.
-     *  points: consider the rect to be vertical. Bottom left is 0, and 1, 2, 3 clockwise
-     *
-     *            w               2       h       3
-     *        1  ---  2             -------------
-     *          |   |            w | angle = -90 |           (angle can't be 90)
-     *          |   |  h            -------------
-     *          |   |             1               0
-     *           ---
-     *        0      3
-     *
+     *  angle: in [0, 180). The angle is then the angle between the long edge and the vertical axis.
+     *  https://stackoverflow.com/questions/22696539/reorder-four-points-of-a-rectangle-to-the-correct-order
      * @param rect
      */
     static void canonicalizeRotatedRect(cv::RotatedRect &rect);

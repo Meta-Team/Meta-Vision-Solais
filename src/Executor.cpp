@@ -13,8 +13,8 @@ Executor::Executor(Camera *camera, ArmorDetector *detector)
 
 }
 
-void Executor::setAction(Executor::Action action) {
-    if (action == curAction) return;
+bool Executor::setAction(Executor::Action action) {
+    if (action == curAction) return true;
     if (th) {  // executor is running
         threadShouldExit = true;
         th->join();
@@ -26,11 +26,30 @@ void Executor::setAction(Executor::Action action) {
     switch (curAction) {
         case NONE:
             // Do nothing
-            break;
+            return true;
         case REAL_TIME_DETECTION:
+            if (!camera) {
+                std::cerr << "Executor: camera not set for REAL_TIME_DETECTION" << std::endl;
+                return false;
+            }
+            if (!detector) {
+                std::cerr << "Executor: detector not set for REAL_TIME_DETECTION" << std::endl;
+                return false;
+            }
             // Start real-time detection thread
             th = new std::thread(&Executor::runRealTimeDetection, this);
-            break;
+            return true;
+    }
+    return false;
+}
+
+void Executor::applyParams(const ParamSet &params) {
+    if (camera) {
+        if (camera->isOpened()) camera->release();
+        camera->open(params);
+    }
+    if (detector) {
+        detector->setParams(params);
     }
 }
 

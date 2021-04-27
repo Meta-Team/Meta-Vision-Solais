@@ -48,6 +48,7 @@ sudo make install
 | fetch | Bytes | nullptr  | Fetch result |
 | stop | Bytes | nullptr | Stop execution |
 | runCamera | Bytes | nullptr | Start execution on camera |
+| fps | Bytes | nullptr | Fetch frame processed |
 
 
 ## Core -> Terminal
@@ -55,3 +56,4 @@ sudo make install
 |--------|--------|------------------|
 | msg | String | Message to be shown in the status bar |
 | res | Bytes | Result protobuf message |
+| fps | Int | Frame processed since last fetch |

@@ -11,7 +11,6 @@ if (QT_ENABLED)
             main.cpp
             MainWindow.ui
             MainWindow.cpp
-            ValueUIBindings.hpp
             AnnotatedMat.cpp
             AnnotatedMatViewer.ui
             AnnotatedMatViewer.cpp

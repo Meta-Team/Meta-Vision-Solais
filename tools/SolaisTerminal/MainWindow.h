@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include "AnnotatedMatViewer.h"
 #include "TerminalSocket.h"
-#include "ValueUIBindings.hpp"
 #include "Parameters.pb.h"
 
 namespace Ui {
@@ -44,8 +43,6 @@ private:
 
     static void updateCameraFrame(void *ptr);
 
-    std::vector<ValueUIBinding *> bindings;
-
     std::vector<AnnotatedMatViewer *> viewers;
 
     TerminalSocketClient socket;
@@ -59,6 +56,8 @@ private:
 
     void handleRecvSingleString(std::string_view name, std::string_view s);
 
+    void handleRecvSingleInt(std::string_view name, int val);
+
     void handleRecvListOfStrings(std::string_view name, const vector<const char *> &list);
 
     static QString bytesToDateRate(unsigned bytes);
@@ -67,15 +66,11 @@ private slots:
 
     void runSingleDetectionOnImage();
 
-    void updateUIFromParams();
-
-    void updateParamsFromUI();
-
     void loadSelectedDataSet();
 
     void connectToServer();
 
-    void updateSocketStats();
+    void updateStats();
 };
 
 }

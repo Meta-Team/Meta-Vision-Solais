@@ -43,8 +43,8 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 inRange(hsvImg, Scalar(params.hsv_red_hue().min(), 0, 0), Scalar(180, 255, 255), thresholdImg1);
                 imgColorThreshold = thresholdImg0 | thresholdImg1;
             } else {
-                inRange(hsvImg, Scalar(params.hsv_blue_bue().min(), 0, 0),
-                        Scalar(params.hsv_blue_bue().max(), 255, 255),
+                inRange(hsvImg, Scalar(params.hsv_blue_hue().min(), 0, 0),
+                        Scalar(params.hsv_blue_hue().max(), 255, 255),
                         imgColorThreshold);
             }
 
@@ -76,10 +76,6 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
     // ================================ Find Contours ================================
     vector<RotatedRect> lightRects;
     {
-#ifdef DEBUG
-        // Make a colored copy since we need to draw rect onto it
-        noteContours.convertFrom(imgLights, COLOR_GRAY2BGR);
-#endif
 
         vector<vector<Point>> contours;
         findContours(imgLights, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -113,6 +109,8 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                     if (contour.size() < 5) continue;
                     rect = fitEllipse(contour);
                     break;
+                default:
+                    assert(!"Invalid params.contour_fit_function()");
             }
             canonicalizeRotatedRect(rect);
 
@@ -174,11 +172,14 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
 
             Point2f leftPoints[4];
-            leftRect.points(leftPoints);
-            // See canonicalizeRotatedRect for the order of leftPoints[]
-            armorPoints[0] = leftPoints[3];
-            armorPoints[1] = leftPoints[2];
-
+            leftRect.points(leftPoints);  // bottomLeft, topLeft, topRight, bottomRight of unrotated rect
+            if (leftRect.angle <= 90) {
+                armorPoints[0] = leftPoints[3];
+                armorPoints[1] = leftPoints[2];
+            } else {
+                armorPoints[0] = leftPoints[1];
+                armorPoints[1] = leftPoints[0];
+            }
 
             auto &leftCenter = leftRect.center;
 
@@ -188,10 +189,24 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
 
                 Point2f rightPoints[4];
-                rightRect.points(rightPoints);
-                // See canonicalizeRotatedRect for the order of rightPoints[]
-                armorPoints[3] = rightPoints[0];
-                armorPoints[2] = rightPoints[1];
+                rightRect.points(rightPoints);  // bottomLeft, topLeft, topRight, bottomRight of unrotated rect
+                if (leftRect.angle <= 90) {
+                    armorPoints[3] = rightPoints[0];
+                    armorPoints[2] = rightPoints[1];
+                } else {  // case 1, 4, 5
+                    armorPoints[3] = rightPoints[2];
+                    armorPoints[2] = rightPoints[3];
+                }
+
+
+                auto leftVector = armorPoints[1] - armorPoints[0];   // up
+                if (leftVector.y > 0) continue;  // leftVector should be upward, or lights intersect
+                auto rightVector = armorPoints[2] - armorPoints[3];  // up
+                if (rightVector.y > 0) continue;  // rightVector should be upward, or lights intersect
+                auto topVector = armorPoints[2] - armorPoints[1];    // right
+                if (topVector.x < 0) continue;  // topVector should be rightward, or lights intersect
+                auto bottomVector = armorPoints[3] - armorPoints[0];  // right
+                if(bottomVector.x < 0) continue;  // bottomVector should be rightward, or lights intersect
 
 
                 auto &rightCenter = rightRect.center;
@@ -201,41 +216,32 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 double averageLength = (leftLength + rightLength) / 2;
 
                 // Filter long light length to short light length ratio
-                if (params.filterLightLengthRatio) {
+                if (params.light_length_max_ratio().enabled()) {
                     double lengthRatio = leftLength > rightLength ?
                                          leftLength / rightLength : rightLength / leftLength;  // >= 1
-                    if (lengthRatio > params.lightLengthMaxRatio) continue;
+                    if (lengthRatio > params.light_length_max_ratio().val()) continue;
                 }
 
                 // Filter central X's difference
-                if (params.filterLightXDistance) {
+                if (params.light_x_dist_over_l().enabled()) {
                     double xDiffOverAvgL = abs(leftCenter.x - rightCenter.x) / averageLength;
-                    if (!params.lightXDistOverL.contains(xDiffOverAvgL)) {
+                    if (!inRange(xDiffOverAvgL, params.light_x_dist_over_l())) {
                         continue;
                     }
                 }
 
                 // Filter central Y's difference
-                if (params.filterLightYDistance) {
+                if (params.light_y_dist_over_l().enabled()) {
                     double yDiffOverAvgL = abs(leftCenter.y - rightCenter.y) / averageLength;
-                    if (!params.lightYDistOverL.contains(yDiffOverAvgL)) {
+                    if (!inRange(yDiffOverAvgL, params.light_y_dist_over_l())) {
                         continue;
                     }
                 }
 
-                auto leftVector = armorPoints[1] - armorPoints[0];   // up
-                assert(leftVector.y <= 0 && "leftVector should be upward");
-                auto rightVector = armorPoints[2] - armorPoints[3];  // up
-                assert(rightVector.y <= 0 && "rightVector should be upward");
-                auto topVector = armorPoints[2] - armorPoints[1];    // right
-                assert(topVector.x >= 0 && "topVector should be rightward");
-                auto bottomVector = armorPoints[3] - armorPoints[0];  // right
-                assert(bottomVector.x >= 0 && "bottomVector should be rightward");
-
                 // Filter angle difference
-                if (params.filterLightAngleDiff) {
+                if (params.light_angle_max_diff().enabled()) {
                     double angleDiff = std::abs(leftRect.angle - rightRect.angle);
-                    if (angleDiff > params.lightAngleMaxDiff) {
+                    if (angleDiff > params.light_angle_max_diff().val()) {
                         continue;
                     }
                 }
@@ -244,8 +250,8 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 double armorWidth = (cv::norm(topVector) + cv::norm(bottomVector)) / 2;
 
                 // Filter armor aspect ratio
-                if (params.filterArmorAspectRatio) {
-                    if (!params.armorAspectRatio.contains(armorWidth / armorHeight)) {
+                if (params.armor_aspect_ratio().enabled()) {
+                    if (!inRange(armorWidth / armorHeight, params.armor_aspect_ratio())) {
                         continue;
                     }
                 }
@@ -279,24 +285,18 @@ void ArmorDetector::drawRotatedRect(Mat &img, const RotatedRect &rect, const Sca
 }
 
 void ArmorDetector::canonicalizeRotatedRect(cv::RotatedRect &rect) {
-    // Reference: https://namkeenman.wordpress.com/2015/12/18/open-cv-determine-angle-of-rotatedrect-minarearect/
-    // Except that angle may be in [0, 90)
-    // The following code handle the most general cases
-
-    // Nothing need to be done for rect.size.width < rect.size.height (case 1, 4, 5 in the URL above)
+    // https://stackoverflow.com/questions/15956124/minarearect-angles-unsure-about-the-angle-returned/21427814#21427814
 
     if (rect.size.width > rect.size.height) {
-        // Case 2, 3, 6
         std::swap(rect.size.width, rect.size.height);
         rect.angle += 90;
     }
-    if (rect.angle >= 90) {
-        // Include transforming case 7 (now become case 5 except that angle == 90) to case 5
-        rect.angle -= 180;
-    } else if (rect.angle < -90) {
+    if (rect.angle < 0) {
         rect.angle += 180;
+    } else if (rect.angle >= 180) {
+        rect.angle -= 180;
     }
-    assert(rect.angle >= -90 && rect.angle < 90);
+    assert(rect.angle >= -45 && rect.angle < 255);
 }
 
 }
