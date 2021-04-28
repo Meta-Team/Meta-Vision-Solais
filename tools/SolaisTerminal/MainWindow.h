@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "AnnotatedMatViewer.h"
+//#include "AnnotatedMatViewer.h"
 #include "TerminalSocket.h"
 #include "Parameters.pb.h"
 
@@ -21,7 +21,7 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(boost::asio::io_context &ioContext, QWidget *parent = nullptr);
 
     ~MainWindow();
 
@@ -34,20 +34,16 @@ private:
     PhaseController* phases;
     QTimer *statsUpdateTimer;
 
-    boost::asio::io_context ioContext;
-    std::thread ioThread;
-
-    static void showCVMatInLabel(const cv::Mat &mat, QImage::Format format, QLabel *label);
-
     void setUIFromResults() const;
 
     static void updateCameraFrame(void *ptr);
 
-    std::vector<AnnotatedMatViewer *> viewers;
+//    std::vector<AnnotatedMatViewer *> viewers;
 
     TerminalSocketClient socket;
 
     // Reuse message objects: developers.google.com/protocol-buffers/docs/cpptutorial#optimization-tips
+    package::ParamSet paramsMessage;
     package::Result resultMessage;
 
     void handleClientDisconnection(TerminalSocketClient *client);
@@ -71,6 +67,8 @@ private slots:
     void connectToServer();
 
     void updateStats();
+
+    void startResultFetchingCycle();
 };
 
 }

@@ -60,6 +60,33 @@
           <string>Connection</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_15">
+          <item row="0" column="0" colspan="2">
+           <widget class="QComboBox" name="serverCombo">
+            <property name="editable">
+             <bool>true</bool>
+            </property>
+            <item>
+             <property name="text">
+              <string>localhost</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-1.local</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-2.local</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-3.local</string>
+             </property>
+            </item>
+           </widget>
+          </item>
           <item row="1" column="0" colspan="2">
            <widget class="QPushButton" name="connectButton">
             <property name="text">
@@ -67,7 +94,7 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="2">
+          <item row="3" column="0" colspan="2">
            <widget class="QWidget" name="widget" native="true">
             <property name="minimumSize">
              <size>
@@ -143,31 +170,17 @@
             </layout>
            </widget>
           </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QComboBox" name="serverCombo">
-            <property name="editable">
+          <item row="4" column="0" colspan="2">
+           <widget class="QCheckBox" name="transferImagesCheck">
+            <property name="toolTip">
+             <string>Transfering images may slow down the Solais core</string>
+            </property>
+            <property name="text">
+             <string>Transfer Images</string>
+            </property>
+            <property name="checked">
              <bool>true</bool>
             </property>
-            <item>
-             <property name="text">
-              <string>localhost</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-1.local</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-2.local</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-3.local</string>
-             </property>
-            </item>
            </widget>
           </item>
          </layout>
@@ -242,7 +255,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="tabCamera">
              <attribute name="title">
@@ -403,7 +416,7 @@
            </widget>
           </item>
           <item row="0" column="5">
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="reloadParamsButton">
             <property name="text">
              <string>Reload</string>
             </property>

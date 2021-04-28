@@ -66,7 +66,7 @@ bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t siz
     return true;
 }
 
-bool TerminalSocketBase::sendBytes(const string &name, google::protobuf::Message &message) {
+bool TerminalSocketBase::sendBytes(const string &name, const google::protobuf::Message &message) {
     if (!connected()) return false;
 
     size_t size = message.ByteSizeLong();

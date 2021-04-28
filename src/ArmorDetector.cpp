@@ -296,7 +296,6 @@ void ArmorDetector::canonicalizeRotatedRect(cv::RotatedRect &rect) {
     } else if (rect.angle >= 180) {
         rect.angle -= 180;
     }
-    assert(rect.angle >= -45 && rect.angle < 255);
 }
 
 }

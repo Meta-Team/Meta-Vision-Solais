@@ -12,6 +12,7 @@
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
 using namespace meta;
 using namespace package;
 
@@ -30,6 +31,7 @@ TerminalSocketServer socketServer(ioContext, 8800, [](auto s) {
 });
 
 // Reuse message objects: developers.google.com/protocol-buffers/docs/cpptutorial#optimization-tips
+ParamSet recvParams;
 Result resultPackage;
 
 Image *allocateProtoJPEGImage(const cv::Mat &mat) {
@@ -44,6 +46,10 @@ Image *allocateProtoJPEGImage(const cv::Mat &mat) {
     image->set_format(package::Image::JPEG);
     image->set_data(buf.data(), buf.size());
     return image;
+}
+
+void sendStatusBarMsg(const string &msg) {
+    socketServer.sendSingleString("msg", "Core: " + msg);
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
@@ -67,7 +73,8 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
         if (executor->getCurrentAction() != Executor::NONE) {
             // Send processing image
             resultPackage.Clear();
-            resultPackage.set_allocated_brightness_threshold_image(allocateProtoJPEGImage(detector->getImgBrightnessThreshold()));
+            resultPackage.set_allocated_brightness_threshold_image(
+                    allocateProtoJPEGImage(detector->getImgBrightnessThreshold()));
             // TODO: more image to send
             socketServer.sendBytes("res", resultPackage);
         }
@@ -76,16 +83,30 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
         socketServer.sendSingleInt("fps", executor->fetchAndClearFrameCounter());
 
+    } else if (name == "setParams") {
+
+        if (!recvParams.ParseFromArray(buf, size)) {
+            sendStatusBarMsg("Invalid ParamSet package");
+        } else {
+            params = recvParams;
+            executor->applyParams(params);
+            sendStatusBarMsg("Parameters applied");
+        }
+
+    } else if (name == "getParams") {
+
+        socketServer.sendBytes("params", params);
+
     } else if (name == "stop") {
 
-            if (!executor->setAction(Executor::NONE)) {
-                socketServer.sendSingleString("msg", "Failed to set executor action NONE");
-            }
+        if (!executor->setAction(Executor::NONE)) {
+            sendStatusBarMsg("Failed to set executor action NONE");
+        }
 
     } else if (name == "runCamera") {
 
         if (!executor->setAction(Executor::REAL_TIME_DETECTION)) {
-            socketServer.sendSingleString("msg", "Failed to set executor action REAL_TIME_DETECTION");
+            sendStatusBarMsg("Failed to set executor action REAL_TIME_DETECTION");
         }
 
     } else {

@@ -66,6 +66,7 @@ void Executor::runRealTimeDetection() {
 
         // Wait for new frame
         while (lastFrameID == camera->getFrameID());
+        lastFrameID = camera->getFrameID();
 
         // Run armor detection algorithm
         auto targets = detector->detect(camera->getFrame());

@@ -42,13 +42,18 @@ sudo make install
 ```
 
 ## Packages
+
+`NameOnly` is `Bytes` with empty content.
+
 ## Terminal -> Core
 | Name   | Type   | Argument         |Note|
 |--------|--------|------------------|----|
-| fetch | Bytes | nullptr  | Fetch result |
-| stop | Bytes | nullptr | Stop execution |
+| fetch | NameOnly |  | Fetch result |
+| stop | NameOnly | | Stop execution |
 | runCamera | Bytes | nullptr | Start execution on camera |
-| fps | Bytes | nullptr | Fetch frame processed |
+| fps | NameOnly | | Fetch frame processed |
+| setParams | Bytes | ParamSet | |
+| getParams | NameOnly | | Fetch current params |
 
 
 ## Core -> Terminal
@@ -57,3 +62,4 @@ sudo make install
 | msg | String | Message to be shown in the status bar |
 | res | Bytes | Result protobuf message |
 | fps | Int | Frame processed since last fetch |
+| params | Bytes | Current params |

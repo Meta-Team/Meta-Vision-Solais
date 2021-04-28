@@ -110,7 +110,7 @@ public:
      * @param message  A protobuf message.
      * @return      Whether the operation succeeded.
      */
-    bool sendBytes(const string &name, google::protobuf::Message &message);
+    bool sendBytes(const string &name, const google::protobuf::Message &message);
 
     /**
      * Async send a list of strings
