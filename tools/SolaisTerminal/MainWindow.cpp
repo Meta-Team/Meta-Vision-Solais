@@ -9,9 +9,10 @@
 
 namespace meta {
 
-MainWindow::MainWindow(boost::asio::io_context &ioContext, QWidget *parent) :
+MainWindow::MainWindow(QWidget *parent) :
         QMainWindow(parent),
         ui(new Ui::MainWindow),
+        ioTimer(new QTimer(this)),
         statsUpdateTimer(new QTimer(this)),
         socket(ioContext, [this](auto c) { handleClientDisconnection(c); }) {
 
@@ -19,10 +20,14 @@ MainWindow::MainWindow(boost::asio::io_context &ioContext, QWidget *parent) :
     ui->setupUi(this);
     phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout);
 
+    // Setup IO
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
                         [this](auto name, auto val) { handleRecvSingleInt(name, val); },
                         [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
                         [this](auto name, auto list) { handleRecvListOfStrings(name, list); });
+    connect(ioTimer, &QTimer::timeout, this, &MainWindow::performIO);
+    ioTimer->setSingleShot(false);
+    ioTimer->start(20);
 
     // Setup update timer
     connect(statsUpdateTimer, &QTimer::timeout, this, &MainWindow::updateStats);
@@ -161,39 +166,16 @@ void MainWindow::runSingleDetectionOnImage() {
     setUIFromResults();*/
 }
 
-void MainWindow::setUIFromResults() const {
-    /*showCVMatInLabel(detector.imgOriginal, QImage::Format_BGR888, ui->originalImage);
-    showCVMatInLabel(detector.imgBrightnessThreshold, QImage::Format_Indexed8, ui->brightnessThresholdImage);
-    showCVMatInLabel(detector.imgColorThreshold, QImage::Format_Indexed8, ui->colorThresholdImage);
-    showCVMatInLabel(detector.noteContours.mat(), QImage::Format_BGR888, ui->contourImage);
-    ui->contourCountLabel->setNum(detector.acceptedContourCount);
-    showCVMatInLabel(detector.imgArmors, QImage::Format_BGR888, ui->armorImage);
-    QString armorResult;
-    QTextStream ss(&armorResult);
-    ss << "Detected " << armorCenters.size() << " armor";
-    if (armorCenters.size() > 1) ss << "s";
-    for (const auto &center : armorCenters) {
-        ss << "\n(" << center.x << ", " << center.y << ")";
-    }
-    ss.flush();
-    ui->armorResultLabel->setText(armorResult);*/
-}
-
-bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
-    /*if (obj == ui->contourImageWidget) {
-        if (event->type() == QEvent::MouseButtonDblClick) {
-//            viewers.emplace_back(new AnnotatedMatViewer(detector.noteContours, QImage::Format_BGR888));
-            viewers.back()->show();
-        }
-    }*/
-    return QObject::eventFilter(obj, event);
-}
-
 void MainWindow::updateStats() {
     std::pair<unsigned, unsigned> stats = socket.getAndClearStats();  // {sent, received}
     ui->sentBytesLabel->setText(bytesToDateRate(stats.first));
     ui->recvBytesLabel->setText(bytesToDateRate(stats.second));
     socket.sendBytes("fps");  // request for FPS
+}
+
+void MainWindow::performIO() {
+    ioContext.poll();
+    if (ioContext.stopped()) ioContext.restart();
 }
 
 QString MainWindow::bytesToDateRate(unsigned int n) {

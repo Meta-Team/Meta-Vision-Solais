@@ -21,25 +21,17 @@ class MainWindow : public QMainWindow {
 Q_OBJECT
 
 public:
-    explicit MainWindow(boost::asio::io_context &ioContext, QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
 
     ~MainWindow();
-
-protected:
-
-    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     Ui::MainWindow *ui;
     PhaseController* phases;
     QTimer *statsUpdateTimer;
 
-    void setUIFromResults() const;
-
-    static void updateCameraFrame(void *ptr);
-
-//    std::vector<AnnotatedMatViewer *> viewers;
-
+    boost::asio::io_context ioContext;
+    QTimer *ioTimer;
     TerminalSocketClient socket;
 
     // Reuse message objects: developers.google.com/protocol-buffers/docs/cpptutorial#optimization-tips
@@ -67,6 +59,8 @@ private slots:
     void connectToServer();
 
     void updateStats();
+
+    void performIO();
 
     void startResultFetchingCycle();
 };

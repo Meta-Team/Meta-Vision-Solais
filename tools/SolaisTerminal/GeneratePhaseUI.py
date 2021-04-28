@@ -221,7 +221,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                     variables.append(("QDoubleSpinBox*", spin_obj))
                     print_line(f'{spin_obj} = new QDoubleSpinBox({left_container_obj});')
                     print_line(f'{spin_obj}->setDecimals({decimal});')
-                    print_line(f'{spin_obj}->setMaximum(999);')
+                    print_line(f'{spin_obj}->setMaximum(9999);')
                     print_line(f'{g_layout_obj}->addWidget({spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
                 elif type_str == "Range":
                     # Two spin boxes
@@ -229,13 +229,13 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                     variables.append(("QDoubleSpinBox*", min_spin_obj))
                     print_line(f'{min_spin_obj} = new QDoubleSpinBox({left_container_obj});')
                     print_line(f'{min_spin_obj}->setDecimals({decimal});')
-                    print_line(f'{min_spin_obj}->setMaximum(999);')
+                    print_line(f'{min_spin_obj}->setMaximum(9999);')
                     print_line(f'{g_layout_obj}->addWidget({min_spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
                     max_spin_obj = f'{param.name}MaxSpin'
                     variables.append(("QDoubleSpinBox*", max_spin_obj))
                     print_line(f'{max_spin_obj} = new QDoubleSpinBox({left_container_obj});')
                     print_line(f'{max_spin_obj}->setDecimals({decimal});')
-                    print_line(f'{max_spin_obj}->setMaximum(999);')
+                    print_line(f'{max_spin_obj}->setMaximum(9999);')
                     print_line(f'{g_layout_obj}->addWidget({max_spin_obj}, {row_count}, 2, 1, 1);')  # span column 2
                 else:
                     raise ValueError(f'Unknown param type "{type_str}"')

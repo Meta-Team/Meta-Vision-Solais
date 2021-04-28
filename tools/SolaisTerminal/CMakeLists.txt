@@ -30,7 +30,7 @@ if (QT_ENABLED)
 #            AnnotatedMat.cpp
 #            AnnotatedMatViewer.ui
 #            AnnotatedMatViewer.cpp
-            QAsioEventDispatcher.cpp
+#            QAsioEventDispatcher.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/Parameters.ui.h)
     target_link_libraries(SolarisTerminal
             ${OpenCV_LIBRARIES}
