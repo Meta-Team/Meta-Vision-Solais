@@ -54,15 +54,13 @@ private slots:
 
     void runSingleDetectionOnImage();
 
-    void loadSelectedDataSet();
-
     void connectToServer();
 
     void updateStats();
 
     void performIO();
 
-    void startResultFetchingCycle();
+    void applyPreviewSource();
 };
 
 }

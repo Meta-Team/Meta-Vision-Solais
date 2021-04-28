@@ -21,12 +21,13 @@ public:
 
     vector<cv::Point2f> detect(const cv::Mat &img);
 
-    const cv::Mat &getImgOriginal() const { return imgOriginal; };
-    const cv::Mat &getImgGray() const { return imgGray; };
-    const cv::Mat &getImgBrightnessThreshold() const { return imgBrightnessThreshold; };
-    const cv::Mat &getImgColorThreshold() const { return imgColorThreshold; };
-    const cv::Mat &getImgLights() const { return imgLights; };
-    const cv::Mat &getImgArmors() const { return imgArmors; };
+    void clearImages() { imgOriginal = imgGray = imgBrightness = imgColor = imgLights = imgArmors = cv::Mat(); }
+    const cv::Mat &originalImage() const { return imgOriginal; };
+    const cv::Mat &grayImage() const { return imgGray; };
+    const cv::Mat &brightnessImage() const { return imgBrightness; };
+    const cv::Mat &colorImage() const { return imgColor; };
+    const cv::Mat &contourImage() const { return imgContours; };
+    const cv::Mat &armorImage() const { return imgArmors; };
 
 private:
 
@@ -34,9 +35,10 @@ private:
 
     cv::Mat imgOriginal;
     cv::Mat imgGray;
-    cv::Mat imgBrightnessThreshold;
-    cv::Mat imgColorThreshold;
+    cv::Mat imgBrightness;
+    cv::Mat imgColor;
     cv::Mat imgLights;
+    cv::Mat imgContours;  // only for debug
 
     int acceptedContourCount;
     cv::Mat imgArmors;

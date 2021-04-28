@@ -5,7 +5,7 @@
 #include "Camera.h"
 #include "Executor.h"
 #include "ArmorDetector.h"
-//#include "DetectorTuner.h"
+#include "ImageDataManager.h"
 #include "TerminalSocket.h"
 #include "TerminalParameters.h"
 #include "Parameters.pb.h"
@@ -18,8 +18,7 @@ using namespace package;
 
 ParamSet params;
 
-std::unique_ptr<Camera> camera;
-std::unique_ptr<ArmorDetector> detector;
+// Client should only operates on the executor
 std::unique_ptr<Executor> executor;
 
 boost::asio::io_context ioContext;
@@ -34,17 +33,22 @@ TerminalSocketServer socketServer(ioContext, 8800, [](auto s) {
 ParamSet recvParams;
 Result resultPackage;
 
+string previewSource = "";
+
 Image *allocateProtoJPEGImage(const cv::Mat &mat) {
-    cv::Mat outImage;
-    std::vector<uchar> buf;
-    float ratio = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / (float) mat.rows;
-
-    cv::resize(mat, outImage, cv::Size(), ratio, ratio);
-    cv::imencode(".jpg", outImage, buf, {cv::IMWRITE_JPEG_QUALITY, 80});
-
     auto image = new package::Image;
     image->set_format(package::Image::JPEG);
-    image->set_data(buf.data(), buf.size());
+
+    if (!mat.empty()) {
+        cv::Mat outImage;
+        std::vector<uchar> buf;
+        float ratio = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / (float) mat.rows;
+
+        cv::resize(mat, outImage, cv::Size(), ratio, ratio);
+        cv::imencode(".jpg", outImage, buf, {cv::IMWRITE_JPEG_QUALITY, 80});
+
+        image->set_data(buf.data(), buf.size());
+    }
     return image;
 }
 
@@ -52,8 +56,53 @@ void sendStatusBarMsg(const string &msg) {
     socketServer.sendSingleString("msg", "Core: " + msg);
 }
 
+void sendResult(bool forceSendResult = false) {
+
+    // Send preview image in an individual package, which will trigger next-cycle fetching
+    resultPackage.Clear();
+    if (previewSource == "Camera") {
+        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->getCamera()->getFrame()));
+        socketServer.sendBytes("res", resultPackage);
+    } else if (!previewSource.empty()) {
+        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->getDataManager()->getImage(previewSource)));
+        socketServer.sendBytes("res", resultPackage);
+        previewSource = "";  // image only needs to be sent once
+    }
+
+    // The remaining images follows the input image package, which forms pipeline with the previous package
+    if (executor->getCurrentAction() != Executor::NONE || forceSendResult) {
+        resultPackage.Clear();
+
+        // Empty handled in allocateProtoJPEGImage
+        // FIXME: lock required?
+        resultPackage.set_allocated_brightness_image(allocateProtoJPEGImage(executor->getDetector()->brightnessImage()));
+        resultPackage.set_allocated_color_image(allocateProtoJPEGImage(executor->getDetector()->colorImage()));
+        resultPackage.set_allocated_contour_image(allocateProtoJPEGImage(executor->getDetector()->contourImage()));
+        resultPackage.set_allocated_armor_image(allocateProtoJPEGImage(executor->getDetector()->armorImage()));
+
+        socketServer.sendBytes("res", resultPackage);
+    }
+}
+
 void handleRecvSingleString(std::string_view name, std::string_view s) {
-    if (name == "") {
+    if (name == "loadDataSet") {
+
+        if (executor->loadDataSet(string(s)) == 0) {
+            sendStatusBarMsg("Failed to load data set " + string(s));
+        } else {
+            socketServer.sendListOfStrings("imageList", executor->getDataManager()->getImageNames());
+            sendStatusBarMsg("Data set " + string(s) + " loaded");
+        }
+
+    } else if (name == "runImage") {
+
+        executor->startSingleImageDetection(string(s));  // blocking
+        sendStatusBarMsg("Run on image " + string(s));
+        sendResult(true);  // always send result
+
+    } else if (name == "viewImage") {
+
+        previewSource = s;
 
     } else goto INVALID_COMMAND;
 
@@ -65,19 +114,7 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
 void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
     if (name == "fetch") {
 
-        // Send camera image
-        resultPackage.Clear();
-        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(camera->getFrame()));
-        socketServer.sendBytes("res", resultPackage);
-
-        if (executor->getCurrentAction() != Executor::NONE) {
-            // Send processing image
-            resultPackage.Clear();
-            resultPackage.set_allocated_brightness_threshold_image(
-                    allocateProtoJPEGImage(detector->getImgBrightnessThreshold()));
-            // TODO: more image to send
-            socketServer.sendBytes("res", resultPackage);
-        }
+        sendResult();
 
     } else if (name == "fps") {
 
@@ -99,15 +136,17 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
     } else if (name == "stop") {
 
-        if (!executor->setAction(Executor::NONE)) {
-            sendStatusBarMsg("Failed to set executor action NONE");
-        }
+        executor->stop();
 
     } else if (name == "runCamera") {
 
-        if (!executor->setAction(Executor::REAL_TIME_DETECTION)) {
+        if (!executor->startRealTimeDetection()) {
             sendStatusBarMsg("Failed to set executor action REAL_TIME_DETECTION");
         }
+
+    } else if (name == "viewCamera") {
+
+        previewSource = "Camera";
 
     } else {
 
@@ -116,11 +155,17 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
     }
 }
 
+// Should not operates on these components directly
+std::unique_ptr<Camera> camera;
+std::unique_ptr<ArmorDetector> detector;
+std::unique_ptr<ImageDataManager> dataManager;
+
 int main(int argc, char *argv[]) {
 
     camera = std::make_unique<Camera>();
     detector = std::make_unique<ArmorDetector>();
-    executor = std::make_unique<Executor>(camera.get(), detector.get());
+    dataManager = std::make_unique<ImageDataManager>();
+    executor = std::make_unique<Executor>(camera.get(), detector.get(), dataManager.get());
 
     params.set_camera_id(0);
     params.set_image_width(1280);

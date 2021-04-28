@@ -11,7 +11,7 @@ message("    Version: " ${OpenCV_VERSION})
 message("    Includes: " ${OpenCV_INCLUDE_DIRS})
 
 # Find Boost
-find_package(Boost REQUIRED system filesystem)
+find_package(Boost REQUIRED system filesystem json)
 
 # Shared include directory
 include_directories(include)

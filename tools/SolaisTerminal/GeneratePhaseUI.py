@@ -326,8 +326,16 @@ def generate_apply_results_code(groups: [Group]) -> [(str, str)]:
             variables.append(("QImage", qimage_obj))
             print_line('if (results.has_%s()) {' % group.image)
             print_line_prefix = "            "
+            print_line('if (!results.%s().data().empty()) {' % group.image)
+            print_line_prefix = "                "
             print_line(f'{qimage_obj} = QImage::fromData((const uint8_t *) results.{group.image}().data().c_str(), results.{group.image}().data().size()).copy();')
             print_line(f'{image_obj}->setPixmap(QPixmap::fromImage({qimage_obj}));')
+            print_line_prefix = "            "
+            print_line('} else {')
+            print_line_prefix = "                "
+            print_line(f'{image_obj}->setText("Empty");')
+            print_line_prefix = "            "
+            print_line('}')
             print_line_prefix = "        "
             print_line('}')
 

@@ -20,12 +20,14 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
     {
         assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
         img.copyTo(imgOriginal);
+        // Do not clear, last data can be used for previews sent back to the Terminal
+        // imgGray = imgBrightness = imgColor = imgLights = imgArmors = Mat();
     }
 
     // ================================ Brightness Threshold ================================
     {
         cvtColor(imgOriginal, imgGray, COLOR_BGR2GRAY);
-        threshold(imgGray, imgBrightnessThreshold, params.brightness_threshold(), 255, THRESH_BINARY);
+        threshold(imgGray, imgBrightness, params.brightness_threshold(), 255, THRESH_BINARY);
     }
 
     // ================================ Color Threshold ================================
@@ -41,11 +43,11 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 Mat thresholdImg0, thresholdImg1;
                 inRange(hsvImg, Scalar(0, 0, 0), Scalar(params.hsv_red_hue().max(), 255, 255), thresholdImg0);
                 inRange(hsvImg, Scalar(params.hsv_red_hue().min(), 0, 0), Scalar(180, 255, 255), thresholdImg1);
-                imgColorThreshold = thresholdImg0 | thresholdImg1;
+                imgColor = thresholdImg0 | thresholdImg1;
             } else {
                 inRange(hsvImg, Scalar(params.hsv_blue_hue().min(), 0, 0),
                         Scalar(params.hsv_blue_hue().max(), 255, 255),
-                        imgColorThreshold);
+                        imgColor);
             }
 
         } else {
@@ -56,8 +58,8 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
             // Filter using channel subtraction
             int mainChannel = (params.enemy_color() == ParamSet::RED ? 2 : 0);
             int oppositeChannel = (params.enemy_color() == ParamSet::RED ? 0 : 2);
-            subtract(channels[mainChannel], channels[oppositeChannel], imgColorThreshold);
-            threshold(imgColorThreshold, imgColorThreshold, params.rb_channel_threshold(), 255, THRESH_BINARY);
+            subtract(channels[mainChannel], channels[oppositeChannel], imgColor);
+            threshold(imgColor, imgColor, params.rb_channel_threshold(), 255, THRESH_BINARY);
 
         }
 
@@ -66,11 +68,11 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
             Mat element = cv::getStructuringElement(
                     cv::MORPH_ELLIPSE,
                     cv::Size(params.color_dilate().val(), params.color_dilate().val()));
-            dilate(imgColorThreshold, imgColorThreshold, element);
+            dilate(imgColor, imgColor, element);
         }
 
         // Apply filter
-        imgLights = imgBrightnessThreshold & imgColorThreshold;
+        imgLights = imgBrightness & imgColor;
     }
 
     // ================================ Find Contours ================================
@@ -134,6 +136,12 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
         }
     }
     acceptedContourCount = lightRects.size();
+
+    // FIXME: this may be costly in non-debug mode
+    cv::cvtColor(imgLights, imgContours, COLOR_GRAY2BGR);
+    for (const auto &rect : lightRects) {
+        drawRotatedRect(imgContours, rect, Scalar(0, 255, 255));
+    }
 
     // If there is less than two light contours, stop detection
     if (lightRects.size() < 2) {

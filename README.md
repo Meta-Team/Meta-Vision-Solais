@@ -50,10 +50,14 @@ sudo make install
 |--------|--------|------------------|----|
 | fetch | NameOnly |  | Fetch result |
 | stop | NameOnly | | Stop execution |
+| viewCamera | NameOnly | | Switch preview to camera |
+| viewImage | String | Image name or empty string | |
 | runCamera | Bytes | nullptr | Start execution on camera |
 | fps | NameOnly | | Fetch frame processed |
 | setParams | Bytes | ParamSet | |
 | getParams | NameOnly | | Fetch current params |
+| loadDataSet | String | Path of the data set | |
+| runImage | String | Image Name | |
 
 
 ## Core -> Terminal
@@ -63,3 +67,4 @@ sudo make install
 | res | Bytes | Result protobuf message |
 | fps | Int | Frame processed since last fetch |
 | params | Bytes | Current params |
+| imageList | ListOfStrings | Image names |

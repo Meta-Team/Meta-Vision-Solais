@@ -5,45 +5,18 @@
 #include "Executor.h"
 #include "Camera.h"
 #include "ArmorDetector.h"
+#include "ImageDataManager.h"
 
 namespace meta {
 
-Executor::Executor(Camera *camera, ArmorDetector *detector)
-        : camera(camera), detector(detector), threadShouldExit(false), frameCounter(0) {
+Executor::Executor(Camera *camera, ArmorDetector *detector, ImageDataManager *dataManager)
+        : camera(camera), detector(detector), dataManager(dataManager),
+        threadShouldExit(false), frameCounter(0) {
 
 }
 
-bool Executor::setAction(Executor::Action action) {
-    if (action == curAction) return true;
-    if (th) {  // executor is running
-        threadShouldExit = true;
-        th->join();
-        delete th;
-        th = nullptr;
-    }
-    curAction = action;
-    threadShouldExit = false;
-    switch (curAction) {
-        case NONE:
-            // Do nothing
-            return true;
-        case REAL_TIME_DETECTION:
-            if (!camera) {
-                std::cerr << "Executor: camera not set for REAL_TIME_DETECTION" << std::endl;
-                return false;
-            }
-            if (!detector) {
-                std::cerr << "Executor: detector not set for REAL_TIME_DETECTION" << std::endl;
-                return false;
-            }
-            // Start real-time detection thread
-            th = new std::thread(&Executor::runRealTimeDetection, this);
-            return true;
-    }
-    return false;
-}
-
-void Executor::applyParams(const ParamSet &params) {
+void Executor::applyParams(const ParamSet &p) {
+    params = p;
     if (camera) {
         if (camera->isOpened()) camera->release();
         camera->open(params);
@@ -57,6 +30,61 @@ int Executor::fetchAndClearFrameCounter() {
     int ret = frameCounter;
     frameCounter = 0;
     return ret;
+}
+
+void Executor::stop() {
+    if (th) {  // executor is running
+        threadShouldExit = true;
+        th->join();
+        delete th;
+        th = nullptr;
+    }
+    curAction = NONE;
+}
+
+bool Executor::startRealTimeDetection() {
+    if (th) stop();
+    if (!camera) {
+        std::cerr << "Executor: camera not set for REAL_TIME_DETECTION" << std::endl;
+        return false;
+    }
+    if (!detector) {
+        std::cerr << "Executor: detector not set for REAL_TIME_DETECTION" << std::endl;
+        return false;
+    }
+    // Start real-time detection thread
+    curAction = REAL_TIME_DETECTION;
+    threadShouldExit = false;
+    th = new std::thread(&Executor::runRealTimeDetection, this);
+    return true;
+}
+
+bool Executor::startSingleImageDetection(const string &imageName) {
+    if (th) stop();
+    if (!detector) {
+        std::cerr << "Executor: detector not set for REAL_TIME_DETECTION" << std::endl;
+        return false;
+    }
+    if (!dataManager) {
+        std::cerr << "Executor: dataManager not set for REAL_TIME_DETECTION" << std::endl;
+        return false;
+    }
+    // Start real-time detection thread
+    curAction = SINGLE_IMAGE_DETECTION;
+
+    cv::Mat img = dataManager->getImage(imageName);
+    if (img.rows != params.image_height() || img.cols != params.image_width()) {
+        cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
+    }
+
+    detector->clearImages();  // clear data of last execution
+    auto targets = detector->detect(img);
+
+    // Discard the result for now
+    (void) targets;
+
+    curAction = NONE;
+    return true;
 }
 
 void Executor::runRealTimeDetection() {
@@ -76,6 +104,10 @@ void Executor::runRealTimeDetection() {
 
         frameCounter++;
     }
+}
+
+int Executor::loadDataSet(const string &path) {
+    return dataManager->loadDataSet(path);
 }
 
 }

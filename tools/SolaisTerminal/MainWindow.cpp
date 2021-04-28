@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent) :
                         [this](auto name, auto val) { handleRecvSingleInt(name, val); },
                         [this](auto name, auto buf, auto size) { handleRecvBytes(name, buf, size); },
                         [this](auto name, auto list) { handleRecvListOfStrings(name, list); });
+    // Socket callbacks are called from the thread of io_context. Qt doesn't allow operating GUI from another thread.
+    // So timer is used to handle the IO operations from the current thread.
     connect(ioTimer, &QTimer::timeout, this, &MainWindow::performIO);
     ioTimer->setSingleShot(false);
     ioTimer->start(20);
@@ -36,16 +38,29 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->transferImagesCheck, &QCheckBox::stateChanged, [this](auto state) {
-        if (state == Qt::Checked) startResultFetchingCycle(); else phases->resetImageLabels();
-    });
+        if (state == Qt::Checked) socket.sendBytes("fetch"); else phases->resetImageLabels(); });
+    connect(ui->manualFetchButton, &QPushButton::clicked, [this] { socket.sendBytes("fetch"); });
 
+    connect(ui->operationTabs, &QTabWidget::currentChanged, this, &MainWindow::applyPreviewSource);
     connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); });
     connect(ui->startCameraButton, &QPushButton::clicked, [this] { socket.sendBytes("runCamera"); });
-//    connect(ui->runSingleImageButton, &QPushButton::clicked, this, &MainWindow::runSingleDetectionOnImage);
-//    connect(ui->loadDataSetButton, &QPushButton::clicked, this, &MainWindow::loadSelectedDataSet);
+    connect(ui->loadDataSetButton, &QPushButton::clicked, [this] {
+        // FIXME: hard code path for now
+        socket.sendSingleString("loadDataSet", "/Users/liuzikai/Files/VOCdevkit/VOC");
+    });
+    connect(ui->imageList, &QListWidget::currentItemChanged, this, &MainWindow::applyPreviewSource);
+    connect(ui->runImageButton, &QPushButton::clicked, [this] {
+        if (ui->imageList->currentItem()) {
+            socket.sendSingleString("runImage", ui->imageList->currentItem()->text().toStdString());
+            // Result will be sent automatically by the Core, no need to fetch
+        } else {
+            ui->statusBar->showMessage("No image selected");
+        }
+    });
 
     connect(ui->reloadParamsButton, &QPushButton::clicked, [this] { socket.sendBytes("getParams"); });
-    connect(ui->saveParamButton, &QPushButton::clicked, [this] { socket.sendBytes("setParams", phases->getParamSet()); });
+    connect(ui->saveParamButton, &QPushButton::clicked,
+            [this] { socket.sendBytes("setParams", phases->getParamSet());});
 
 
 }
@@ -54,14 +69,15 @@ void MainWindow::connectToServer() {
     if (ui->connectButton->text() == "Connect") {
         if (socket.connect(ui->serverCombo->currentText().toStdString(), TCP_SOCKET_PORT_STR)) {
 
-            ui->statusBar->showMessage( "Connected to " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
+            ui->statusBar->showMessage("Connected to " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
 
             // Update UI
             ui->serverCombo->setEnabled(false);
             ui->connectButton->setText("Disconnect");
 
-            // Start fetching cycle
-            if (ui->transferImagesCheck->isChecked()) startResultFetchingCycle();
+            socket.sendBytes("getParams");  // reload parameters
+            applyPreviewSource();
+            if (ui->transferImagesCheck->isChecked()) socket.sendBytes("fetch");  // start fetching cycle
 
         } else {
             ui->statusBar->showMessage("Failed to connected to " + ui->serverCombo->currentText() + ":" +
@@ -90,7 +106,7 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
                 phases->applyResults(resultMessage);
             }
             if (resultMessage.has_camera_image()) {
-                startResultFetchingCycle();  // continue for next cycle
+                socket.sendBytes("fetch");  // continue for next cycle
             }
         }  // Otherwise, discard result and do not send next fetching request
 
@@ -130,10 +146,28 @@ void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
 
 
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
+    if (name == "imageList") {
 
+        ui->imageList->clear();
+        for (const auto &image : list) {
+            ui->imageList->addItem(image);
+        }
+
+    } else {
+        ui->statusBar->showMessage("Unknown list-of-string package <" + QString(name.data()) + ">");
+    }
 }
 
-void MainWindow::startResultFetchingCycle() {
+void MainWindow::applyPreviewSource() {
+    if (ui->operationTabs->currentWidget() == ui->tabCamera) {
+        socket.sendBytes("viewCamera");
+    } else if (ui->operationTabs->currentWidget() == ui->tabImages) {
+        if (!ui->imageList->currentItem()) {
+            socket.sendSingleString("viewImage", "");
+        } else {
+            socket.sendSingleString("viewImage", ui->imageList->currentItem()->text().toStdString());
+        }
+    }
     socket.sendBytes("fetch");
 }
 
@@ -143,21 +177,13 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-void MainWindow::loadSelectedDataSet() {
-
-    /*ui->imageList->clear();
-    for (const auto &image : tuner.getDataSetImages()) {
-        ui->imageList->addItem(image.c_str());
-    }*/
-}
-
 void MainWindow::runSingleDetectionOnImage() {
     /*updateParamsFromUI();
     tuner.setSharedParams(sharedParams);
     detector.setParams(sharedParams, detectorParams);
 
-    DetectorTuner::RunEvaluation evaluation;
-    tuner.runOnSingleImage(ui->imageList->currentItem()->text().toStdString(), armorCenters, evaluation);
+    ImageDataManager::RunEvaluation evaluation;
+    tuner.runOnSingleImage(ui->getImageNames->currentItem()->text().toStdString(), armorCenters, evaluation);
 
     ui->evalResultLabel->setText(
             "Count: " + QString::number(evaluation.imageCount) + "\n" +
