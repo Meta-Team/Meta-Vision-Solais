@@ -10,10 +10,10 @@ namespace meta {
 bool Camera::open(const package::ParamSet &params) {
     capInfoSS.str(std::string());
 
-    // Open the camera
+    // Open the camera_
     cap.open(params.camera_id(), cv::CAP_ANY);
     if (!cap.isOpened()) {
-        capInfoSS << "Failed to open camera " << params.camera_id() << "\n";
+        capInfoSS << "Failed to open camera_ " << params.camera_id() << "\n";
         std::cerr << capInfoSS.rdbuf();
         return false;
     }
@@ -37,7 +37,7 @@ bool Camera::open(const package::ParamSet &params) {
     // Get a test frame
     cap.read(buffer[0]);
     if (buffer->empty()) {
-        capInfoSS << "Failed to fetch test image from camera " << params.camera_id() << "\n";
+        capInfoSS << "Failed to fetch test image from camera_ " << params.camera_id() << "\n";
         std::cerr << capInfoSS.rdbuf();
         return false;
     }

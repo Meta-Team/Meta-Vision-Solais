@@ -2,7 +2,7 @@
 // Created by liuzikai on 4/16/20.
 // Reference: https://blog.csdn.net/Loser__Wang/article/details/51811347
 // Usage:
-// * Set camera parameters and outputPath below
+// * Set camera_ parameters and outputPath below
 // * Run the program
 // * Press Q to take a photo
 // * Press ESC to exit

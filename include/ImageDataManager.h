@@ -6,23 +6,35 @@
 #define META_VISION_SOLAIS_DETECTORTUNER_H
 
 #include "Common.h"
+#include <boost/filesystem.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 namespace meta {
 
+namespace fs = boost::filesystem;
+
 class ImageDataManager {
 public:
 
-    int loadDataSet(const string &path);
+    ImageDataManager();
 
-    const vector<string> &getImageNames() const { return imageNames; }
+    void reloadDataSetList();
+
+    const vector<string> &getDataSetList() const { return dataSets; }
+
+    int loadDataSet(const string &dataSetName);
+
+    const vector<string> &getImageList() const { return images; }
 
     cv::Mat getImage(const string &imageName) const;
 
 private:
 
-    string dataSetPath;
-    vector<string> imageNames;
+    const fs::path imageSetRoot;
+
+    fs::path currentDataSetPath;
+    vector<string> dataSets;
+    vector<string> images;
 };
 
 }

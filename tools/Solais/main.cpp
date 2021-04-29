@@ -33,8 +33,6 @@ TerminalSocketServer socketServer(ioContext, 8800, [](auto s) {
 ParamSet recvParams;
 Result resultPackage;
 
-string previewSource = "";
-
 Image *allocateProtoJPEGImage(const cv::Mat &mat) {
     auto image = new package::Image;
     image->set_format(package::Image::JPEG);
@@ -57,52 +55,40 @@ void sendStatusBarMsg(const string &msg) {
 }
 
 void sendResult(bool forceSendResult = false) {
-
-    // Send preview image in an individual package, which will trigger next-cycle fetching
-    resultPackage.Clear();
-    if (previewSource == "Camera") {
-        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->getCamera()->getFrame()));
-        socketServer.sendBytes("res", resultPackage);
-    } else if (!previewSource.empty()) {
-        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->getDataManager()->getImage(previewSource)));
-        socketServer.sendBytes("res", resultPackage);
-        previewSource = "";  // image only needs to be sent once
-    }
-
-    // The remaining images follows the input image package, which forms pipeline with the previous package
     if (executor->getCurrentAction() != Executor::NONE || forceSendResult) {
+
+        // Send preview image in an individual package, which will trigger next-cycle fetching
+        resultPackage.Clear();
+        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->detector()->originalImage()));
+        socketServer.sendBytes("res", resultPackage);
+
+        // The remaining images follows the input image package, which forms pipeline with the previous package
         resultPackage.Clear();
 
         // Empty handled in allocateProtoJPEGImage
         // FIXME: lock required?
-        resultPackage.set_allocated_brightness_image(allocateProtoJPEGImage(executor->getDetector()->brightnessImage()));
-        resultPackage.set_allocated_color_image(allocateProtoJPEGImage(executor->getDetector()->colorImage()));
-        resultPackage.set_allocated_contour_image(allocateProtoJPEGImage(executor->getDetector()->contourImage()));
-        resultPackage.set_allocated_armor_image(allocateProtoJPEGImage(executor->getDetector()->armorImage()));
+        resultPackage.set_allocated_brightness_image(allocateProtoJPEGImage(executor->detector()->brightnessImage()));
+        resultPackage.set_allocated_color_image(allocateProtoJPEGImage(executor->detector()->colorImage()));
+        resultPackage.set_allocated_contour_image(allocateProtoJPEGImage(executor->detector()->contourImage()));
+        resultPackage.set_allocated_armor_image(allocateProtoJPEGImage(executor->detector()->armorImage()));
 
         socketServer.sendBytes("res", resultPackage);
     }
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
-    if (name == "loadDataSet") {
-
-        if (executor->loadDataSet(string(s)) == 0) {
+    if (name == "loadImageDataSet") {
+        if (executor->loadImageDataSet(string(s)) == 0) {
             sendStatusBarMsg("Failed to load data set " + string(s));
         } else {
-            socketServer.sendListOfStrings("imageList", executor->getDataManager()->getImageNames());
+            socketServer.sendListOfStrings("imageList", executor->dataManager()->getImageList());
             sendStatusBarMsg("Data set " + string(s) + " loaded");
         }
 
     } else if (name == "runImage") {
-
         executor->startSingleImageDetection(string(s));  // blocking
         sendStatusBarMsg("Run on image " + string(s));
         sendResult(true);  // always send result
-
-    } else if (name == "viewImage") {
-
-        previewSource = s;
 
     } else goto INVALID_COMMAND;
 
@@ -113,15 +99,12 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
 
 void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
     if (name == "fetch") {
-
         sendResult();
 
     } else if (name == "fps") {
-
         socketServer.sendSingleInt("fps", executor->fetchAndClearFrameCounter());
 
     } else if (name == "setParams") {
-
         if (!recvParams.ParseFromArray(buf, size)) {
             sendStatusBarMsg("Invalid ParamSet package");
         } else {
@@ -131,27 +114,24 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
         }
 
     } else if (name == "getParams") {
-
         socketServer.sendBytes("params", params);
 
     } else if (name == "stop") {
-
         executor->stop();
 
     } else if (name == "runCamera") {
-
         if (!executor->startRealTimeDetection()) {
             sendStatusBarMsg("Failed to set executor action REAL_TIME_DETECTION");
+        } else {
+            sendStatusBarMsg("Start real time detection");
         }
 
-    } else if (name == "viewCamera") {
-
-        previewSource = "Camera";
+    } else if (name == "reloadLists") {
+        executor->reloadLists();
+        socketServer.sendListOfStrings("dataSetList", executor->dataManager()->getDataSetList());
 
     } else {
-
         std::cerr << "Unknown bytes package <" << name << ">" << std::endl;
-
     }
 }
 

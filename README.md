@@ -50,14 +50,13 @@ sudo make install
 |--------|--------|------------------|----|
 | fetch | NameOnly |  | Fetch result |
 | stop | NameOnly | | Stop execution |
-| viewCamera | NameOnly | | Switch preview to camera |
-| viewImage | String | Image name or empty string | |
-| runCamera | Bytes | nullptr | Start execution on camera |
+| runCamera | Bytes | nullptr | Start execution on camera_ |
 | fps | NameOnly | | Fetch frame processed |
 | setParams | Bytes | ParamSet | |
 | getParams | NameOnly | | Fetch current params |
-| loadDataSet | String | Path of the data set | |
+| loadImageDataSet | String | Path of the data set | |
 | runImage | String | Image Name | |
+| reloadLists | NameOnly | | Fetch data set list and parameter set list |
 
 
 ## Core -> Terminal
@@ -68,3 +67,4 @@ sudo make install
 | fps | Int | Frame processed since last fetch |
 | params | Bytes | Current params |
 | imageList | ListOfStrings | Image names |
+| dataSetList | ListOfStrings | Data set names |

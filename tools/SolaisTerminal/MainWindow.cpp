@@ -39,24 +39,15 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->transferImagesCheck, &QCheckBox::stateChanged, [this](auto state) {
         if (state == Qt::Checked) socket.sendBytes("fetch"); else phases->resetImageLabels(); });
-    connect(ui->manualFetchButton, &QPushButton::clicked, [this] { socket.sendBytes("fetch"); });
+    connect(ui->reloadListsButton, &QPushButton::clicked, [this] { socket.sendBytes("reloadLists"); });
 
-    connect(ui->operationTabs, &QTabWidget::currentChanged, this, &MainWindow::applyPreviewSource);
     connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); });
-    connect(ui->startCameraButton, &QPushButton::clicked, [this] { socket.sendBytes("runCamera"); });
-    connect(ui->loadDataSetButton, &QPushButton::clicked, [this] {
-        // FIXME: hard code path for now
-        socket.sendSingleString("loadDataSet", "/Users/liuzikai/Files/VOCdevkit/VOC");
-    });
-    connect(ui->imageList, &QListWidget::currentItemChanged, this, &MainWindow::applyPreviewSource);
-    connect(ui->runImageButton, &QPushButton::clicked, [this] {
-        if (ui->imageList->currentItem()) {
-            socket.sendSingleString("runImage", ui->imageList->currentItem()->text().toStdString());
-            // Result will be sent automatically by the Core, no need to fetch
-        } else {
-            ui->statusBar->showMessage("No image selected");
-        }
-    });
+    connect(ui->runCameraButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("runCamera"); socket.sendBytes("fetch"); });
+    connect(ui->dataSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
+        if (current) socket.sendSingleString("loadImageDataSet", current->text().toStdString()); });
+    connect(ui->imageList, &QListWidget::currentItemChanged, this, [this] (auto current, auto previous) {
+        if (current) socket.sendSingleString("runImage", current->text().toStdString()); });
 
     connect(ui->reloadParamsButton, &QPushButton::clicked, [this] { socket.sendBytes("getParams"); });
     connect(ui->saveParamButton, &QPushButton::clicked,
@@ -75,8 +66,8 @@ void MainWindow::connectToServer() {
             ui->serverCombo->setEnabled(false);
             ui->connectButton->setText("Disconnect");
 
+            socket.sendBytes("reloadLists");
             socket.sendBytes("getParams");  // reload parameters
-            applyPreviewSource();
             if (ui->transferImagesCheck->isChecked()) socket.sendBytes("fetch");  // start fetching cycle
 
         } else {
@@ -93,6 +84,10 @@ void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
             "Disconnected from " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
     ui->serverCombo->setEnabled(true);
     ui->connectButton->setText("Connect");
+
+    phases->resetImageLabels();
+    ui->dataSetList->clear();
+    ui->imageList->clear();
 }
 
 void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
@@ -147,10 +142,15 @@ void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
 
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
     if (name == "imageList") {
-
         ui->imageList->clear();
         for (const auto &image : list) {
             ui->imageList->addItem(image);
+        }
+
+    } else if (name == "dataSetList") {
+        ui->dataSetList->clear();
+        for (const auto &image : list) {
+            ui->dataSetList->addItem(image);
         }
 
     } else {
@@ -158,38 +158,10 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<con
     }
 }
 
-void MainWindow::applyPreviewSource() {
-    if (ui->operationTabs->currentWidget() == ui->tabCamera) {
-        socket.sendBytes("viewCamera");
-    } else if (ui->operationTabs->currentWidget() == ui->tabImages) {
-        if (!ui->imageList->currentItem()) {
-            socket.sendSingleString("viewImage", "");
-        } else {
-            socket.sendSingleString("viewImage", ui->imageList->currentItem()->text().toStdString());
-        }
-    }
-    socket.sendBytes("fetch");
-}
-
 MainWindow::~MainWindow() {
 //    for (auto &viewer : viewers) delete viewer;
     delete phases;
     delete ui;
-}
-
-void MainWindow::runSingleDetectionOnImage() {
-    /*updateParamsFromUI();
-    tuner.setSharedParams(sharedParams);
-    detector.setParams(sharedParams, detectorParams);
-
-    ImageDataManager::RunEvaluation evaluation;
-    tuner.runOnSingleImage(ui->getImageNames->currentItem()->text().toStdString(), armorCenters, evaluation);
-
-    ui->evalResultLabel->setText(
-            "Count: " + QString::number(evaluation.imageCount) + "\n" +
-            "Time: " + QString::number(evaluation.timeEscapedMS) + " ms"
-    );
-    setUIFromResults();*/
 }
 
 void MainWindow::updateStats() {

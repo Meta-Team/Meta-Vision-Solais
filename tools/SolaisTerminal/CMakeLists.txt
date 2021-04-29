@@ -1,19 +1,6 @@
-if (CMAKE_PREFIX_PATH)
-    set(QT_ENABLED 1)
-    message("Qt is enabled")
+if (Qt5_FOUND AND Boost_FOUND AND Protobuf_FOUND)
+    message("Target SolarisTerminal available to build")
 
-    set(QT_VERSION 5)
-    set(QT_LIBS Core Gui Widgets)
-    # Qt5::CorePrivate and Qt5::GuiPrivate are in Core and Gui component
-    set(QT_LIBS_QUALIFIED Qt5::Core Qt5::Gui Qt5::Widgets Qt5::CorePrivate Qt5::GuiPrivate)
-
-    find_package(Qt${QT_VERSION} COMPONENTS ${QT_LIBS} REQUIRED)
-else()
-    message("CMAKE_PREFIX_PATH is not defined, and therefore Qt is disabled. If you want to use Qt, you may need to set it "
-            "(-DCMAKE_PREFIX_PATH=\"path/to/Qt/lib/cmake\" or -DCMAKE_PREFIX_PATH=/usr/include/{host}/qt{version}/ on Ubuntu)")
-endif ()
-
-if (QT_ENABLED)
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOUIC ON)
@@ -33,7 +20,7 @@ if (QT_ENABLED)
 #            QAsioEventDispatcher.cpp
             ${CMAKE_CURRENT_BINARY_DIR}/Parameters.ui.h)
     target_link_libraries(SolarisTerminal
-            ${OpenCV_LIBRARIES}
+#            ${OpenCV_LIBRARIES}
             ${QT_LIBS_QUALIFIED}
             ${Boost_FILESYSTEM_LIBRARY}
             ${Boost_SYSTEM_LIBRARY}
@@ -41,4 +28,6 @@ if (QT_ENABLED)
             libTerminalSocket)
     target_include_directories(SolarisTerminal
             PRIVATE ${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
+else()
+    message(WARNING "Target SolarisTerminal not available to build")
 endif ()

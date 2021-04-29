@@ -52,15 +52,12 @@ private:
 
 private slots:
 
-    void runSingleDetectionOnImage();
-
     void connectToServer();
 
     void updateStats();
 
     void performIO();
 
-    void applyPreviewSource();
 };
 
 }

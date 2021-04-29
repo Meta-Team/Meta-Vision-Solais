@@ -60,40 +60,6 @@
           <string>Connection</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_15">
-          <item row="0" column="0" colspan="2">
-           <widget class="QComboBox" name="serverCombo">
-            <property name="editable">
-             <bool>true</bool>
-            </property>
-            <item>
-             <property name="text">
-              <string>localhost</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-1.local</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-2.local</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-3.local</string>
-             </property>
-            </item>
-           </widget>
-          </item>
-          <item row="1" column="0" colspan="2">
-           <widget class="QPushButton" name="connectButton">
-            <property name="text">
-             <string>Connect</string>
-            </property>
-           </widget>
-          </item>
           <item row="3" column="0" colspan="2">
            <widget class="QWidget" name="widget" native="true">
             <property name="minimumSize">
@@ -170,23 +136,57 @@
             </layout>
            </widget>
           </item>
-          <item row="4" column="0">
+          <item row="0" column="0" colspan="2">
+           <widget class="QComboBox" name="serverCombo">
+            <property name="editable">
+             <bool>true</bool>
+            </property>
+            <item>
+             <property name="text">
+              <string>localhost</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-1.local</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-2.local</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-3.local</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QPushButton" name="connectButton">
+            <property name="text">
+             <string>Connect</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QPushButton" name="reloadListsButton">
+            <property name="text">
+             <string>Reload Lists</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
            <widget class="QCheckBox" name="transferImagesCheck">
             <property name="toolTip">
              <string>Transfering images may slow down the Solais core</string>
             </property>
             <property name="text">
-             <string>Images</string>
+             <string>Transfer Images</string>
             </property>
             <property name="checked">
              <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QPushButton" name="manualFetchButton">
-            <property name="text">
-             <string>Fetch</string>
             </property>
            </widget>
           </item>
@@ -262,7 +262,7 @@
              </size>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>1</number>
             </property>
             <widget class="QWidget" name="tabCamera">
              <attribute name="title">
@@ -270,7 +270,7 @@
              </attribute>
              <layout class="QVBoxLayout" name="verticalLayout_4">
               <item>
-               <widget class="QPushButton" name="startCameraButton">
+               <widget class="QPushButton" name="runCameraButton">
                 <property name="text">
                  <string>Start on Camera</string>
                 </property>
@@ -283,69 +283,63 @@
               <string>Images</string>
              </attribute>
              <layout class="QGridLayout" name="gridLayout_3">
-              <item row="1" column="2">
-               <widget class="QPushButton" name="deleteDataSetButton">
-                <property name="text">
-                 <string>D</string>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="0" colspan="3">
-               <widget class="QPushButton" name="runImageButton">
-                <property name="text">
-                 <string>Run on Single Image</string>
-                </property>
-               </widget>
-              </item>
-              <item row="6" column="0" colspan="3">
-               <widget class="QListWidget" name="imageList"/>
-              </item>
-              <item row="1" column="1">
-               <widget class="QPushButton" name="renameDataSetButton">
-                <property name="text">
-                 <string>R</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QPushButton" name="addDataSetButton">
-                <property name="text">
-                 <string>A</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0" colspan="3">
+              <item row="2" column="0" colspan="2">
                <widget class="QListWidget" name="dataSetList">
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
-                  <height>75</height>
+                  <height>50</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
-                  <height>75</height>
+                  <height>50</height>
                  </size>
                 </property>
                </widget>
               </item>
-              <item row="7" column="0" colspan="3">
+              <item row="4" column="0" colspan="2">
+               <widget class="QListWidget" name="imageList"/>
+              </item>
+              <item row="5" column="0" colspan="2">
                <widget class="QPushButton" name="runDataSetButton">
                 <property name="text">
                  <string>Run on Data Set</string>
                 </property>
                </widget>
               </item>
-              <item row="4" column="0" colspan="3">
-               <widget class="QPushButton" name="loadDataSetButton">
-                <property name="text">
-                 <string>Load Data Set</string>
-                </property>
-               </widget>
-              </item>
              </layout>
             </widget>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="paramSetGroup">
+            <property name="title">
+             <string>Parameter Set</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout">
+             <item row="0" column="0" colspan="4">
+              <widget class="QComboBox" name="paramSetCombo"/>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QPushButton" name="reloadParamsButton">
+               <property name="text">
+                <string>Reload</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="2" colspan="2">
+              <widget class="QPushButton" name="saveParamButton">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="text">
+                <string>Apply</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>
@@ -370,76 +364,6 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QGroupBox" name="paramSetGroup">
-         <property name="title">
-          <string>Parameter Set</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="6">
-           <widget class="QPushButton" name="saveParamButton">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="text">
-             <string>Save and Apply</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="4">
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="0">
-           <widget class="QPushButton" name="duplicateParamSetButton">
-            <property name="text">
-             <string>D</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="renameParamSetButton">
-            <property name="text">
-             <string>R</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="deleteParamSetButton">
-            <property name="text">
-             <string>D</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QComboBox" name="paramSetCombo">
-            <property name="minimumSize">
-             <size>
-              <width>200</width>
-              <height>0</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="5">
-           <widget class="QPushButton" name="reloadParamsButton">
-            <property name="text">
-             <string>Reload</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <widget class="QScrollArea" name="centralContainer">
          <property name="frameShape">
           <enum>QFrame::NoFrame</enum>
@@ -453,10 +377,23 @@
             <x>0</x>
             <y>0</y>
             <width>1014</width>
-            <height>695</height>
+            <height>785</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="centralContainerVertialLayout"/>
+          <layout class="QVBoxLayout" name="centralContainerVertialLayout">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+          </layout>
          </widget>
         </widget>
        </item>

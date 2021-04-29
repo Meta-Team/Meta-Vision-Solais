@@ -10,20 +10,23 @@
 namespace meta {
 
 Executor::Executor(Camera *camera, ArmorDetector *detector, ImageDataManager *dataManager)
-        : camera(camera), detector(detector), dataManager(dataManager),
-        threadShouldExit(false), frameCounter(0) {
+        : camera_(camera), detector_(detector), dataManager_(dataManager),
+          threadShouldExit(false), frameCounter(0) {
 
 }
 
 void Executor::applyParams(const ParamSet &p) {
+    // Skip re-opening the camera_ if the parameter doesn't change to save some time
+    if (camera_ && !(p.camera_id() == params.camera_id() && p.fps() == p.fps() &&
+                    p.image_width() == params.image_width() && p.image_height() != params.image_height() &&
+                    p.gamma().enabled() == p.gamma().enabled() && p.gamma().val() == p.gamma().val())) {
+        if (camera_->isOpened()) camera_->release();
+        camera_->open(p);
+    }
+    if (detector_) {
+        detector_->setParams(p);
+    }
     params = p;
-    if (camera) {
-        if (camera->isOpened()) camera->release();
-        camera->open(params);
-    }
-    if (detector) {
-        detector->setParams(params);
-    }
 }
 
 int Executor::fetchAndClearFrameCounter() {
@@ -44,12 +47,12 @@ void Executor::stop() {
 
 bool Executor::startRealTimeDetection() {
     if (th) stop();
-    if (!camera) {
-        std::cerr << "Executor: camera not set for REAL_TIME_DETECTION" << std::endl;
+    if (!camera_) {
+        std::cerr << "Executor: camera_ not set for REAL_TIME_DETECTION" << std::endl;
         return false;
     }
-    if (!detector) {
-        std::cerr << "Executor: detector not set for REAL_TIME_DETECTION" << std::endl;
+    if (!detector_) {
+        std::cerr << "Executor: detector_ not set for REAL_TIME_DETECTION" << std::endl;
         return false;
     }
     // Start real-time detection thread
@@ -61,24 +64,24 @@ bool Executor::startRealTimeDetection() {
 
 bool Executor::startSingleImageDetection(const string &imageName) {
     if (th) stop();
-    if (!detector) {
-        std::cerr << "Executor: detector not set for REAL_TIME_DETECTION" << std::endl;
+    if (!detector_) {
+        std::cerr << "Executor: detector_ not set for REAL_TIME_DETECTION" << std::endl;
         return false;
     }
-    if (!dataManager) {
-        std::cerr << "Executor: dataManager not set for REAL_TIME_DETECTION" << std::endl;
+    if (!dataManager_) {
+        std::cerr << "Executor: dataManager_ not set for REAL_TIME_DETECTION" << std::endl;
         return false;
     }
     // Start real-time detection thread
     curAction = SINGLE_IMAGE_DETECTION;
 
-    cv::Mat img = dataManager->getImage(imageName);
+    cv::Mat img = dataManager_->getImage(imageName);
     if (img.rows != params.image_height() || img.cols != params.image_width()) {
         cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
     }
 
-    detector->clearImages();  // clear data of last execution
-    auto targets = detector->detect(img);
+    detector_->clearImages();  // clear data of last execution
+    auto targets = detector_->detect(img);
 
     // Discard the result for now
     (void) targets;
@@ -90,14 +93,14 @@ bool Executor::startSingleImageDetection(const string &imageName) {
 void Executor::runRealTimeDetection() {
     frameCounter = 0;
     unsigned int lastFrameID = -1;
-    while(!threadShouldExit) {
+    while (!threadShouldExit) {
 
         // Wait for new frame
-        while (lastFrameID == camera->getFrameID());
-        lastFrameID = camera->getFrameID();
+        while (lastFrameID == camera_->getFrameID());
+        lastFrameID = camera_->getFrameID();
 
         // Run armor detection algorithm
-        auto targets = detector->detect(camera->getFrame());
+        auto targets = detector_->detect(camera_->getFrame());
 
         // Discard the result for now
         (void) targets;
@@ -106,8 +109,12 @@ void Executor::runRealTimeDetection() {
     }
 }
 
-int Executor::loadDataSet(const string &path) {
-    return dataManager->loadDataSet(path);
+void Executor::reloadLists() {
+    dataManager_->reloadDataSetList();
+}
+
+int Executor::loadImageDataSet(const string &path) {
+    return dataManager_->loadDataSet(path);
 }
 
 }

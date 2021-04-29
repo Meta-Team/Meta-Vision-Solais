@@ -21,11 +21,11 @@ public:
 
     explicit Executor(Camera *camera, ArmorDetector *detector, ImageDataManager *dataManager);
 
-    const Camera *getCamera() const { return camera; }
-    const ArmorDetector *getDetector() const { return detector; }
-    const ImageDataManager *getDataManager() const { return dataManager; };
+    const Camera *camera() const { return camera_; }
+    const ArmorDetector *detector() const { return detector_; }
+    const ImageDataManager *dataManager() const { return dataManager_; };
 
-    void applyParams(const ParamSet &params);
+    void applyParams(const ParamSet &p);
 
     enum Action {
         NONE,
@@ -43,13 +43,15 @@ public:
 
     int fetchAndClearFrameCounter();
 
-    int loadDataSet(const string &path);
+    void reloadLists();
+
+    int loadImageDataSet(const string &path);
 
 private:
 
-    Camera *camera;
-    ArmorDetector *detector;
-    ImageDataManager *dataManager;
+    Camera *camera_;
+    ArmorDetector *detector_;
+    ImageDataManager *dataManager_;
 
     ParamSet params;
 
