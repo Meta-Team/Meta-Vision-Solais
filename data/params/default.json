@@ -1,0 +1,67 @@
+{
+ "image_width": 1280,
+ "image_height": 720,
+ "enemy_color": "BLUE",
+ "camera_id": 0,
+ "fps": 120,
+ "gamma": {
+  "enabled": false,
+  "val": 0
+ },
+ "brightness_threshold": 155,
+ "color_threshold_mode": "RB_CHANNELS",
+ "hsv_red_hue": {
+  "min": 150,
+  "max": 30
+ },
+ "hsv_blue_hue": {
+  "min": 90,
+  "max": 150
+ },
+ "rb_channel_threshold": 55,
+ "color_dilate": {
+  "enabled": true,
+  "val": 6
+ },
+ "contour_fit_function": "ELLIPSE",
+ "contour_pixel_count": {
+  "enabled": true,
+  "val": 15
+ },
+ "contour_min_area": {
+  "enabled": false,
+  "val": 3
+ },
+ "long_edge_min_length": {
+  "enabled": true,
+  "val": 30
+ },
+ "light_aspect_ratio": {
+  "enabled": true,
+  "min": 2,
+  "max": 30
+ },
+ "light_length_max_ratio": {
+  "enabled": true,
+  "val": 1.5
+ },
+ "light_x_dist_over_l": {
+  "enabled": false,
+  "min": 1,
+  "max": 3
+ },
+ "light_y_dist_over_l": {
+  "enabled": false,
+  "min": 0,
+  "max": 1
+ },
+ "light_angle_max_diff": {
+  "enabled": true,
+  "val": 10
+ },
+ "armor_aspect_ratio": {
+  "enabled": true,
+  "min": 1.25,
+  "max": 5
+ }
+}

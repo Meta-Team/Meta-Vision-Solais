@@ -14,18 +14,22 @@ namespace meta {
 // Forward declarations
 class Camera;
 class ArmorDetector;
-class ImageDataManager;
+class DataManager;
 
 class Executor {
 public:
 
-    explicit Executor(Camera *camera, ArmorDetector *detector, ImageDataManager *dataManager);
+    explicit Executor(Camera *camera, ArmorDetector *detector, DataManager *dataManager);
 
     const Camera *camera() const { return camera_; }
     const ArmorDetector *detector() const { return detector_; }
-    const ImageDataManager *dataManager() const { return dataManager_; };
+    const DataManager *dataManager() const { return dataManager_; };
 
-    void applyParams(const ParamSet &p);
+    void switchParams(const string &paramSetName);
+
+    void saveAndApplyParams(const ParamSet &p);
+
+    const ParamSet &getCurrentParams() const { return params; }
 
     enum Action {
         NONE,
@@ -51,7 +55,7 @@ private:
 
     Camera *camera_;
     ArmorDetector *detector_;
-    ImageDataManager *dataManager_;
+    DataManager *dataManager_;
 
     ParamSet params;
 
@@ -60,6 +64,8 @@ private:
     std::thread *th = nullptr;
     std::atomic<bool> threadShouldExit;
     std::atomic<int> frameCounter;
+
+    void applyParamsInternal(const ParamSet &p);
 
     void runRealTimeDetection();
 

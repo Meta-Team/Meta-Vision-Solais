@@ -7,7 +7,7 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND)
     find_package(pugixml REQUIRED)
     add_library(libSolais
             ArmorDetector.cpp
-            ImageDataManager.cpp
+            DataManager.cpp
             Camera.cpp
             Serial.cpp
             Executor.cpp)
@@ -22,11 +22,11 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND)
             libTerminalSocket)
     target_compile_definitions(libSolais PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
-    if(NOT PARAMS_ROOT)
-        set(PARAMS_ROOT "${PROJECT_SOURCE_DIR}/data")
-        message("Directory of parameter sets is default as \"${PARAMS_ROOT}\"")
+    if(NOT PARAM_SET_ROOT)
+        set(PARAM_SET_ROOT "${PROJECT_SOURCE_DIR}/data")
+        message("Directory of parameter sets is default as \"${PARAM_SET_ROOT}\"")
     else()
-        message("Directory of parameter sets is set as \"${PARAMS_ROOT}\"")
+        message("Directory of parameter sets is set as \"${PARAM_SET_ROOT}\"")
     endif ()
 
     if(NOT DATA_SET_ROOT)
@@ -37,6 +37,6 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND)
     endif ()
 
     target_compile_definitions(libSolais
-            PUBLIC "PARAMS_ROOT=\"${PARAMS_ROOT}\""
+            PUBLIC "PARAM_SET_ROOT=\"${PARAM_SET_ROOT}\""
             PUBLIC "DATA_SET_ROOT=\"${DATA_SET_ROOT}\"")
 endif()

@@ -21,7 +21,7 @@ public:
 
     ~Camera();
 
-    bool open(const package::ParamSet &params);
+    void open(const package::ParamSet &params);
 
     bool isOpened() const { return cap.isOpened(); }
 
@@ -54,7 +54,7 @@ private:
 
     std::vector<std::pair<NewFrameCallBack, void *>> callbacks;
 
-    void readFrameFromCamera();
+    void readFrameFromCamera(const package::ParamSet &params);
 
 };
 

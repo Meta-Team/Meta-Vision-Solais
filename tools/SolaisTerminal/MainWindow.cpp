@@ -39,7 +39,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->transferImagesCheck, &QCheckBox::stateChanged, [this](auto state) {
         if (state == Qt::Checked) socket.sendBytes("fetch"); else phases->resetImageLabels(); });
-    connect(ui->reloadListsButton, &QPushButton::clicked, [this] { socket.sendBytes("reloadLists"); });
+    connect(ui->reloadListsButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("reloadLists"); socket.sendBytes("fetchLists"); });
 
     connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); });
     connect(ui->runCameraButton, &QPushButton::clicked, [this] {
@@ -49,6 +50,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->imageList, &QListWidget::currentItemChanged, this, [this] (auto current, auto previous) {
         if (current) socket.sendSingleString("runImage", current->text().toStdString()); });
 
+    connect(ui->paramSetCombo, &QComboBox::currentTextChanged, [this](const QString &text) {
+        socket.sendSingleString("switchParams", text.toStdString());
+        socket.sendBytes("getParams");
+    });
     connect(ui->reloadParamsButton, &QPushButton::clicked, [this] { socket.sendBytes("getParams"); });
     connect(ui->saveParamButton, &QPushButton::clicked,
             [this] { socket.sendBytes("setParams", phases->getParamSet());});
@@ -66,8 +71,7 @@ void MainWindow::connectToServer() {
             ui->serverCombo->setEnabled(false);
             ui->connectButton->setText("Disconnect");
 
-            socket.sendBytes("reloadLists");
-            socket.sendBytes("getParams");  // reload parameters
+            socket.sendBytes("fetchLists");  // will trigger data set and param set reloads
             if (ui->transferImagesCheck->isChecked()) socket.sendBytes("fetch");  // start fetching cycle
 
         } else {
@@ -88,6 +92,7 @@ void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
     phases->resetImageLabels();
     ui->dataSetList->clear();
     ui->imageList->clear();
+    ui->paramSetCombo->clear();
 }
 
 void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
@@ -111,7 +116,6 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
             ui->statusBar->showMessage("Received an invalid ParamSet package");
         } else {
             phases->applyParamSet(paramsMessage);
-            ui->statusBar->showMessage("Parameter updated");
         }
 
     } else {
@@ -123,6 +127,12 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
 
     if (name == "msg") {
         ui->statusBar->showMessage(QString(s.data()));
+
+    } else if (name == "currentParamSetName") {
+        ui->paramSetCombo->blockSignals(true);
+        ui->paramSetCombo->setCurrentText(QString::fromStdString(string(s)));
+        ui->paramSetCombo->blockSignals(false);
+
     } else goto INVALID_PACKAGE;
 
     return;
@@ -142,16 +152,27 @@ void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
 
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
     if (name == "imageList") {
+        ui->imageList->blockSignals(true);
         ui->imageList->clear();
-        for (const auto &image : list) {
-            ui->imageList->addItem(image);
-        }
+        for (const auto &image : list) ui->imageList->addItem(image);
+        ui->imageList->blockSignals(false);
 
     } else if (name == "dataSetList") {
+        ui->dataSetList->blockSignals(true);
         ui->dataSetList->clear();
-        for (const auto &image : list) {
-            ui->dataSetList->addItem(image);
-        }
+        for (const auto &image : list) ui->dataSetList->addItem(image);
+        ui->dataSetList->blockSignals(false);
+        ui->imageList->clear();  // current data set is reset
+
+    } else if (name == "paramSetList") {
+        ui->paramSetCombo->blockSignals(true);
+        ui->paramSetCombo->clear();
+        for (const auto &paramSet : list) ui->paramSetCombo->addItem(paramSet);
+        ui->paramSetCombo->blockSignals(false);
+
+        // Reload
+        socket.sendBytes("getCurrentParamSetName");
+        socket.sendBytes("getParams");
 
     } else {
         ui->statusBar->showMessage("Unknown list-of-string package <" + QString(name.data()) + ">");

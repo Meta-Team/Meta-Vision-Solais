@@ -5,7 +5,7 @@
 #include "Camera.h"
 #include "Executor.h"
 #include "ArmorDetector.h"
-#include "ImageDataManager.h"
+#include "DataManager.h"
 #include "TerminalSocket.h"
 #include "TerminalParameters.h"
 #include "Parameters.pb.h"
@@ -15,8 +15,6 @@
 
 using namespace meta;
 using namespace package;
-
-ParamSet params;
 
 // Client should only operates on the executor
 std::unique_ptr<Executor> executor;
@@ -82,13 +80,17 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
             sendStatusBarMsg("Failed to load data set " + string(s));
         } else {
             socketServer.sendListOfStrings("imageList", executor->dataManager()->getImageList());
-            sendStatusBarMsg("Data set " + string(s) + " loaded");
+            sendStatusBarMsg("Data set \"" + string(s) + "\" loaded");
         }
 
     } else if (name == "runImage") {
         executor->startSingleImageDetection(string(s));  // blocking
         sendStatusBarMsg("Run on image " + string(s));
         sendResult(true);  // always send result
+
+    } else if (name == "switchParams") {
+        executor->switchParams(string(s));
+        sendStatusBarMsg("Switched to parameter set \"" + string(s) + "\"");
 
     } else goto INVALID_COMMAND;
 
@@ -108,15 +110,17 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
         if (!recvParams.ParseFromArray(buf, size)) {
             sendStatusBarMsg("Invalid ParamSet package");
         } else {
-            params = recvParams;
-            executor->applyParams(params);
-            sendStatusBarMsg("Parameters applied");
+            executor->saveAndApplyParams(recvParams);
+            sendStatusBarMsg("Parameter set \"" + executor->dataManager()->currentParamSetName() + "\" saved and applied");
         }
 
     } else if (name == "getParams") {
-        socketServer.sendBytes("params", params);
+        socketServer.sendBytes("params", executor->getCurrentParams());
 
-    } else if (name == "stop") {
+    } else if (name == "getCurrentParamSetName") {
+        socketServer.sendSingleString("currentParamSetName", executor->dataManager()->currentParamSetName());
+
+    }else if (name == "stop") {
         executor->stop();
 
     } else if (name == "runCamera") {
@@ -126,9 +130,14 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
             sendStatusBarMsg("Start real time detection");
         }
 
-    } else if (name == "reloadLists") {
-        executor->reloadLists();
+    } else if (name == "fetchLists") {
         socketServer.sendListOfStrings("dataSetList", executor->dataManager()->getDataSetList());
+        socketServer.sendListOfStrings("paramSetList", executor->dataManager()->getParamSetList());
+        socketServer.sendSingleString("currentParamSetName", executor->dataManager()->currentParamSetName());
+        socketServer.sendBytes("params", executor->getCurrentParams());
+
+    } else if (name == "reloadLists") {
+        executor->reloadLists();  // switch to default parameter set
 
     } else {
         std::cerr << "Unknown bytes package <" << name << ">" << std::endl;
@@ -138,42 +147,14 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 // Should not operates on these components directly
 std::unique_ptr<Camera> camera;
 std::unique_ptr<ArmorDetector> detector;
-std::unique_ptr<ImageDataManager> dataManager;
+std::unique_ptr<DataManager> dataManager;
 
 int main(int argc, char *argv[]) {
 
     camera = std::make_unique<Camera>();
     detector = std::make_unique<ArmorDetector>();
-    dataManager = std::make_unique<ImageDataManager>();
+    dataManager = std::make_unique<DataManager>();
     executor = std::make_unique<Executor>(camera.get(), detector.get(), dataManager.get());
-
-    params.set_camera_id(0);
-    params.set_image_width(1280);
-    params.set_image_height(720);
-    params.set_fps(120);
-    params.set_allocated_gamma(allocToggledDouble(false));
-
-    params.set_enemy_color(ParamSet::BLUE);
-    params.set_brightness_threshold(155);
-    params.set_color_threshold_mode(ParamSet::RB_CHANNELS);
-    params.set_allocated_hsv_red_hue(allocDoubleRange(150, 30));  // across the 0 (180) point
-    params.set_allocated_hsv_blue_hue(allocDoubleRange(90, 150));
-    params.set_rb_channel_threshold(55);
-    params.set_allocated_color_dilate(allocToggledInt(true, 6));
-
-    params.set_contour_fit_function(ParamSet::ELLIPSE);
-    params.set_allocated_contour_pixel_count(allocToggledDouble(true, 15));
-    params.set_allocated_contour_min_area(allocToggledDouble(false, 3));
-    params.set_allocated_long_edge_min_length(allocToggledInt(true, 30));
-    params.set_allocated_light_aspect_ratio(allocToggledDoubleRange(true, 2, 30));
-
-    params.set_allocated_light_length_max_ratio(allocToggledDouble(true, 1.5));
-    params.set_allocated_light_x_dist_over_l(allocToggledDoubleRange(false, 1, 3));
-    params.set_allocated_light_y_dist_over_l(allocToggledDoubleRange(false, 0, 1));
-    params.set_allocated_light_angle_max_diff(allocToggledDouble(true, 10));
-    params.set_allocated_armor_aspect_ratio(allocToggledDoubleRange(true, 1.25, 5));
-
-    executor->applyParams(params);
 
     socketServer.startAccept();
     socketServer.setCallbacks(handleRecvSingleString,

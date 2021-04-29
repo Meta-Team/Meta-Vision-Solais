@@ -5,27 +5,37 @@
 #include "Executor.h"
 #include "Camera.h"
 #include "ArmorDetector.h"
-#include "ImageDataManager.h"
+#include "DataManager.h"
 
 namespace meta {
 
-Executor::Executor(Camera *camera, ArmorDetector *detector, ImageDataManager *dataManager)
+Executor::Executor(Camera *camera, ArmorDetector *detector, DataManager *dataManager)
         : camera_(camera), detector_(detector), dataManager_(dataManager),
           threadShouldExit(false), frameCounter(0) {
 
+    reloadLists();
 }
 
-void Executor::applyParams(const ParamSet &p) {
+void Executor::switchParams(const string &paramSetName) {
+    dataManager_->switchToParamSet(paramSetName);
+    applyParamsInternal(dataManager_->loadCurrentParamSet());
+}
+
+void Executor::saveAndApplyParams(const ParamSet &p) {
+    dataManager_->saveCurrentParamSet(p);
+    applyParamsInternal(p);
+}
+
+void Executor::applyParamsInternal(const ParamSet &p) {
     // Skip re-opening the camera_ if the parameter doesn't change to save some time
-    if (camera_ && !(p.camera_id() == params.camera_id() && p.fps() == p.fps() &&
-                    p.image_width() == params.image_width() && p.image_height() != params.image_height() &&
-                    p.gamma().enabled() == p.gamma().enabled() && p.gamma().val() == p.gamma().val())) {
+    if (!(p.camera_id() == params.camera_id() && p.fps() == p.fps() &&
+          p.image_width() == params.image_width() && p.image_height() != params.image_height() &&
+          p.gamma().enabled() == p.gamma().enabled() && p.gamma().val() == p.gamma().val())) {
+
         if (camera_->isOpened()) camera_->release();
         camera_->open(p);
     }
-    if (detector_) {
-        detector_->setParams(p);
-    }
+    detector_->setParams(p);
     params = p;
 }
 
@@ -47,14 +57,7 @@ void Executor::stop() {
 
 bool Executor::startRealTimeDetection() {
     if (th) stop();
-    if (!camera_) {
-        std::cerr << "Executor: camera_ not set for REAL_TIME_DETECTION" << std::endl;
-        return false;
-    }
-    if (!detector_) {
-        std::cerr << "Executor: detector_ not set for REAL_TIME_DETECTION" << std::endl;
-        return false;
-    }
+
     // Start real-time detection thread
     curAction = REAL_TIME_DETECTION;
     threadShouldExit = false;
@@ -64,15 +67,7 @@ bool Executor::startRealTimeDetection() {
 
 bool Executor::startSingleImageDetection(const string &imageName) {
     if (th) stop();
-    if (!detector_) {
-        std::cerr << "Executor: detector_ not set for REAL_TIME_DETECTION" << std::endl;
-        return false;
-    }
-    if (!dataManager_) {
-        std::cerr << "Executor: dataManager_ not set for REAL_TIME_DETECTION" << std::endl;
-        return false;
-    }
-    // Start real-time detection thread
+
     curAction = SINGLE_IMAGE_DETECTION;
 
     cv::Mat img = dataManager_->getImage(imageName);
@@ -111,6 +106,8 @@ void Executor::runRealTimeDetection() {
 
 void Executor::reloadLists() {
     dataManager_->reloadDataSetList();
+    dataManager_->reloadParamSetList();  // switch to default parameter set
+    applyParamsInternal(dataManager_->loadCurrentParamSet());
 }
 
 int Executor::loadImageDataSet(const string &path) {

@@ -7,15 +7,32 @@
 
 namespace meta {
 
-bool Camera::open(const package::ParamSet &params) {
+void Camera::open(const package::ParamSet &params) {
+    // Start the fetching thread
+    if (th) {
+        release();
+    }
+    threadShouldExit = false;
+    th = new std::thread(&Camera::readFrameFromCamera, this, params);
+}
+
+Camera::~Camera() {
+    release();
+}
+
+void Camera::registerNewFrameCallBack(Camera::NewFrameCallBack callBack, void *param) {
+    callbacks.emplace_back(callBack, param);
+}
+
+void Camera::readFrameFromCamera(const package::ParamSet &params) {
     capInfoSS.str(std::string());
 
-    // Open the camera_
+    // Open the camera in the same thread
     cap.open(params.camera_id(), cv::CAP_ANY);
     if (!cap.isOpened()) {
-        capInfoSS << "Failed to open camera_ " << params.camera_id() << "\n";
+        capInfoSS << "Failed to open camera " << params.camera_id() << "\n";
         std::cerr << capInfoSS.rdbuf();
-        return false;
+        return;
     }
 
     // Set parameters
@@ -37,16 +54,16 @@ bool Camera::open(const package::ParamSet &params) {
     // Get a test frame
     cap.read(buffer[0]);
     if (buffer->empty()) {
-        capInfoSS << "Failed to fetch test image from camera_ " << params.camera_id() << "\n";
+        capInfoSS << "Failed to fetch test image from camera " << params.camera_id() << "\n";
         std::cerr << capInfoSS.rdbuf();
-        return false;
+        return;
     }
     if (buffer[0].cols != params.image_width() || buffer[0].rows != params.image_height()) {
         capInfoSS << "Invalid frame size. "
                   << "Expected: " << params.image_width() << "x" << params.image_height() << ", "
                   << "Actual: " << buffer[0].cols << "x" << buffer[0].rows << "\n";
         std::cerr << capInfoSS.rdbuf();
-        return false;
+        return;
     }
 
     // Report actual parameters
@@ -55,26 +72,6 @@ bool Camera::open(const package::ParamSet &params) {
               << " @ " << cap.get(cv::CAP_PROP_FPS) << " fps\n"
               << "Gamma: " << cap.get(cv::CAP_PROP_GAMMA) << "\n";
     std::cout << capInfoSS.rdbuf();
-
-    // Start the fetching thread
-    if (th) {
-        release();
-    }
-    threadShouldExit = false;
-    th = new std::thread(&Camera::readFrameFromCamera, this);
-
-    return true;
-}
-
-Camera::~Camera() {
-    release();
-}
-
-void Camera::registerNewFrameCallBack(Camera::NewFrameCallBack callBack, void *param) {
-    callbacks.emplace_back(callBack, param);
-}
-
-void Camera::readFrameFromCamera() {
 
     while(!threadShouldExit) {
 
@@ -94,7 +91,6 @@ void Camera::readFrameFromCamera() {
         for (const auto &item : callbacks) {
             item.first(item.second);
         }
-
     }
 
     cap.release();

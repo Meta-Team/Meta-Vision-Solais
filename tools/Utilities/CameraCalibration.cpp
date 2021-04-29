@@ -2,7 +2,7 @@
 // Created by liuzikai on 4/16/20.
 // Reference: https://blog.csdn.net/Loser__Wang/article/details/51811347
 // Usage:
-// * Set camera_ parameters and calibration parameters below
+// * Set camera parameters and calibration parameters below
 // * Run the program and see the result
 // * Press ESC to exit
 //
