@@ -46,7 +46,7 @@ private:
 
     // Double buffering
     std::atomic<int> lastBuffer;
-    cv:: Mat buffer[2];
+    cv::Mat buffer[2];
     unsigned int bufferFrameID[2] = {0, 0};
 
     std::thread *th = nullptr;

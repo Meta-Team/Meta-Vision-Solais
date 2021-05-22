@@ -1,5 +1,5 @@
-if (Qt5_FOUND AND Boost_FOUND AND Protobuf_FOUND)
-    message("Target SolarisTerminal available to build")
+if (Qt5_FOUND AND Boost_FOUND AND TARGET libParameters AND TARGET libTerminalSocket)
+#    message("=> Target SolarisTerminal is available to build")
 
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTORCC ON)
@@ -29,5 +29,5 @@ if (Qt5_FOUND AND Boost_FOUND AND Protobuf_FOUND)
     target_include_directories(SolarisTerminal
             PRIVATE ${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 else()
-    message(WARNING "Target SolarisTerminal not available to build")
+    message(WARNING "=> Target SolarisTerminal is not available to build. Depends: Qt, Boost, libParameters, libTerminalSocket")
 endif ()

@@ -1,5 +1,5 @@
 if (OpenCV_FOUND)
-    message("Targets OpenCV utilities available to build")
+#    message("=> Targets OpenCV utilities are available to build")
 
     add_executable(CameraCalibration CameraCalibration.cpp)
     target_link_libraries(CameraCalibration ${OpenCV_LIBRARIES})
@@ -10,5 +10,5 @@ if (OpenCV_FOUND)
     add_executable(TakePhotoUsingCamera TakePhotoUsingCamera.cpp)
     target_link_libraries(TakePhotoUsingCamera ${OpenCV_LIBRARIES})
 else()
-    message(WARNING "Targets OpenCV utilities not available to build")
+    message(WARNING "=> Targets OpenCV utilities is not available to build. Depends: OpenCV")
 endif ()

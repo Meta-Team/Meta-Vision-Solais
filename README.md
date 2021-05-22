@@ -1,17 +1,18 @@
 Meta-Vision-Solais
 ===
 
-## Dependencies
+# Dependencies
 * CMake >= 3.10
 * OpenCV 4
 * Boost
 * pugixml
+* ZBar (for ArmorSolverUnitTest)
 
-## Setup on Jetson Nano
+# Setup on Jetson Nano
 
 Ubuntu 18.04 for Jetson Nano has OpenCV 4.1.1 pre-installed.
 
-### Install Boost
+## Install Boost
 The Boost library from apt-get of Ubuntu 18.04 is too old. Building from source can be time-consuming as Jetson Nano 
 doesn't have powerful CPU. Instead, install newer Boost from other source.
 ```shell
@@ -27,7 +28,7 @@ sudo dpkg -i --force-overwrite /var/cache/apt/archives/libboost1.74-dev_1.74-0~1
 sudo apt install -f libboost1.74-dev
 ```
 
-### Install pugixml
+## Install pugixml
 The pugixml from apt-get can't be found by cmake, so manual installation is required. You may use the latest package in 
 the following commands.
 ```shell
@@ -41,7 +42,20 @@ make
 sudo make install
 ```
 
-## Packages
+## Install ZBar
+```shell
+sudo apt-get install libzbar-dev libzbar0
+```
+
+# Setup on macOS
+
+```shell
+brew install cmake opencv boost pugixml zbar
+```
+
+
+
+# Packages
 
 `NameOnly` is `Bytes` with empty content.
 

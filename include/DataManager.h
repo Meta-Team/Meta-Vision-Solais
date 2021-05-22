@@ -19,17 +19,23 @@ public:
 
     DataManager();
 
+    // Image data sets
+
     void reloadDataSetList();
 
     const vector<string> &getDataSetList() const { return dataSets; }
 
     int loadDataSet(const string &dataSetName);
 
+    // Images
+
     const vector<string> &getImageList() const { return images; }
 
     cv::Mat getImage(const string &imageName) const;
 
     void reloadParamSetList();  // switch to default
+
+    // Parameter sets
 
     const vector<string> &getParamSetList() const { return paramsSetNames; }
 

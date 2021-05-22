@@ -1,9 +1,19 @@
 if (Boost_FOUND)
     add_library(libTerminalSocket TerminalSocket.cpp)
     target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY})
+else()
+    message(WARNING "=> Target libTerminalSocket is not available to build. Depends: Boost")
 endif ()
 
-if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND)
+
+if (OpenCV_FOUND)
+    add_library(libArmorSolver ArmorSolver.cpp)
+    target_link_libraries(libArmorSolver ${OpenCV_LIBRARIES})
+else()
+    message(WARNING "=> Target libArmorSolver is not available to build. Depends: OpenCV")
+endif()
+
+if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND TARGET libParameters AND TARGET libTerminalSocket AND TARGET libArmorSolver)
     find_package(pugixml REQUIRED)
     add_library(libSolais
             ArmorDetector.cpp
@@ -19,7 +29,8 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND)
             pugixml
             pthread
             libParameters
-            libTerminalSocket)
+            libTerminalSocket
+            libArmorSolver)
     target_compile_definitions(libSolais PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
     if(NOT PARAM_SET_ROOT)
@@ -39,4 +50,6 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND)
     target_compile_definitions(libSolais
             PUBLIC "PARAM_SET_ROOT=\"${PARAM_SET_ROOT}\""
             PUBLIC "DATA_SET_ROOT=\"${DATA_SET_ROOT}\"")
+else()
+    message(WARNING "=> Target libSolais is not available to build. Depends: Boost, OpenCV, Protobuf, libParameters, libTerminalSocket, libArmorSolver")
 endif()

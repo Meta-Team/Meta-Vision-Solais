@@ -198,7 +198,7 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
                 Point2f rightPoints[4];
                 rightRect.points(rightPoints);  // bottomLeft, topLeft, topRight, bottomRight of unrotated rect
-                if (leftRect.angle <= 90) {
+                if (rightRect.angle <= 90) {
                     armorPoints[3] = rightPoints[0];
                     armorPoints[2] = rightPoints[1];
                 } else {  // case 1, 4, 5
@@ -208,13 +208,21 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
 
                 auto leftVector = armorPoints[1] - armorPoints[0];   // up
-                if (leftVector.y > 0) continue;  // leftVector should be upward, or lights intersect
+                if (leftVector.y > 0) {
+                    continue;  // leftVector should be upward, or lights intersect
+                }
                 auto rightVector = armorPoints[2] - armorPoints[3];  // up
-                if (rightVector.y > 0) continue;  // rightVector should be upward, or lights intersect
+                if (rightVector.y > 0) {
+                    continue;  // rightVector should be upward, or lights intersect
+                }
                 auto topVector = armorPoints[2] - armorPoints[1];    // right
-                if (topVector.x < 0) continue;  // topVector should be rightward, or lights intersect
+                if (topVector.x < 0) {
+                    continue;  // topVector should be rightward, or lights intersect
+                }
                 auto bottomVector = armorPoints[3] - armorPoints[0];  // right
-                if(bottomVector.x < 0) continue;  // bottomVector should be rightward, or lights intersect
+                if(bottomVector.x < 0) {
+                    continue;  // bottomVector should be rightward, or lights intersect
+                }
 
 
                 auto &rightCenter = rightRect.center;
@@ -249,6 +257,9 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 // Filter angle difference
                 if (params.light_angle_max_diff().enabled()) {
                     double angleDiff = std::abs(leftRect.angle - rightRect.angle);
+                    if (angleDiff > 90) {
+                        angleDiff = 180 - angleDiff;
+                    }
                     if (angleDiff > params.light_angle_max_diff().val()) {
                         continue;
                     }

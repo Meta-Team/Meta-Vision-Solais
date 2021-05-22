@@ -25,25 +25,25 @@
  },
  "contour_fit_function": "ELLIPSE",
  "contour_pixel_count": {
-  "enabled": true,
+  "enabled": false,
   "val": 15
  },
  "contour_min_area": {
-  "enabled": false,
-  "val": 3
+  "enabled": true,
+  "val": 15
  },
  "long_edge_min_length": {
   "enabled": true,
-  "val": 30
+  "val": 15
  },
  "light_aspect_ratio": {
   "enabled": true,
-  "min": 2,
-  "max": 30
+  "min": 1.5,
+  "max": 15
  },
  "light_length_max_ratio": {
   "enabled": true,
-  "val": 1.5
+  "val": 2
  },
  "light_x_dist_over_l": {
   "enabled": false,

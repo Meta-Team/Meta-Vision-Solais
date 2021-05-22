@@ -29,7 +29,7 @@ void Executor::saveAndApplyParams(const ParamSet &p) {
 void Executor::applyParamsInternal(const ParamSet &p) {
     // Skip re-opening the camera_ if the parameter doesn't change to save some time
     if (!(p.camera_id() == params.camera_id() && p.fps() == p.fps() &&
-          p.image_width() == params.image_width() && p.image_height() != params.image_height() &&
+          p.image_width() == params.image_width() && p.image_height() == params.image_height() &&
           p.gamma().enabled() == p.gamma().enabled() && p.gamma().val() == p.gamma().val())) {
 
         if (camera_->isOpened()) camera_->release();

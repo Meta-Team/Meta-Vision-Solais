@@ -47,8 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
         socket.sendBytes("runCamera"); socket.sendBytes("fetch"); });
     connect(ui->dataSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
         if (current) socket.sendSingleString("loadImageDataSet", current->text().toStdString()); });
-    connect(ui->imageList, &QListWidget::currentItemChanged, this, [this] (auto current, auto previous) {
-        if (current) socket.sendSingleString("runImage", current->text().toStdString()); });
+    connect(ui->imageList, &QListWidget::itemClicked, this, [this] (auto item) {
+        if (item) socket.sendSingleString("runImage", item->text().toStdString()); });
 
     connect(ui->paramSetCombo, &QComboBox::currentTextChanged, [this](const QString &text) {
         socket.sendSingleString("switchParams", text.toStdString());
@@ -65,7 +65,7 @@ void MainWindow::connectToServer() {
     if (ui->connectButton->text() == "Connect") {
         if (socket.connect(ui->serverCombo->currentText().toStdString(), TCP_SOCKET_PORT_STR)) {
 
-            ui->statusBar->showMessage("Connected to " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
+            showStatusMessage("Connected to " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
 
             // Update UI
             ui->serverCombo->setEnabled(false);
@@ -75,7 +75,7 @@ void MainWindow::connectToServer() {
             if (ui->transferImagesCheck->isChecked()) socket.sendBytes("fetch");  // start fetching cycle
 
         } else {
-            ui->statusBar->showMessage("Failed to connected to " + ui->serverCombo->currentText() + ":" +
+            showStatusMessage("Failed to connected to " + ui->serverCombo->currentText() + ":" +
                                        TCP_SOCKET_PORT_STR);
         }
     } else {
@@ -84,7 +84,7 @@ void MainWindow::connectToServer() {
 }
 
 void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
-    ui->statusBar->showMessage(
+    showStatusMessage(
             "Disconnected from " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
     ui->serverCombo->setEnabled(true);
     ui->connectButton->setText("Connect");
@@ -101,7 +101,7 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
 
         if (ui->transferImagesCheck->isChecked()) {
             if (!resultMessage.ParseFromArray(buf, size)) {
-                ui->statusBar->showMessage("Received an invalid Result package");
+                showStatusMessage("Received an invalid Result package");
             } else {
                 phases->applyResults(resultMessage);
             }
@@ -113,20 +113,20 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
     } else if (name == "params") {
 
         if (!paramsMessage.ParseFromArray(buf, size)) {
-            ui->statusBar->showMessage("Received an invalid ParamSet package");
+            showStatusMessage("Received an invalid ParamSet package");
         } else {
             phases->applyParamSet(paramsMessage);
         }
 
     } else {
-        ui->statusBar->showMessage("Unknown bytes package <" + QString(name.data()) + ">");
+        showStatusMessage("Unknown bytes package <" + QString(name.data()) + ">");
     }
 }
 
 void MainWindow::handleRecvSingleString(std::string_view name, std::string_view s) {
 
     if (name == "msg") {
-        ui->statusBar->showMessage(QString(s.data()));
+        showStatusMessage(QString(s.data()));
 
     } else if (name == "currentParamSetName") {
         ui->paramSetCombo->blockSignals(true);
@@ -137,7 +137,7 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
 
     return;
     INVALID_PACKAGE:
-    ui->statusBar->showMessage("Invalid single-string package <" +
+    showStatusMessage("Invalid single-string package <" +
                                QString(name.data()) + ">\"" + QString(s.data()) + "\"");
 }
 
@@ -145,7 +145,7 @@ void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
     if (name == "fps") {
         ui->fpsLabel->setText(QString::number(val) + " frame/s");
     } else {
-        ui->statusBar->showMessage("Unknown int package <" + QString(name.data()) + ">");
+        showStatusMessage("Unknown int package <" + QString(name.data()) + ">");
     }
 }
 
@@ -175,7 +175,7 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<con
         socket.sendBytes("getParams");
 
     } else {
-        ui->statusBar->showMessage("Unknown list-of-string package <" + QString(name.data()) + ">");
+        showStatusMessage("Unknown list-of-string package <" + QString(name.data()) + ">");
     }
 }
 
@@ -183,6 +183,10 @@ MainWindow::~MainWindow() {
 //    for (auto &viewer : viewers) delete viewer;
     delete phases;
     delete ui;
+}
+
+void MainWindow::showStatusMessage(const QString &text) {
+    ui->statusBar->showMessage(text, 5000);
 }
 
 void MainWindow::updateStats() {

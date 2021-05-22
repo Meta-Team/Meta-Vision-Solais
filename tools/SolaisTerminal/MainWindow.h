@@ -50,6 +50,8 @@ private:
 
     static QString bytesToDateRate(unsigned bytes);
 
+    void showStatusMessage(const QString &text);
+
 private slots:
 
     void connectToServer();

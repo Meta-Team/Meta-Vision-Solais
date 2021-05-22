@@ -125,7 +125,7 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
     } else if (name == "runCamera") {
         if (!executor->startRealTimeDetection()) {
-            sendStatusBarMsg("Failed to set executor action REAL_TIME_DETECTION");
+            sendStatusBarMsg("Failed to start real time detection");
         } else {
             sendStatusBarMsg("Start real time detection");
         }
