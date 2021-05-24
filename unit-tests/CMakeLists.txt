@@ -5,6 +5,13 @@ else()
     message(WARNING "=> Target TerminalSocketUnitTest is not available to build. Depends: libTerminalSocket")
 endif ()
 
+if (TARGET libSerial)
+    add_executable(SerialUnitTest SerialUnitTest.cpp)
+    target_link_libraries(SerialUnitTest libSerial)
+else()
+    message(WARNING "=> Target SerialUnitTest is not available to build. Depends: libSerial")
+endif ()
+
 
 find_package(PkgConfig REQUIRED)
 if (PkgConfig_FOUND)

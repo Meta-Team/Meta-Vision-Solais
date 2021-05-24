@@ -139,7 +139,7 @@ int main() {
                 pnts[3] = Point2f(hull[2].x, hull[2].y);
 
                 auto offset = solver.solve(pnts);
-                cout << "X " << offset[0] << "    Y " << offset[1] << "    Z " << offset[2] << endl;
+                cout << "X " << offset.x << "    Y " << offset.y << "    Z " << offset.z << endl;
             }
         }
 

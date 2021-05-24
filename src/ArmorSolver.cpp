@@ -27,7 +27,7 @@ ArmorSolver::ArmorSolver(float armorWidth, float armorHeight, const cv::Mat &cam
 
 }
 
-std::array<float, 3> ArmorSolver::solve(const std::array<cv::Point2f, 4> &imagePoints) {
+cv::Point3f ArmorSolver::solve(const std::array<cv::Point2f, 4> &imagePoints) {
     cv::Mat rVec = cv::Mat::zeros(3, 1, CV_64FC1);
     cv::Mat tVec = cv::Mat::zeros(3, 1, CV_64FC1);
     cv::solvePnP(armorObjectPoints, imagePoints, cameraMatrix, distCoeffs, rVec, tVec, false, cv::SOLVEPNP_ITERATIVE);

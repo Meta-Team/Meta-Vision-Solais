@@ -11,8 +11,6 @@
 #include <utility>
 #include <google/protobuf/message.h>
 
-using boost::asio::ip::tcp;
-
 namespace meta {
 
 /**
@@ -183,7 +181,7 @@ protected:
      * @param disconnectCallback  Callback function when disconnected.
      */
     template<class T>
-    void setupSocket(std::shared_ptr<tcp::socket> newSocket, std::function<void(T *)> disconnectCallback);
+    void setupSocket(std::shared_ptr<boost::asio::ip::tcp::socket> newSocket, std::function<void(T *)> disconnectCallback);
 
     /**
      * Close the socket. disconnectCallback maybe triggered by handleRecv if the recv cycle is still running.
@@ -199,7 +197,7 @@ private:
 
     // ================================ Socket and IO Context ================================
 
-    std::shared_ptr<tcp::socket> socket = nullptr;
+    std::shared_ptr<boost::asio::ip::tcp::socket> socket = nullptr;
     std::atomic<bool> socketDisconnected = false;
 
     // ================================ Sending ================================
@@ -281,10 +279,10 @@ public:
 protected:
 
     int port;
-    tcp::acceptor acceptor;
+    boost::asio::ip::tcp::acceptor acceptor;
     ServerDisconnectionCallback disconnectionCallback;
 
-    void handleAccept(std::shared_ptr<tcp::socket> socket, const boost::system::error_code &error);
+    void handleAccept(std::shared_ptr<boost::asio::ip::tcp::socket> socket, const boost::system::error_code &error);
 
 };
 
@@ -320,7 +318,7 @@ public:
 
 protected:
 
-    tcp::resolver resolver;
+    boost::asio::ip::tcp::resolver resolver;
 
     ClientDisconnectionCallback disconnectionCallback;
 

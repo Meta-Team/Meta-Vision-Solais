@@ -6,6 +6,8 @@
 #include <iostream>
 #include <utility>
 
+using boost::asio::ip::tcp;
+
 namespace meta {
 
 TerminalSocketBase::TerminalSocketBase(boost::asio::io_context &ioContext)

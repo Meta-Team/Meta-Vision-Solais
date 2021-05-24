@@ -31,7 +31,7 @@ public:
      * @param imagePoints
      * @return Displacement: x, y, z(distance) in mm
      */
-    std::array<float, 3> solve(const std::array<cv::Point2f, 4> &imagePoints);
+    cv::Point3f solve(const std::array<cv::Point2f, 4> &imagePoints);
 
 private:
 
