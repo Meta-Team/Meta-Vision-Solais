@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Setup UI
     ui->setupUi(this);
-    phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout);
+    phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout, this);
 
     // Setup IO
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
@@ -36,27 +36,56 @@ MainWindow::MainWindow(QWidget *parent) :
     statsUpdateTimer->setSingleShot(false);
     statsUpdateTimer->start(1000);  // update socket stats per second
 
+    // Setup signals and functions
+
+    // Phases
+    connect(phases, &PhaseController::parameterEdited, [this] {
+        ui->reloadParamsButton->setStyleSheet("font-weight: bold; color: red");
+        ui->saveParamButton->setStyleSheet("font-weight: bold; color: red");
+    });
+
+    // Connection
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->transferImagesCheck, &QCheckBox::stateChanged, [this](auto state) {
-        if (state == Qt::Checked) socket.sendBytes("fetch"); else phases->resetImageLabels(); });
+        if (state == Qt::Checked) socket.sendBytes("fetch"); else phases->resetImageLabels();
+    });
     connect(ui->reloadListsButton, &QPushButton::clicked, [this] {
         socket.sendBytes("reloadLists"); socket.sendBytes("fetchLists"); });
 
-    connect(ui->stopButton, &QPushButton::clicked, [this] { socket.sendBytes("stop"); });
+    // Execution
+    connect(ui->stopButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("stop");
+    });
     connect(ui->runCameraButton, &QPushButton::clicked, [this] {
-        socket.sendBytes("runCamera"); socket.sendBytes("fetch"); });
-    connect(ui->dataSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
-        if (current) socket.sendSingleString("loadImageDataSet", current->text().toStdString()); });
-    connect(ui->imageList, &QListWidget::itemClicked, this, [this] (auto item) {
-        if (item) socket.sendSingleString("runImage", item->text().toStdString()); });
+        socket.sendBytes("runCamera");
+        socket.sendBytes("fetch");
+        lastRunSingleImage = false;
+    });
+    connect(ui->imageSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
+        if (current) socket.sendSingleString("switchImageSet", current->text().toStdString());
+        lastRunSingleImage = false;
+    });
+    connect(ui->imageList, &QListWidget::currentItemChanged, this, &MainWindow::runOnCurrentSelectedImage);
+    connect(ui->runImageSetButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("runImageSet");
+        socket.sendBytes("fetch");
+        lastRunSingleImage = false;
+    });
 
+    // Parameters
     connect(ui->paramSetCombo, &QComboBox::currentTextChanged, [this](const QString &text) {
-        socket.sendSingleString("switchParams", text.toStdString());
+        socket.sendSingleString("switchParamSet", text.toStdString());
         socket.sendBytes("getParams");
     });
-    connect(ui->reloadParamsButton, &QPushButton::clicked, [this] { socket.sendBytes("getParams"); });
-    connect(ui->saveParamButton, &QPushButton::clicked,
-            [this] { socket.sendBytes("setParams", phases->getParamSet());});
+    connect(ui->reloadParamsButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("getParams");
+    });
+    connect(ui->saveParamButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("setParams", phases->getParamSet());
+        ui->reloadParamsButton->setStyleSheet("");
+        ui->saveParamButton->setStyleSheet("");
+        if (lastRunSingleImage) runOnCurrentSelectedImage();
+    });
 
 
 }
@@ -90,7 +119,7 @@ void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
     ui->connectButton->setText("Connect");
 
     phases->resetImageLabels();
-    ui->dataSetList->clear();
+    ui->imageSetList->clear();
     ui->imageList->clear();
     ui->paramSetCombo->clear();
 }
@@ -116,6 +145,8 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
             showStatusMessage("Received an invalid ParamSet package");
         } else {
             phases->applyParamSet(paramsMessage);
+            ui->reloadParamsButton->setStyleSheet("");
+            ui->saveParamButton->setStyleSheet("");
         }
 
     } else {
@@ -157,11 +188,11 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<con
         for (const auto &image : list) ui->imageList->addItem(image);
         ui->imageList->blockSignals(false);
 
-    } else if (name == "dataSetList") {
-        ui->dataSetList->blockSignals(true);
-        ui->dataSetList->clear();
-        for (const auto &image : list) ui->dataSetList->addItem(image);
-        ui->dataSetList->blockSignals(false);
+    } else if (name == "imageSetList") {
+        ui->imageSetList->blockSignals(true);
+        ui->imageSetList->clear();
+        for (const auto &image : list) ui->imageSetList->addItem(image);
+        ui->imageSetList->blockSignals(false);
         ui->imageList->clear();  // current data set is reset
 
     } else if (name == "paramSetList") {
@@ -176,6 +207,13 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<con
 
     } else {
         showStatusMessage("Unknown list-of-string package <" + QString(name.data()) + ">");
+    }
+}
+
+void MainWindow::runOnCurrentSelectedImage() {
+    if (ui->imageList->currentItem()) {
+        socket.sendSingleString("runImage", ui->imageList->currentItem()->text().toStdString());
+        lastRunSingleImage = true;
     }
 }
 

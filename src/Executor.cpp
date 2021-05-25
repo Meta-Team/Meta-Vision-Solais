@@ -4,39 +4,51 @@
 
 #include "Executor.h"
 #include "Camera.h"
+#include "ImageSet.h"
 #include "ArmorDetector.h"
-#include "DataManager.h"
+#include "ParamSetManager.h"
 
 namespace meta {
 
-Executor::Executor(Camera *camera, ArmorDetector *detector, DataManager *dataManager)
-        : camera_(camera), detector_(detector), dataManager_(dataManager),
+Executor::Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager)
+        : camera_(camera), imageSet_(imageSet), detector_(detector), paramSetManager_(paramSetManager),
           threadShouldExit(false), frameCounter(0) {
 
     reloadLists();
 }
 
-void Executor::switchParams(const string &paramSetName) {
-    dataManager_->switchToParamSet(paramSetName);
-    applyParamsInternal(dataManager_->loadCurrentParamSet());
+void Executor::switchParamSet(const string &paramSetName) {
+    paramSetManager_->switchToParamSet(paramSetName);
+    applyParams(paramSetManager_->loadCurrentParamSet());
 }
 
 void Executor::saveAndApplyParams(const ParamSet &p) {
-    dataManager_->saveCurrentParamSet(p);
-    applyParamsInternal(p);
+    paramSetManager_->saveCurrentParamSet(p);
+    applyParams(p);
 }
 
-void Executor::applyParamsInternal(const ParamSet &p) {
-    // Skip re-opening the camera_ if the parameter doesn't change to save some time
+void Executor::applyParams(const ParamSet &p) {
+    // For better user experience for parameter tuning, here we don't stop the detection thread
+    // But if there is some changes in the streaming source, detection may terminate anyway
+
+    params = p;
+
+    // Skip re-opening the video source if the parameter doesn't change to save some time
     if (!(p.camera_id() == params.camera_id() && p.fps() == p.fps() &&
           p.image_width() == params.image_width() && p.image_height() == params.image_height() &&
           p.gamma().enabled() == p.gamma().enabled() && p.gamma().val() == p.gamma().val())) {
 
-        if (camera_->isOpened()) camera_->release();
-        camera_->open(p);
+        if (camera_->isOpened()) {
+            camera_->close();
+            camera_->open(params);
+        }
+
+        if (imageSet_->isOpened()) {
+            imageSet_->close();
+            imageSet_->open(params);
+        }
     }
     detector_->setParams(p);
-    params = p;
 }
 
 int Executor::fetchAndClearFrameCounter() {
@@ -58,10 +70,31 @@ void Executor::stop() {
 bool Executor::startRealTimeDetection() {
     if (th) stop();
 
+    if (!camera_->isOpened()) {
+        if (!camera_->open(params)) {
+            return false;
+        }
+    }
+
     // Start real-time detection thread
     curAction = REAL_TIME_DETECTION;
     threadShouldExit = false;
-    th = new std::thread(&Executor::runRealTimeDetection, this);
+    th = new std::thread(&Executor::runStreamingDetection, this, camera_);
+    return true;
+}
+
+bool Executor::startImageSetDetection() {
+    if (th) stop();
+
+    if (!imageSet_->isOpened()) imageSet_->close();  // always restart
+    if (!imageSet_->open(params)) {
+        return false;
+    }
+
+    // Start real-time detection thread
+    curAction = REAL_TIME_DETECTION;
+    threadShouldExit = false;
+    th = new std::thread(&Executor::runStreamingDetection, this, imageSet_);
     return true;
 }
 
@@ -70,10 +103,8 @@ bool Executor::startSingleImageDetection(const string &imageName) {
 
     curAction = SINGLE_IMAGE_DETECTION;
 
-    cv::Mat img = dataManager_->getImage(imageName);
-    if (img.rows != params.image_height() || img.cols != params.image_width()) {
-        cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
-    }
+    // Run on single image without starting the streaming thread
+    cv::Mat img = imageSet_->getSingleImage(imageName, params);
 
     detector_->clearImages();  // clear data of last execution
     auto targets = detector_->detect(img);
@@ -85,33 +116,47 @@ bool Executor::startSingleImageDetection(const string &imageName) {
     return true;
 }
 
-void Executor::runRealTimeDetection() {
+void Executor::runStreamingDetection(VideoSource *source) {
     frameCounter = 0;
-    unsigned int lastFrameID = -1;
-    while (!threadShouldExit) {
+
+    unsigned int lastFrameID = source->getFrameID();  // use last frame ID to wait for new frame
+    while (true) {
 
         // Wait for new frame
-        while (lastFrameID == camera_->getFrameID());
-        lastFrameID = camera_->getFrameID();
+        while (!threadShouldExit && lastFrameID == source->getFrameID());
+
+        if (threadShouldExit || source->getFrameID() == -1) {
+            break;
+        }
+        lastFrameID = source->getFrameID();  // update frame ID
+
+        auto &img = source->getFrame();  // no need for copying due to double buffering
+        source->fetchNextFrame();
 
         // Run armor detection algorithm
-        auto targets = detector_->detect(camera_->getFrame());
+        auto targets = detector_->detect(img);
 
         // Discard the result for now
         (void) targets;
 
+        // Increment frame counter
         frameCounter++;
     }
+
+    std::cout << "Executor: stopped\n";
+
+    source->close();
+    curAction = NONE;
 }
 
 void Executor::reloadLists() {
-    dataManager_->reloadDataSetList();
-    dataManager_->reloadParamSetList();  // switch to default parameter set
-    applyParamsInternal(dataManager_->loadCurrentParamSet());
+    imageSet_->reloadImageSetList();
+    paramSetManager_->reloadParamSetList();  // switch to default parameter set
+    applyParams(paramSetManager_->loadCurrentParamSet());
 }
 
-int Executor::loadImageDataSet(const string &path) {
-    return dataManager_->loadDataSet(path);
+int Executor::switchImageSet(const string &path) {
+    return imageSet_->switchImageSet(path);
 }
 
 }

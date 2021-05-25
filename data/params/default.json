@@ -8,7 +8,7 @@
   "enabled": false,
   "val": 0
  },
- "brightness_threshold": 155,
+ "brightness_threshold": 150,
  "color_threshold_mode": "RB_CHANNELS",
  "hsv_red_hue": {
   "min": 150,
@@ -21,7 +21,7 @@
  "rb_channel_threshold": 55,
  "color_dilate": {
   "enabled": true,
-  "val": 6
+  "val": 5
  },
  "contour_fit_function": "ELLIPSE",
  "contour_pixel_count": {
@@ -30,38 +30,42 @@
  },
  "contour_min_area": {
   "enabled": true,
-  "val": 15
+  "val": 5
  },
  "long_edge_min_length": {
   "enabled": true,
-  "val": 15
+  "val": 5
  },
  "light_aspect_ratio": {
   "enabled": true,
-  "min": 1.5,
-  "max": 15
+  "min": 1.2,
+  "max": 20
+ },
+ "light_max_rotation": {
+  "enabled": true,
+  "val": 30
  },
  "light_length_max_ratio": {
   "enabled": true,
-  "val": 2
+  "val": 1.4
  },
  "light_x_dist_over_l": {
-  "enabled": false,
+  "enabled": true,
   "min": 1,
-  "max": 3
+  "max": 6
  },
  "light_y_dist_over_l": {
-  "enabled": false,
+  "enabled": true,
   "min": 0,
-  "max": 1
+  "max": 0.9
  },
  "light_angle_max_diff": {
   "enabled": true,
-  "val": 10
+  "val": 15
  },
  "armor_aspect_ratio": {
   "enabled": true,
   "min": 1.25,
-  "max": 5
+  "max": 4.5
  }
 }

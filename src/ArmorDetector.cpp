@@ -115,17 +115,21 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
                     assert(!"Invalid params.contour_fit_function()");
             }
             canonicalizeRotatedRect(rect);
+            // Now, width: the short edge, height: the long edge, angle: in [0, 180)
 
             // Filter long edge min length
-            double longEdgeLength = max(rect.size.width, rect.size.height);
-            if (params.long_edge_min_length().enabled() && longEdgeLength < params.long_edge_min_length().val()) {
+            if (params.long_edge_min_length().enabled() && rect.size.height < params.long_edge_min_length().val()) {
+                continue;
+            }
+
+            // Filter angle
+            if (params.light_max_rotation().enabled() && std::min(rect.angle, 180 - rect.angle) >= params.light_max_rotation().val()) {
                 continue;
             }
 
             // Filter aspect ratio
-            double shortEdgeLength = min(rect.size.width, rect.size.height);
             if (params.light_aspect_ratio().enabled()) {
-                double aspectRatio = longEdgeLength / shortEdgeLength;
+                double aspectRatio = rect.size.height / rect.size.width;
                 if (!inRange(aspectRatio, params.light_aspect_ratio())) {
                     continue;
                 }

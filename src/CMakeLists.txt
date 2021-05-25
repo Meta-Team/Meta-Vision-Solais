@@ -25,8 +25,11 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND TARGET libParameters AND
     add_library(libSolais
             ArmorDetector.cpp
             ArmorSelector.cpp
-            DataManager.cpp
+            AimingCalculator.cpp
+            ParamSetManager.cpp
             Camera.cpp
+            ImageSet.cpp
+            VideoSource.cpp
             Executor.cpp)
     target_link_libraries(libSolais
             ${OpenCV_LIBRARIES}

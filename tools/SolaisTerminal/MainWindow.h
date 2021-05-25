@@ -52,6 +52,10 @@ private:
 
     void showStatusMessage(const QString &text);
 
+    void runOnCurrentSelectedImage();
+
+    bool lastRunSingleImage = false;
+
 private slots:
 
     void connectToServer();

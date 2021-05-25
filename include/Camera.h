@@ -5,33 +5,31 @@
 #ifndef META_VISION_SOLAIS_CAMERA_H
 #define META_VISION_SOLAIS_CAMERA_H
 
-#include "Common.h"
 #include <thread>
 #include <atomic>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/videoio.hpp>
 #include "Parameters.pb.h"
+#include "VideoSource.h"
 
 namespace meta {
 
-class Camera {
+class Camera : public VideoSource {
 public:
 
     explicit Camera() : lastBuffer(0) {}
 
     ~Camera();
 
-    void open(const package::ParamSet &params);
+    bool open(const package::ParamSet &params) override;
 
-    bool isOpened() const { return cap.isOpened(); }
+    bool isOpened() const override { return cap.isOpened(); }
 
-    string getCapInfo() const { return capInfoSS.str(); };
+    std::string getCapInfo() const { return capInfoSS.str(); };
 
-    void release();
+    void close() override;
 
-    unsigned int getFrameID() const { return bufferFrameID[lastBuffer]; }
+    int getFrameID() const override { return bufferFrameID[lastBuffer]; }
 
-    const cv::Mat &getFrame() const { return buffer[lastBuffer]; }
+    const cv::Mat &getFrame() const override { return buffer[lastBuffer]; }
 
     using NewFrameCallBack = void (*)(void *);
 
@@ -47,7 +45,7 @@ private:
     // Double buffering
     std::atomic<int> lastBuffer;
     cv::Mat buffer[2];
-    unsigned int bufferFrameID[2] = {0, 0};
+    int bufferFrameID[2] = {0, 0};
 
     std::thread *th = nullptr;
     std::atomic<bool> threadShouldExit;

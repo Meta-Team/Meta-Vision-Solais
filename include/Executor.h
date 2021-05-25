@@ -5,27 +5,30 @@
 #ifndef META_VISION_SOLAIS_EXECUTOR_H
 #define META_VISION_SOLAIS_EXECUTOR_H
 
-#include "Common.h"
+// Include as few modules as possible and use forward declarations
 #include "Parameters.h"
+#include "VideoSource.h"
 #include <thread>
 
 namespace meta {
 
 // Forward declarations
 class Camera;
+class ImageSet;
 class ArmorDetector;
-class DataManager;
+class ParamSetManager;
 
 class Executor {
 public:
 
-    explicit Executor(Camera *camera, ArmorDetector *detector, DataManager *dataManager);
+    explicit Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager);
 
     const Camera *camera() const { return camera_; }
+    const ImageSet *imageSet() const { return imageSet_; }
     const ArmorDetector *detector() const { return detector_; }
-    const DataManager *dataManager() const { return dataManager_; };
+    const ParamSetManager *dataManager() const { return paramSetManager_; };
 
-    void switchParams(const string &paramSetName);
+    void switchParamSet(const std::string &paramSetName);
 
     void saveAndApplyParams(const ParamSet &p);
 
@@ -43,19 +46,22 @@ public:
 
     bool startRealTimeDetection();
 
-    bool startSingleImageDetection(const string &imageName);
+    bool startSingleImageDetection(const std::string &imageName);
+
+    bool startImageSetDetection();
 
     int fetchAndClearFrameCounter();
 
     void reloadLists();
 
-    int loadImageDataSet(const string &path);
+    int switchImageSet(const std::string &path);
 
 private:
 
     Camera *camera_;
+    ImageSet *imageSet_;
     ArmorDetector *detector_;
-    DataManager *dataManager_;
+    ParamSetManager *paramSetManager_;
 
     ParamSet params;
 
@@ -65,9 +71,9 @@ private:
     std::atomic<bool> threadShouldExit;
     std::atomic<int> frameCounter;
 
-    void applyParamsInternal(const ParamSet &p);
+    void applyParams(const ParamSet &p);
 
-    void runRealTimeDetection();
+    void runStreamingDetection(VideoSource *source);
 
 };
 

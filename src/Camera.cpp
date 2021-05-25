@@ -7,17 +7,24 @@
 
 namespace meta {
 
-void Camera::open(const package::ParamSet &params) {
+bool Camera::open(const package::ParamSet &params) {
     // Start the fetching thread
     if (th) {
-        release();
+        close();
     }
     threadShouldExit = false;
     th = new std::thread(&Camera::readFrameFromCamera, this, params);
+
+    return true;
 }
 
 Camera::~Camera() {
-    release();
+    if (th) {
+        threadShouldExit = true;
+        th->join();
+        delete th;
+        th = nullptr;
+    }
 }
 
 void Camera::registerNewFrameCallBack(Camera::NewFrameCallBack callBack, void *param) {
@@ -73,19 +80,21 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
               << "Gamma: " << cap.get(cv::CAP_PROP_GAMMA) << "\n";
     std::cout << capInfoSS.rdbuf();
 
-    while(!threadShouldExit) {
+    while(true) {
 
         int workingBuffer = 1 - lastBuffer;
 
-        if (!cap.isOpened()) {
+        if (threadShouldExit || !cap.isOpened()) {
+            bufferFrameID[workingBuffer] = -1;  // indicate invalid frame
             break;
         }
 
         if (!cap.read(buffer[workingBuffer])) {
-            continue;
+            continue;  // try again
         }
 
         bufferFrameID[workingBuffer] = bufferFrameID[lastBuffer] + 1;
+        if (bufferFrameID[workingBuffer] >= FRAME_ID_MAX) bufferFrameID[workingBuffer] = 0;
         lastBuffer = workingBuffer;
 
         for (const auto &item : callbacks) {
@@ -94,10 +103,10 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
     }
 
     cap.release();
-    std::cout << "Camera closed\n";
+    std::cout << "Camera: closed\n";
 }
 
-void Camera::release() {
+void Camera::close() {
     if (th) {
         threadShouldExit = true;
         th->join();

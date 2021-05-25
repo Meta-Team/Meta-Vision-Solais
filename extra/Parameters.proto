@@ -84,9 +84,10 @@ message ParamSet {
   ToggledDouble contour_min_area = 15;           // Min contour area
   ToggledInt long_edge_min_length = 16;          // Min length of the long edge
   ToggledDoubleRange light_aspect_ratio = 17;    // Aspect ratio range
+  ToggledDouble light_max_rotation = 23;         // min(angle, 180 - angle) <
 
   // GROUP: Armors
-  ToggledDouble light_length_max_ratio = 18;     // Long length / short length <
+  ToggledDouble light_length_max_ratio = 18;     // Long light / short light <
   ToggledDoubleRange light_x_dist_over_l = 19;   // abs(X1 - X2) / avgL
   ToggledDoubleRange light_y_dist_over_l = 20;   // abs(Y1 - Y2) / avgL
   ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <

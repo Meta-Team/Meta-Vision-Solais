@@ -3,9 +3,10 @@
 //
 
 #include "Camera.h"
+#include "ImageSet.h"
 #include "Executor.h"
 #include "ArmorDetector.h"
-#include "DataManager.h"
+#include "ParamSetManager.h"
 #include "TerminalSocket.h"
 #include "TerminalParameters.h"
 #include "Parameters.pb.h"
@@ -75,12 +76,12 @@ void sendResult(bool forceSendResult = false) {
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
-    if (name == "loadImageDataSet") {
-        if (executor->loadImageDataSet(string(s)) == 0) {
+    if (name == "switchImageSet") {
+        if (executor->switchImageSet(string(s)) == 0) {
             sendStatusBarMsg("Failed to load data set " + string(s));
         } else {
-            socketServer.sendListOfStrings("imageList", executor->dataManager()->getImageList());
-            sendStatusBarMsg("Data set \"" + string(s) + "\" loaded");
+            socketServer.sendListOfStrings("imageList", executor->imageSet()->getImageList());
+            sendStatusBarMsg("Image set \"" + string(s) + "\" loaded");
         }
 
     } else if (name == "runImage") {
@@ -88,8 +89,8 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
         sendStatusBarMsg("Run on image " + string(s));
         sendResult(true);  // always send result
 
-    } else if (name == "switchParams") {
-        executor->switchParams(string(s));
+    } else if (name == "switchParamSet") {
+        executor->switchParamSet(string(s));
         sendStatusBarMsg("Switched to parameter set \"" + string(s) + "\"");
 
     } else goto INVALID_COMMAND;
@@ -130,8 +131,15 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
             sendStatusBarMsg("Start real time detection");
         }
 
+    } else if (name == "runImageSet") {
+        if (!executor->startImageSetDetection()) {
+            sendStatusBarMsg("Failed to start streaming on image set");
+        } else {
+            sendStatusBarMsg("Start streaming on image set");
+        }
+
     } else if (name == "fetchLists") {
-        socketServer.sendListOfStrings("dataSetList", executor->dataManager()->getDataSetList());
+        socketServer.sendListOfStrings("imageSetList", executor->imageSet()->getImageSetList());
         socketServer.sendListOfStrings("paramSetList", executor->dataManager()->getParamSetList());
         socketServer.sendSingleString("currentParamSetName", executor->dataManager()->currentParamSetName());
         socketServer.sendBytes("params", executor->getCurrentParams());
@@ -146,15 +154,17 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
 // Should not operates on these components directly
 std::unique_ptr<Camera> camera;
+std::unique_ptr<ImageSet> imageSet;
 std::unique_ptr<ArmorDetector> detector;
-std::unique_ptr<DataManager> dataManager;
+std::unique_ptr<ParamSetManager> dataManager;
 
 int main(int argc, char *argv[]) {
 
     camera = std::make_unique<Camera>();
+    imageSet = std::make_unique<ImageSet>();
     detector = std::make_unique<ArmorDetector>();
-    dataManager = std::make_unique<DataManager>();
-    executor = std::make_unique<Executor>(camera.get(), detector.get(), dataManager.get());
+    dataManager = std::make_unique<ParamSetManager>();
+    executor = std::make_unique<Executor>(camera.get(), imageSet.get(), detector.get(), dataManager.get());
 
     socketServer.startAccept();
     socketServer.setCallbacks(handleRecvSingleString,

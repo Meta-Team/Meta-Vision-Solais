@@ -2,65 +2,19 @@
 // Created by liuzikai on 3/6/21.
 //
 
-#include "DataManager.h"
+#include "ParamSetManager.h"
 #include <iostream>
 #include <pugixml.hpp>
 #include <google/protobuf/util/json_util.h>
 
 namespace meta {
 
-DataManager::DataManager()
-        : imageSetRoot(fs::path(DATA_SET_ROOT) / "images"),
-          paramSetRoot(fs::path(PARAM_SET_ROOT) / "params"){
+ParamSetManager::ParamSetManager()
+        : paramSetRoot(fs::path(PARAM_SET_ROOT) / "params"){
 
 }
 
-void DataManager::reloadDataSetList() {
-    dataSets.clear();
-    currentDataSetPath = "";
-    images.clear();
-    if (fs::is_directory(imageSetRoot)) {
-        for (const auto &entry : fs::directory_iterator(imageSetRoot)) {
-            if (fs::is_directory(imageSetRoot / entry.path().filename())) {
-                dataSets.emplace_back(entry.path().filename().string());
-            }
-        }
-    }
-}
-
-int DataManager::loadDataSet(const string &dataSetName) {
-    currentDataSetPath = imageSetRoot / dataSetName;
-    images.clear();
-
-    std::cout << "DataManager: Loading data set " << currentDataSetPath << "..." << std::endl;
-
-    for (const auto &entry : fs::directory_iterator(currentDataSetPath)) {
-        if (strcasecmp(entry.path().extension().c_str(), ".jpg") == 0) {
-
-            fs::path xmlFile = fs::path(currentDataSetPath) / entry.path().stem();
-            xmlFile += ".xml";
-
-            if (!fs::exists(xmlFile)) {
-                std::cerr << "Missing xml file: " << entry.path().filename() << std::endl;
-                continue;
-            }
-
-            images.emplace_back(entry.path().filename().string());
-        }
-    }
-
-    std::cout << "DataManager: " << images.size() << " images loaded." << std::endl;
-
-    return images.size();
-}
-
-cv::Mat DataManager::getImage(const string &imageName) const {
-    if (currentDataSetPath.empty()) return cv::Mat();
-    fs::path imageFile = fs::path(currentDataSetPath) / imageName;
-    return cv::imread(imageFile.string());
-}
-
-void DataManager::reloadParamSetList() {
+void ParamSetManager::reloadParamSetList() {
     paramsSetNames.clear();
 
     if (!fs::is_directory(paramSetRoot) || !fs::exists(paramSetRoot / "default.json")) {
@@ -87,6 +41,7 @@ void DataManager::reloadParamSetList() {
         params.set_allocated_contour_min_area(allocToggledDouble(false, 3));
         params.set_allocated_long_edge_min_length(allocToggledInt(true, 30));
         params.set_allocated_light_aspect_ratio(allocToggledDoubleRange(true, 2, 30));
+        params.set_allocated_light_max_rotation(allocToggledDouble(true, 15));
 
         params.set_allocated_light_length_max_ratio(allocToggledDouble(true, 1.5));
         params.set_allocated_light_x_dist_over_l(allocToggledDoubleRange(false, 1, 3));
@@ -106,7 +61,7 @@ void DataManager::reloadParamSetList() {
     curParamSetName = "default";  // switch to default
 }
 
-ParamSet DataManager::loadCurrentParamSet() const {
+ParamSet ParamSetManager::loadCurrentParamSet() const {
     ParamSet p;
     auto filename = paramSetRoot / (curParamSetName + ".json");
 
@@ -118,12 +73,12 @@ ParamSet DataManager::loadCurrentParamSet() const {
     return p;
 }
 
-void DataManager::saveCurrentParamSet(const ParamSet &p) {
+void ParamSetManager::saveCurrentParamSet(const ParamSet &p) {
     saveParamSetToJson(p, paramSetRoot / (curParamSetName + ".json"));
 }
 
-void DataManager::saveParamSetToJson(const ParamSet &p, const fs::path &filename) {
-    string content;
+void ParamSetManager::saveParamSetToJson(const ParamSet &p, const fs::path &filename) {
+    std::string content;
 
     google::protobuf::util::JsonPrintOptions options;
     options.add_whitespace = true;

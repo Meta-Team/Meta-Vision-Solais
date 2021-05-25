@@ -66,11 +66,12 @@ brew install cmake opencv boost pugixml zbar
 | stop | NameOnly | | Stop execution |
 | runCamera | Bytes | nullptr | Start execution on camera |
 | fps | NameOnly | | Fetch frame processed |
-| switchParams | String | ParamSet name | |
+| switchParamSet | String | ParamSet name | |
 | setParams | Bytes | ParamSet | |
 | getParams | NameOnly | | Fetch current params |
-| loadImageDataSet | String | Path of the data set | |
+| switchImageSet | String | Path of the data set | |
 | runImage | String | Image Name | Result sent back automatically |
+| runImageSet | NameOnly |  | Use current ImageSet set by switchImageSet |
 | reloadLists | NameOnly | | Reload at core, need to fetch manually |
 | fetchLists | NameOnly | | Fetch data set list and parameter set list |
 | getCurrentParamSetName | NameOnly | | |
@@ -84,5 +85,5 @@ brew install cmake opencv boost pugixml zbar
 | fps | Int | Frame processed since last fetch |
 | params | Bytes | Current params |
 | imageList | ListOfStrings | Image names |
-| dataSetList | ListOfStrings | Data set names |
+| imageSetList | ListOfStrings | Data set names |
 | currentParamSetName | String | |
