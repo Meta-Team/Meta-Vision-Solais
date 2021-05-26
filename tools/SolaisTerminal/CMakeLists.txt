@@ -14,6 +14,7 @@ if (Qt5_FOUND AND Boost_FOUND AND TARGET libParameters AND TARGET libTerminalSoc
             main.cpp
             MainWindow.ui
             MainWindow.cpp
+            CollapsibleGroupBox.hpp
 #            AnnotatedMat.cpp
 #            AnnotatedMatViewer.ui
 #            AnnotatedMatViewer.cpp
@@ -27,7 +28,7 @@ if (Qt5_FOUND AND Boost_FOUND AND TARGET libParameters AND TARGET libTerminalSoc
             libParameters
             libTerminalSocket)
     target_include_directories(SolarisTerminal
-            PRIVATE ${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
+            PRIVATE ${OpenCV_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 else()
     message(WARNING "=> Target SolarisTerminal is not available to build. Depends: Qt, Boost, libParameters, libTerminalSocket")
 endif ()
