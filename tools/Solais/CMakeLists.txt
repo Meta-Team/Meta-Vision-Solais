@@ -5,5 +5,5 @@ if (TARGET libSolais AND TARGET libParameters)
     target_link_libraries(Solaris
             PRIVATE libSolais libParameters)
 else()
-    message(WARNING "=> Target Solaris is not available to build. Depends: libSolais, libParameters")
+    message("=> Target Solaris is not available to build. Depends: libSolais, libParameters")
 endif()

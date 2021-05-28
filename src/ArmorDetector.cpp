@@ -8,7 +8,24 @@ using namespace cv;
 
 namespace meta {
 
-std::vector<Point2f> ArmorDetector::detect(const Mat &img) {
+std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) {
+    auto ret = detect_(img);
+    // Assign (no copying) the result all at once, if the result is not being processed
+    if (outputMutex.try_lock()) {
+        imgOriginalOutput = imgOriginal;
+        imgGrayOutput = imgGray;
+        imgBrightnessOutput = imgBrightness;
+        imgColorOutput = imgColor;
+        imgLightsOutput = imgLights;
+        imgContoursOutput = imgContours;
+        imgArmorsOutput = imgArmors;
+        outputMutex.unlock();
+    }
+    // Otherwise, simple discard the results of current run
+    return ret;
+}
+
+std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img) {
 
     /*
      * Note: in this mega function, steps are wrapped with {} to reduce local variable pollution and make it easier to
@@ -162,11 +179,11 @@ std::vector<Point2f> ArmorDetector::detect(const Mat &img) {
      */
 
     // ================================ Combine Lights to Armors ================================
-    std::vector<Point2f> acceptedArmorCenters;
+    std::vector<DetectedArmor> acceptedArmors;
     {
         imgOriginal.copyTo(imgArmors);
 
-        Point2f armorPoints[4];
+        std::array<Point2f, 4> armorPoints;
         /*
          *              1 ----------- 2
          *            |*|             |*|
@@ -290,26 +307,18 @@ std::vector<Point2f> ArmorDetector::detect(const Mat &img) {
                 // Just use the average X and Y coordinate for the four point
                 center.x /= 4;
                 center.y /= 4;
-                acceptedArmorCenters.emplace_back(center);
+
+                acceptedArmors.emplace_back(DetectedArmor{
+                    armorPoints,
+                    center
+                });
+
                 cv::circle(imgArmors, center, 2, Scalar(0, 0, 255), 2);
             }
         }
     }
 
-    // Assign (no copying) the result all at once, if the result is not being processed
-    if (outputMutex.try_lock()) {
-        imgOriginalOutput = imgOriginal;
-        imgGrayOutput = imgGray;
-        imgBrightnessOutput = imgBrightness;
-        imgColorOutput = imgColor;
-        imgLightsOutput = imgLights;
-        imgContoursOutput = imgContours;
-        imgArmorsOutput = imgArmors;
-        outputMutex.unlock();
-    }
-    // Otherwise, simple discard the results of current run
-
-    return acceptedArmorCenters;
+    return acceptedArmors;
 }
 
 void ArmorDetector::drawRotatedRect(Mat &img, const RotatedRect &rect, const Scalar &boarderColor) {

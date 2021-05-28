@@ -2,68 +2,62 @@ if (Boost_FOUND)
     add_library(libTerminalSocket TerminalSocket.cpp)
     target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY})
 else()
-    message(WARNING "=> Target libTerminalSocket is not available to build. Depends: Boost")
+    message("=> Target libTerminalSocket is not available to build. Depends: Boost")
 endif ()
 
 if (Boost_FOUND)
+    if(NOT SERIAL_DEVICE)
+        set(SERIAL_DEVICE "/dev/ttyTHS1")
+        message("Use default serial device \"${SERIAL_DEVICE}\"")
+    else()
+        message("Serial device is set as \"${SERIAL_DEVICE}\"")
+    endif ()
+
     add_library(libSerial Serial.cpp CRC.cpp)
+    target_compile_definitions(libSerial
+            PUBLIC "SERIAL_DEVICE=\"${SERIAL_DEVICE}\"")
     target_link_libraries(libSerial PUBLIC ${Boost_SYSTEM_LIBRARY})
 else()
-    message(WARNING "=> Target libSerial is not available to build. Depends: Boost")
+    message("=> Target libSerial is not available to build. Depends: Boost")
 endif ()
 
 if (OpenCV_FOUND)
-    add_library(libArmorSolver ArmorSolver.cpp)
+    add_library(libArmorSolver PositionCalculator.cpp)
     target_link_libraries(libArmorSolver ${OpenCV_LIBRARIES})
 else()
-    message(WARNING "=> Target libArmorSolver is not available to build. Depends: OpenCV")
+    message("=> Target libArmorSolver is not available to build. Depends: OpenCV")
 endif()
 
-#find_package(PkgConfig REQUIRED)
-#set(GSTREAMER_MINIMUM_VERSION 1.0.5)
-#pkg_check_modules(GST1_TEST gstreamer-1.0)
-#if ( GST1_TEST_FOUND AND NOT ${GST1_TEST_VERSION} VERSION_LESS ${GSTREAMER_MINIMUM_VERSION} )
-#    pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
-#    pkg_check_modules(GSTREAMER-APP REQUIRED gstreamer-app-1.0)
-#    pkg_check_modules(GSTREAMER-AUDIO REQUIRED gstreamer-audio-1.0)
-#    pkg_check_modules(GSTREAMER-PBUTILS REQUIRED gstreamer-pbutils-1.0)
-#    pkg_check_modules(GSTREAMER-FFT REQUIRED gstreamer-fft-1.0)
-#    add_definitions(-DGST_API_VERSION_1=1)
-#else()
-#    # fallback to gstreamer-1.0
-#    unset(GSTREAMER_MINIMUM_VERSION)
-#    pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
-#    pkg_check_modules(GSTREAMER-APP REQUIRED gstreamer-app-1.0)
-#    pkg_check_modules(GSTREAMER-AUDIO REQUIRED gstreamer-audio-1.0)
-#    pkg_check_modules(GSTREAMER-FFT REQUIRED gstreamer-fft-1.0)
-#    set_source_files_properties(WebKitWebAudioSourceGStreamer.cpp PROPERTIES COMPILE_DEFINITIONS "GLIB_DISABLE_DEPRECATION_WARNINGS=1")
-#endif()
-#
-#include_directories(
-#        ${GSTREAMER_INCLUDE_DIRS}
-#        ${GSTREAMER-APP_INCLUDE_DIRS}
-#        ${GSTREAMER-AUDIO_INCLUDE_DIRS}
-#        ${GSTREAMER-PBUTILS_INCLUDE_DIRS}
-#        ${GSTREAMER-FFT_INCLUDE_DIRS}
-#)
-#link_directories(
-#        ${GSTREAMER_LIBRARY_DIRS}
-#        ${GSTREAMER-APP_LIBRARY_DIRS}
-#        ${GSTREAMER-AUDIO_LIBRARY_DIRS}
-#        ${GSTREAMER-PBUTILS_LIBRARY_DIRS}
-#        ${GSTREAMER-FFT_LIBRARY_DIRS}
-#)
+if (OpenCV_FOUND AND TARGET libParameters)
+    add_library(libCamera Camera.cpp)
+    target_link_libraries(libCamera ${OpenCV_LIBRARIES} libParameters)
+else()
+    message("=> Target libCamera is not available to build. Depends: OpenCV, libParameters")
+endif()
+
+
+if (OpenCV_FOUND AND TARGET libParameters)
+    add_library(libGStreamerCamera GStreamerCamera.cpp)
+    target_link_libraries(libGStreamerCamera
+            ${GSTREAMER_LIBRARIES}
+            ${GSTREAMER-APP_LIBRARIES}
+            ${GSTREAMER-AUDIO_LIBRARIES}
+            ${GSTREAMER-PBUTILS_LIBRARIES}
+            ${GSTREAMER-FFT_LIBRARIES}
+            ${OpenCV_LIBRARIES}
+            libParameters
+            )
+else()
+    message("=> Target libGStreamerCamera is not available to build. Depends: GStreamer, OpenCV, libParameters")
+endif ()
 
 
 if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET libParameters AND TARGET libTerminalSocket AND TARGET libArmorSolver AND TARGET libSerial)
     add_library(libSolais
             ArmorDetector.cpp
-            ArmorSelector.cpp
-            AimingCalculator.cpp
+            AimingSolver.cpp
             ParamSetManager.cpp
-            Camera.cpp
             ImageSet.cpp
-            VideoSource.cpp
             Executor.cpp)
     target_link_libraries(libSolais
             ${OpenCV_LIBRARIES}
@@ -76,11 +70,7 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET
             libTerminalSocket
             libSerial
             libArmorSolver
-#            ${GSTREAMER_LIBRARIES}
-#            ${GSTREAMER-APP_LIBRARIES}
-#            ${GSTREAMER-AUDIO_LIBRARIES}
-#            ${GSTREAMER-PBUTILS_LIBRARIES}
-#            ${GSTREAMER-FFT_LIBRARIES}
+            libCamera
             )
     target_compile_definitions(libSolais PUBLIC "$<$<CONFIG:DEBUG>:DEBUG>")
 
@@ -102,5 +92,5 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET
             PUBLIC "PARAM_SET_ROOT=\"${PARAM_SET_ROOT}\""
             PUBLIC "DATA_SET_ROOT=\"${DATA_SET_ROOT}\"")
 else()
-    message(WARNING "=> Target libSolais is not available to build. Depends: Boost, OpenCV, Protobuf, libParameters, libTerminalSocket, libSerial, libArmorSolver")
+    message("=> Target libSolais is not available to build. Depends: Boost, OpenCV, Protobuf, libParameters, libTerminalSocket, libSerial, libArmorSolver")
 endif()

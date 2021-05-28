@@ -12,14 +12,18 @@
 #include "ImageSet.h"
 #include "ArmorDetector.h"
 #include "ParamSetManager.h"
+#include "PositionCalculator.h"
+#include "AimingSolver.h"
+#include "Serial.h"
 #include <thread>
 
 namespace meta {
 
-class Executor {
+class Executor : protected FrameCounterBase /* we would like to rename the function */ {
 public:
 
-    explicit Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager);
+    explicit Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager,
+                      PositionCalculator *positionCalculator, AimingSolver *aimingSolver, Serial *serial);
 
     /** Read-Only Components **/
 
@@ -32,6 +36,12 @@ public:
     const ArmorDetector *detector() const { return detector_; }
 
     const ParamSetManager *dataManager() const { return paramSetManager_; };
+
+    const PositionCalculator *positionCalculator() const { return positionCalculator_; }
+
+    const AimingSolver *aimingSolver() const { return aimingSolver_; }
+
+    const Serial *serial() const { return serial_; }
 
     /** Parameter Sets and Image Lists Control **/
 
@@ -72,9 +82,11 @@ public:
 
     /** Statistics and Output **/
 
-    unsigned int fetchAndClearExecutorFrameCounter();
+    unsigned int fetchAndClearExecutorFrameCounter() { return FrameCounterBase::fetchAndClearFrameCounter(); }
 
     unsigned int fetchAndClearInputFrameCounter();
+
+    unsigned int fetchAndClearSerialFrameCounter() { return serial_ ? serial_->fetchAndClearFrameCounter() : 0; }
 
     std::mutex &detectorOutputMutex() { return detector_->outputMutex; }
 
@@ -84,6 +96,9 @@ private:
     ImageSet *imageSet_;
     ArmorDetector *detector_;
     ParamSetManager *paramSetManager_;
+    PositionCalculator *positionCalculator_;
+    AimingSolver *aimingSolver_;
+    Serial *serial_;
 
     VideoSource *currentInput_ = nullptr;
 
@@ -93,12 +108,6 @@ private:
 
     std::thread *th = nullptr;
     bool threadShouldExit = false;
-
-    // To be (only) incremented by the thread and read by fetchAndClearFrameCounter(). Always increasing. Avoid atomic.
-    unsigned int cumulativeFrameCounter = 0;
-
-    // Use by fetchAndClearFrameCounter() to calculate difference between two fetches
-    unsigned int lastFetchFrameCounter = 0;
 
     void applyParams(const ParamSet &p);
 

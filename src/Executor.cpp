@@ -7,8 +7,10 @@
 
 namespace meta {
 
-Executor::Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager)
-        : camera_(camera), imageSet_(imageSet), detector_(detector), paramSetManager_(paramSetManager)  {
+Executor::Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager,
+                   PositionCalculator *positionCalculator, AimingSolver *aimingSolver, Serial *serial)
+        : camera_(camera), imageSet_(imageSet), detector_(detector), paramSetManager_(paramSetManager),
+          positionCalculator_(positionCalculator), aimingSolver_(aimingSolver), serial_(serial) {
 
     reloadLists();
 }
@@ -44,16 +46,31 @@ void Executor::applyParams(const ParamSet &p) {
             imageSet_->open(params);
         }
     }
+
     detector_->setParams(p);
-}
 
-unsigned int Executor::fetchAndClearExecutorFrameCounter() {
-    unsigned int ret = cumulativeFrameCounter - lastFetchFrameCounter;  // only read cumulativeFrameCounter
+    {
+        std::string filename =
+                std::string(DATA_SET_ROOT) + "/params/" +
+                std::to_string(params.image_width()) + "x" + std::to_string(params.image_height()) + ".xml";
 
-    // Even if cumulativeFrameCounter overflows, the subtraction should still be correct?
+        cv::Mat cameraMatrix;
+        cv::Mat distCoeffs;
+        float zScale;
 
-    lastFetchFrameCounter += ret;  // avoid reading cumulativeFrameCounter as it may have changed
-    return ret;
+        cv::FileStorage fs(filename, cv::FileStorage::READ);
+        if (!fs.isOpened()) {
+            std::cerr << "Failed to open " << filename << std::endl;
+            std::exit(1);
+        }
+
+        fs["cameraMatrix"] >> cameraMatrix;
+        fs["distCoeffs"] >> distCoeffs;
+        fs["zScale"] >> zScale;
+
+        // TODO: large armor?
+        positionCalculator_->setParameters(120, 55, cameraMatrix, distCoeffs, zScale);
+    }
 }
 
 void Executor::stop() {
@@ -106,10 +123,30 @@ bool Executor::startSingleImageDetection(const std::string &imageName) {
     cv::Mat img = imageSet_->getSingleImage(imageName, params);
 
     detector_->clearImages();  // clear data of last execution
-    auto targets = detector_->detect(img);
+    std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
 
-    // Discard the result for now
-    (void) targets;
+    // Solve armor positions
+    std::vector<AimingSolver::ArmorInfo> armors;
+    for (const auto &detectedArmor : detectedArmors) {
+        cv::Point3f offset;
+        if (positionCalculator_->solve(detectedArmor.points, offset)) {
+            armors.emplace_back(AimingSolver::ArmorInfo{
+                    detectedArmor.points,
+                    detectedArmor.center,
+                    offset
+            });
+        }
+    }
+
+    // Update
+    aimingSolver_->update(armors);
+
+    // Send control command
+    const auto &command = aimingSolver_->getControlCommand();
+    serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
+
+    // Increment statistics
+    ++cumulativeFrameCounter;
 
     // Do not set curAction to NONE so that the result can be fetched
     // curAction = NONE;
@@ -121,6 +158,7 @@ void Executor::runStreamingDetection(VideoSource *source) {
 
     currentInput_ = source;
     currentInput_->fetchAndClearFrameCounter();
+    // TODO: clear the solver
 
     unsigned int lastFrameID = source->getFrameID();  // use last frame ID to wait for new frame
     while (true) {
@@ -137,10 +175,27 @@ void Executor::runStreamingDetection(VideoSource *source) {
         source->fetchNextFrame();
 
         // Run armor detection algorithm
-        auto targets = detector_->detect(img);
+        std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
 
-        // Discard the result for now
-        (void) targets;
+        // Solve armor positions
+        std::vector<AimingSolver::ArmorInfo> armors;
+        for (const auto &detectedArmor : detectedArmors) {
+            cv::Point3f offset;
+            if (positionCalculator_->solve(detectedArmor.points, offset)) {
+                armors.emplace_back(AimingSolver::ArmorInfo{
+                        detectedArmor.points,
+                        detectedArmor.center,
+                        offset
+                });
+            }
+        }
+
+        // Update
+        aimingSolver_->update(armors);
+
+        // Send control command
+        const auto &command = aimingSolver_->getControlCommand();
+        serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
 
         // Increment frame counter
         cumulativeFrameCounter++;

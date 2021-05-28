@@ -9,6 +9,7 @@
 
 namespace meta {
 
+// PARAM_SET_ROOT defined in CMakeLists.txt
 ParamSetManager::ParamSetManager()
         : paramSetRoot(fs::path(PARAM_SET_ROOT) / "params"){
 

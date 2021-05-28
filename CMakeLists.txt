@@ -65,6 +65,35 @@ else ()
     message(WARNING "pugixml not found so some targets may not be available")
 endif ()
 
+# Find GStreamer
+find_package(PkgConfig)
+if (PkgConfig_FOUND)
+    pkg_check_modules(GSTREAMER gstreamer-1.0)
+    pkg_check_modules(GSTREAMER_APP gstreamer-app-1.0)
+    pkg_check_modules(GSTREAMER_AUDIO gstreamer-audio-1.0)
+    pkg_check_modules(GSTREAMER_PBUTILS gstreamer-pbutils-1.0)
+    pkg_check_modules(GSTREAMER_FFT gstreamer-fft-1.0)
+
+    if (GSTREAMER_FOUND AND GSTREAMER_APP_FOUND AND GSTREAMER_AUDIO_FOUND AND GSTREAMER_PBUTILS_FOUND AND GSTREAMER_FFT_FOUND)
+        include_directories(
+                ${GSTREAMER_INCLUDE_DIRS}
+                ${GSTREAMER_APP_INCLUDE_DIRS}
+                ${GSTREAMER_AUDIO_INCLUDE_DIRS}
+                ${GSTREAMER_PBUTILS_INCLUDE_DIRS}
+                ${GSTREAMER_FFT_INCLUDE_DIRS}
+        )
+        link_directories(
+                ${GSTREAMER_LIBRARY_DIRS}
+                ${GSTREAMER_APP_LIBRARY_DIRS}
+                ${GSTREAMER_AUDIO_LIBRARY_DIRS}
+                ${GSTREAMER_PBUTILS_LIBRARY_DIRS}
+                ${GSTREAMER_FFT_LIBRARY_DIRS}
+        )
+    else ()
+        unset(GSTREAMER_FOUND)
+    endif ()
+endif ()
+
 # Shared include directory
 include_directories(include)
 

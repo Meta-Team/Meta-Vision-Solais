@@ -19,7 +19,12 @@ public:
 
     const ParamSet &getParams() const { return params; }
 
-    std::vector<cv::Point2f> detect(const cv::Mat &img);
+    struct DetectedArmor {
+        std::array<cv::Point2f, 4> points;
+        cv::Point2f center;
+    };
+
+    std::vector<DetectedArmor> detect(const cv::Mat &img);
 
     void clearImages() { imgOriginal = imgGray = imgBrightness = imgColor = imgLights = imgArmors = cv::Mat(); }
 
@@ -54,6 +59,8 @@ private:
     cv::Mat imgLightsOutput;
     cv::Mat imgContoursOutput;
     cv::Mat imgArmorsOutput;
+
+    std::vector<DetectedArmor> detect_(const cv::Mat &img);
 
 
     static void drawRotatedRect(cv::Mat &img, const cv::RotatedRect &rect, const cv::Scalar &boarderColor);

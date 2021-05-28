@@ -2,8 +2,8 @@
 // Created by liuzikai on 5/22/21.
 //
 
-#ifndef META_VISION_SOLAIS_ARMORSOLVER_H
-#define META_VISION_SOLAIS_ARMORSOLVER_H
+#ifndef META_VISION_SOLAIS_POSITIONCALCULATOR_H
+#define META_VISION_SOLAIS_POSITIONCALCULATOR_H
 
 #include <vector>
 #include <array>
@@ -12,31 +12,32 @@
 
 namespace meta {
 
-class ArmorSolver {
+class PositionCalculator {
 public:
 
     /**
-     * Initialize an ArmorSolver.
+     *
      * @param armorWidth  [mm]
      * @param armorHeight [mm]
      * @param cameraMatrix
      * @param distCoeffs
      * @param zScale
      */
-    explicit ArmorSolver(float armorWidth, float armorHeight, const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs,
-                         float zScale);
+    void setParameters(float armorWidth, float armorHeight, const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs,
+                       float zScale);
 
     /**
      * Solve armor position in physical world.
      * @param imagePoints
-     * @return Displacement: x, y, z(distance) in mm
+     * @param offset       Displacement: x, y, z(distance) in mm
+     * @return
      */
-    cv::Point3f solve(const std::array<cv::Point2f, 4> &imagePoints);
+    bool solve(const std::array<cv::Point2f, 4> &imagePoints, cv::Point3f &offset) const;
 
 private:
 
-    float armorWidth;
-    float armorHeight;
+    float armorWidth = 0;
+    float armorHeight = 0;
 
     std::vector<cv::Point3f> armorObjectPoints;
 
@@ -48,4 +49,4 @@ private:
 
 }
 
-#endif //META_VISION_SOLAIS_ARMORSOLVER_H
+#endif //META_VISION_SOLAIS_POSITIONCALCULATOR_H

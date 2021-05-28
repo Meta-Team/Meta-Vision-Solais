@@ -8,6 +8,7 @@
 
 namespace meta {
 
+// DATA_SET_ROOT defined in CMakeLists.txt
 ImageSet::ImageSet() : imageSetRoot(fs::path(DATA_SET_ROOT) / "images") {
     if (!fs::exists(imageSetRoot)) {
         fs::create_directories(imageSetRoot);

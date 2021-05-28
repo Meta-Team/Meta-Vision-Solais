@@ -12,8 +12,12 @@ Serial::Serial(boost::asio::io_context &ioContext)
         : ioContext(ioContext), serial(ioContext) {
 
     boost::system::error_code ec;
+    // SERIAL_DEVICE defined in CMakeLists.txt
     serial.open(SERIAL_DEVICE, ec);
-    assert(!ec && "Failed to open the serial device");
+    if (ec) {
+        std::cerr << "Failed to open serial device \"" << SERIAL_DEVICE << "\": " << ec.message() << std::endl;
+        std::exit(1);
+    }
 
     ::tcflush(serial.lowest_layer().native_handle(), TCIOFLUSH);  // flush input and output
     serial.set_option(boost::asio::serial_port::baud_rate(SERIAL_BAUD_RATE));
@@ -54,6 +58,7 @@ void Serial::handleSend(std::shared_ptr<Package> pkg, const boost::system::error
         std::cerr << "Serial: send error: " << error.message() << "\n";
         std::exit(1);
     }
+    ++cumulativeFrameCounter;
 }
 
 }

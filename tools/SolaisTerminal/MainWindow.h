@@ -26,6 +26,7 @@ public:
     ~MainWindow();
 
 private:
+
     Ui::MainWindow *ui;
     PhaseController* phases;
     QTimer *statsUpdateTimer;
@@ -37,6 +38,8 @@ private:
     // Reuse message objects: developers.google.com/protocol-buffers/docs/cpptutorial#optimization-tips
     package::ParamSet paramsMessage;
     package::Result resultMessage;
+
+    int resultPackageCounter = 0;
 
     void handleClientDisconnection(TerminalSocketClient *client);
 

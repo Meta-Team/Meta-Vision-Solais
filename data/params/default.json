@@ -8,20 +8,20 @@
   "enabled": false,
   "val": 0
  },
- "brightness_threshold": 150,
+ "brightness_threshold": 240,
  "color_threshold_mode": "RB_CHANNELS",
  "hsv_red_hue": {
   "min": 150,
   "max": 30
  },
  "hsv_blue_hue": {
-  "min": 90,
-  "max": 150
+  "min": 123,
+  "max": 127
  },
- "rb_channel_threshold": 55,
+ "rb_channel_threshold": 35,
  "color_dilate": {
   "enabled": true,
-  "val": 5
+  "val": 15
  },
  "contour_fit_function": "ELLIPSE",
  "contour_pixel_count": {
@@ -30,11 +30,11 @@
  },
  "contour_min_area": {
   "enabled": true,
-  "val": 5
+  "val": 20
  },
  "long_edge_min_length": {
   "enabled": true,
-  "val": 5
+  "val": 20
  },
  "light_aspect_ratio": {
   "enabled": true,

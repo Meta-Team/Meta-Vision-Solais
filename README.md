@@ -74,6 +74,9 @@ brew install cmake opencv boost pugixml zbar protobuf
 -DCMAKE_PREFIX_PATH=/snap/protobuf/current
 ```
 
+# CMake Options
+TODO...
+
 # Design Ideas
 * Near-zero overhead for terminal-related code in Solais Core
     * Fetch initiated

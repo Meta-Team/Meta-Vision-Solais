@@ -8,5 +8,5 @@ if (Protobuf_FOUND)
             PUBLIC ${Protobuf_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}  # for Parameters.pc.h
             )
 else()
-    message(WARNING "=> Target libParameters is not available to build. Depends: Protobuf")
+    message("=> Target libParameters is not available to build. Depends: Protobuf")
 endif ()

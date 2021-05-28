@@ -136,16 +136,17 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
     if (name == "res") {
 
         if (ui->transferImagesCheck->isChecked()) {
-            if (!resultMessage.ParseFromArray(buf, size)) {
-                showStatusMessage("Received an invalid Result package");
-            } else {
-                phases->applyResults(resultMessage);
-            }
-            if (resultMessage.has_camera_image()) {
-                socket.sendBytes("fetch");  // continue for next cycle
-            } else {
+            if (size == 0) {
                 // Do not send another fetch, but hold the fetch package
                 holdingFetchPackage = true;
+            } else {
+                if (!resultMessage.ParseFromArray(buf, size)) {
+                    showStatusMessage("Received an invalid Result package");
+                } else {
+                    ++resultPackageCounter;
+                    phases->applyResults(resultMessage);
+                }
+                socket.sendBytes("fetch");  // continue for next cycle
             }
         }  // Otherwise, discard result and do not send next fetching request
 
@@ -198,9 +199,10 @@ void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
 
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
     if (name == "fps") {
-        if (list.size() == 2) {
+        if (list.size() == 3) {
             ui->inputFPSLabel->setText(QString(list[0]) + " frames/s");
-            ui->fpsLabel->setText(QString(list[1]) + " frames/s");
+            ui->executionFPSLabel->setText(QString(list[1]) + " frames/s");
+            ui->serialFPSLabel->setText(QString(list[2]) + " pkgs/s");
         } else {
             showStatusMessage("Invalid fps package size " + QString::number(list.size()));
         }
@@ -254,7 +256,9 @@ void MainWindow::updateStats() {
     std::pair<unsigned, unsigned> stats = socket.getAndClearStats();  // {sent, received}
     ui->sentBytesLabel->setText(bytesToDateRate(stats.first));
     ui->recvBytesLabel->setText(bytesToDateRate(stats.second));
-    socket.sendBytes("fps");  // request for FPS
+    ui->resultFPSLabel->setText(QString::number(resultPackageCounter) + " pkgs/s");
+    resultPackageCounter = 0;
+    socket.sendBytes("fps");  // request for FPS, handled by callback
 }
 
 void MainWindow::performIO() {

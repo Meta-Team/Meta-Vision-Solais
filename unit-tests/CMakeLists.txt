@@ -1,25 +1,46 @@
 if (TARGET libTerminalSocket)
     add_executable(TerminalSocketUnitTest TerminalSocketUnitTest.cpp)
     target_link_libraries(TerminalSocketUnitTest libTerminalSocket)
-else()
-    message(WARNING "=> Target TerminalSocketUnitTest is not available to build. Depends: libTerminalSocket")
+else ()
+    message("=> Target TerminalSocketUnitTest is not available to build. Depends: libTerminalSocket")
 endif ()
 
 if (TARGET libSerial)
     add_executable(SerialUnitTest SerialUnitTest.cpp)
     target_link_libraries(SerialUnitTest libSerial pthread)
-else()
-    message(WARNING "=> Target SerialUnitTest is not available to build. Depends: libSerial")
+else ()
+    message("=> Target SerialUnitTest is not available to build. Depends: libSerial")
+endif ()
+
+if (TARGET libCamera)
+    add_executable(CameraBenchmark CameraBenchmark.cpp)
+    target_link_libraries(CameraBenchmark libCamera)
+else ()
+    message("=> Target CameraBenchmark is not available to build. Depends: libCamera")
 endif ()
 
 
 find_package(PkgConfig REQUIRED)
 if (PkgConfig_FOUND)
     pkg_check_modules(ZBar IMPORTED_TARGET zbar)
-endif()
+endif ()
 if (ZBar_FOUND AND TARGET libArmorSolver)
-    add_executable(ArmorSolverUnitTest ArmorSolverUnitTest.cpp)
-    target_link_libraries(ArmorSolverUnitTest libArmorSolver PkgConfig::ZBar)
+    add_executable(PositionCalculatorUnitTest PositionCalculatorUnitTest.cpp)
+    target_link_libraries(PositionCalculatorUnitTest libArmorSolver PkgConfig::ZBar)
+else ()
+    message("=> Target PositionCalculatorUnitTest is not available to build. Depends: ZBar, libArmorSolver")
+endif ()
+
+if (GSTREAMER_FOUND)
+    add_executable(GStreamerUnitTest GStreamerUnitTest.cpp)
+    target_link_libraries(GStreamerUnitTest
+            ${GSTREAMER_LIBRARIES}
+            ${GSTREAMER_APP_LIBRARIES}
+            ${GSTREAMER_AUDIO_LIBRARIES}
+            ${GSTREAMER_PBUTILS_LIBRARIES}
+            ${GSTREAMER_FFT_LIBRARIES}
+            ${OpenCV_LIBRARIES}
+            )
 else()
-    message(WARNING "=> Target ArmorSolverUnitTest is not available to build. Depends: ZBar, libArmorSolver")
+    message("=> Target GStreamerUnitTest is not available to build. Depends: GStreamer")
 endif ()

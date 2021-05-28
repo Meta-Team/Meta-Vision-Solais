@@ -8,10 +8,11 @@
 #include <string>
 #include <cstdint>
 #include <boost/asio.hpp>
+#include "FrameCounterBase.h"
 
 namespace meta {
 
-class Serial {
+class Serial : public FrameCounterBase {
 public:
 
     explicit Serial(boost::asio::io_context &ioContext);
@@ -23,7 +24,6 @@ private:
     boost::asio::io_context &ioContext;
     boost::asio::serial_port serial;
 
-    static constexpr const char *SERIAL_DEVICE = "/dev/ttyTHS1";
     static constexpr int SERIAL_BAUD_RATE = 115200;
 
     enum ReceiverState {

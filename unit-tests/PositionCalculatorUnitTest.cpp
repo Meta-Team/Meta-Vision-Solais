@@ -9,7 +9,7 @@
 #include <array>
 #include <opencv2/opencv.hpp>
 #include <zbar.h>
-#include "ArmorSolver.h"
+#include "PositionCalculator.h"
 
 using namespace cv;
 using namespace std;
@@ -96,7 +96,7 @@ int main() {
     fs["zScale"] >> zScale;
 
 
-    ArmorSolver solver(armorWidth, armorHeight, cameraMatrix, distCoeffs, zScale);
+    PositionCalculator solver(armorWidth, armorHeight, cameraMatrix, distCoeffs, zScale);
 
     Mat img;
     vector<vector<Point> > squares;

@@ -93,6 +93,8 @@ message ParamSet {
   required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <
   required ToggledDoubleRange armor_aspect_ratio = 22;    // Armor width/height
 
+  // GROUP: Aiming
+
 }
 
 // =================================================== Results ===================================================
@@ -119,4 +121,8 @@ message Result {
   // GROUP: Armors
   optional string armor_info = 7;  // Armor info
   optional Image armor_image = 8;  // Armor image
+
+  // GROUP: Aiming
+  optional string aiming_info = 9;  // Aiming info
+  optional Image aiming_image = 10;  // Aiming image
 }

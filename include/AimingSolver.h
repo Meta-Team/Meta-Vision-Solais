@@ -1,9 +1,9 @@
 //
-// Created by liuzikai on 5/22/21.
+// Created by liuzikai on 5/25/21.
 //
 
-#ifndef META_VISION_SOLAIS_ARMORSELECTOR_H
-#define META_VISION_SOLAIS_ARMORSELECTOR_H
+#ifndef META_VISION_SOLAIS_AIMINGSOLVER_H
+#define META_VISION_SOLAIS_AIMINGSOLVER_H
 
 #include <vector>
 #include <array>
@@ -12,7 +12,7 @@
 
 namespace meta {
 
-class ArmorSelector {
+class AimingSolver {
 public:
 
     struct ArmorInfo {
@@ -21,18 +21,26 @@ public:
         cv::Point3f offsets;
     };
 
-    ArmorInfo select(std::vector<ArmorInfo> armors);
+    void update(std::vector<ArmorInfo> armors);
+
+    struct ControlCommand {
+        float yawDelta = 0;
+        float pitchDelta = 0;
+    };
+
+    ControlCommand getControlCommand() const;
 
 private:
+
+    ControlCommand latestCommand;
 
     struct DistanceLess {
         inline bool operator()(const ArmorInfo &a, const ArmorInfo &b) const {
             return cv::norm(a.offsets) < cv::norm(b.offsets);
         }
     };
-
 };
 
 }
 
-#endif //META_VISION_SOLAIS_ARMORSELECTOR_H
+#endif //META_VISION_SOLAIS_AIMINGSOLVER_H

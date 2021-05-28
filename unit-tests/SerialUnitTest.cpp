@@ -6,16 +6,16 @@
 #include <thread>
 #include <iostream>
 
-boost::asio::io_context ioContext;
+boost::asio::io_context tcpIOContext;
 
 std::thread ioThread([]{
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(ioContext.get_executor());
-    ioContext.run();  // this operation is blocking, until ioContext is deleted
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(tcpIOContext.get_executor());
+    tcpIOContext.run();  // this operation is blocking, until ioContext is deleted
 });
 
 float yawDelta = 0, pitchDelta = 0;
 
-meta::Serial serial(ioContext);
+meta::Serial serial(tcpIOContext);
 
 std::thread sendThread([]{
     while (true) {
