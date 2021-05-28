@@ -6,7 +6,6 @@
 #define META_VISION_SOLAIS_CAMERA_H
 
 #include <thread>
-#include <atomic>
 #include "Parameters.pb.h"
 #include "VideoSource.h"
 
@@ -15,9 +14,7 @@ namespace meta {
 class Camera : public VideoSource {
 public:
 
-    explicit Camera() : lastBuffer(0) {}
-
-    ~Camera();
+    ~Camera() override;
 
     bool open(const package::ParamSet &params) override;
 
@@ -31,11 +28,6 @@ public:
 
     const cv::Mat &getFrame() const override { return buffer[lastBuffer]; }
 
-    using NewFrameCallBack = void (*)(void *);
-
-    void registerNewFrameCallBack(NewFrameCallBack callBack, void *param);
-
-
 private:
 
     cv::VideoCapture cap;
@@ -43,14 +35,12 @@ private:
     std::stringstream capInfoSS;
 
     // Double buffering
-    std::atomic<int> lastBuffer;
+    uint8_t lastBuffer = 0;
     cv::Mat buffer[2];
     int bufferFrameID[2] = {0, 0};
 
     std::thread *th = nullptr;
-    std::atomic<bool> threadShouldExit;
-
-    std::vector<std::pair<NewFrameCallBack, void *>> callbacks;
+    bool threadShouldExit;
 
     void readFrameFromCamera(const package::ParamSet &params);
 

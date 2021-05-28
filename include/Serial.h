@@ -23,7 +23,7 @@ private:
     boost::asio::io_context &ioContext;
     boost::asio::serial_port serial;
 
-    static constexpr const char *SERIAL_DEVICE = "/dev/ttyS1";
+    static constexpr const char *SERIAL_DEVICE = "/dev/ttyTHS1";
     static constexpr int SERIAL_BAUD_RATE = 115200;
 
     enum ReceiverState {

@@ -8,31 +8,44 @@
 // Include as few modules as possible and use forward declarations
 #include "Parameters.h"
 #include "VideoSource.h"
+#include "Camera.h"
+#include "ImageSet.h"
+#include "ArmorDetector.h"
+#include "ParamSetManager.h"
 #include <thread>
 
 namespace meta {
-
-// Forward declarations
-class Camera;
-class ImageSet;
-class ArmorDetector;
-class ParamSetManager;
 
 class Executor {
 public:
 
     explicit Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager);
 
+    /** Read-Only Components **/
+
     const Camera *camera() const { return camera_; }
+
     const ImageSet *imageSet() const { return imageSet_; }
+
+    const VideoSource *currentInput() const { return currentInput_; };
+
     const ArmorDetector *detector() const { return detector_; }
+
     const ParamSetManager *dataManager() const { return paramSetManager_; };
+
+    /** Parameter Sets and Image Lists Control **/
+
+    void reloadLists();
+
+    int switchImageSet(const std::string &path);
 
     void switchParamSet(const std::string &paramSetName);
 
     void saveAndApplyParams(const ParamSet &p);
 
     const ParamSet &getCurrentParams() const { return params; }
+
+    /** Execution **/
 
     enum Action {
         NONE,
@@ -46,15 +59,24 @@ public:
 
     bool startRealTimeDetection();
 
+    /**
+     * Run detection on a single image. This operation is blocking and sets current action to SINGLE_IMAGE_DETECTION,
+     * without resetting to NONE after completion. TCP socket can sent the result based on getCurrentAction() != NONE,
+     * but should call stop() if the current action is SINGLE_IMAGE_DETECTION.
+     * @param imageName
+     * @return
+     */
     bool startSingleImageDetection(const std::string &imageName);
 
     bool startImageSetDetection();
 
-    int fetchAndClearFrameCounter();
+    /** Statistics and Output **/
 
-    void reloadLists();
+    unsigned int fetchAndClearExecutorFrameCounter();
 
-    int switchImageSet(const std::string &path);
+    unsigned int fetchAndClearInputFrameCounter();
+
+    std::mutex &detectorOutputMutex() { return detector_->outputMutex; }
 
 private:
 
@@ -63,13 +85,20 @@ private:
     ArmorDetector *detector_;
     ParamSetManager *paramSetManager_;
 
+    VideoSource *currentInput_ = nullptr;
+
     ParamSet params;
 
     Action curAction = NONE;
 
     std::thread *th = nullptr;
-    std::atomic<bool> threadShouldExit;
-    std::atomic<int> frameCounter;
+    bool threadShouldExit = false;
+
+    // To be (only) incremented by the thread and read by fetchAndClearFrameCounter(). Always increasing. Avoid atomic.
+    unsigned int cumulativeFrameCounter = 0;
+
+    // Use by fetchAndClearFrameCounter() to calculate difference between two fetches
+    unsigned int lastFetchFrameCounter = 0;
 
     void applyParams(const ParamSet &p);
 

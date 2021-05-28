@@ -8,7 +8,7 @@ using namespace cv;
 
 namespace meta {
 
-vector<Point2f> ArmorDetector::detect(const Mat &img) {
+std::vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
     /*
      * Note: in this mega function, steps are wrapped with {} to reduce local variable pollution and make it easier to
@@ -19,9 +19,8 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
     // ================================ Setup ================================
     {
         assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
-        img.copyTo(imgOriginal);
-        // Do not clear, last data can be used for previews sent back to the Terminal
-        // imgGray = imgBrightness = imgColor = imgLights = imgArmors = Mat();
+        img.copyTo(imgOriginal);  // do make a copy
+        // TODO: this doesn't guarantee completion?
     }
 
     // ================================ Brightness Threshold ================================
@@ -52,7 +51,7 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
 
         } else {
 
-            vector<Mat> channels;
+            std::vector<Mat> channels;
             split(imgOriginal, channels);
 
             // Filter using channel subtraction
@@ -76,10 +75,10 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
     }
 
     // ================================ Find Contours ================================
-    vector<RotatedRect> lightRects;
+    std::vector<RotatedRect> lightRects;
     {
 
-        vector<vector<Point>> contours;
+        std::vector<std::vector<Point>> contours;
         findContours(imgLights, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
         // Filter individual contours
@@ -163,7 +162,7 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
      */
 
     // ================================ Combine Lights to Armors ================================
-    vector<Point2f> acceptedArmorCenters;
+    std::vector<Point2f> acceptedArmorCenters;
     {
         imgOriginal.copyTo(imgArmors);
 
@@ -296,6 +295,20 @@ vector<Point2f> ArmorDetector::detect(const Mat &img) {
             }
         }
     }
+
+    // Assign (no copying) the result all at once, if the result is not being processed
+    if (outputMutex.try_lock()) {
+        imgOriginalOutput = imgOriginal;
+        imgGrayOutput = imgGray;
+        imgBrightnessOutput = imgBrightness;
+        imgColorOutput = imgColor;
+        imgLightsOutput = imgLights;
+        imgContoursOutput = imgContours;
+        imgArmorsOutput = imgArmors;
+        outputMutex.unlock();
+    }
+    // Otherwise, simple discard the results of current run
+
     return acceptedArmorCenters;
 }
 

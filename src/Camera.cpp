@@ -27,15 +27,12 @@ Camera::~Camera() {
     }
 }
 
-void Camera::registerNewFrameCallBack(Camera::NewFrameCallBack callBack, void *param) {
-    callbacks.emplace_back(callBack, param);
-}
-
 void Camera::readFrameFromCamera(const package::ParamSet &params) {
     capInfoSS.str(std::string());
 
     // Open the camera in the same thread
     cap.open(params.camera_id(), cv::CAP_ANY);
+    // cv::VideoCapture cap("v4l2src device=/dev/video0 io-mode=2 ! image/jpeg, width=(int)1280, height=(int)720 ! nvjpegdec ! video/x-raw ! videoconvert ! video/x-raw,format=BGR ! appsink", cv::CAP_GSTREAMER);
     if (!cap.isOpened()) {
         capInfoSS << "Failed to open camera " << params.camera_id() << "\n";
         std::cerr << capInfoSS.rdbuf();
@@ -82,7 +79,7 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
 
     while(true) {
 
-        int workingBuffer = 1 - lastBuffer;
+        uint8_t workingBuffer = 1 - lastBuffer;
 
         if (threadShouldExit || !cap.isOpened()) {
             bufferFrameID[workingBuffer] = -1;  // indicate invalid frame
@@ -97,9 +94,7 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
         if (bufferFrameID[workingBuffer] >= FRAME_ID_MAX) bufferFrameID[workingBuffer] = 0;
         lastBuffer = workingBuffer;
 
-        for (const auto &item : callbacks) {
-            item.first(item.second);
-        }
+        ++cumulativeFrameCounter;  // the only place of incrementing
     }
 
     cap.release();

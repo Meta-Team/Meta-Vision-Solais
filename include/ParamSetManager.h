@@ -7,7 +7,6 @@
 
 #include "Parameters.h"
 #include <boost/filesystem.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 namespace meta {
 

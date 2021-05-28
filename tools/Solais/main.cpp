@@ -13,6 +13,8 @@
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/utility.hpp>
+#include <opencv2/core/cuda.hpp>
 
 using namespace meta;
 using namespace package;
@@ -53,26 +55,26 @@ void sendStatusBarMsg(const string &msg) {
     socketServer.sendSingleString("msg", "Core: " + msg);
 }
 
-void sendResult(bool forceSendResult = false) {
-    if (executor->getCurrentAction() != Executor::NONE || forceSendResult) {
-
-        // Send preview image in an individual package, which will trigger next-cycle fetching
-        resultPackage.Clear();
-        resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->detector()->originalImage()));
-        socketServer.sendBytes("res", resultPackage);
-
-        // The remaining images follows the input image package, which forms pipeline with the previous package
-        resultPackage.Clear();
-
-        // Empty handled in allocateProtoJPEGImage
-        // FIXME: lock required?
-        resultPackage.set_allocated_brightness_image(allocateProtoJPEGImage(executor->detector()->brightnessImage()));
-        resultPackage.set_allocated_color_image(allocateProtoJPEGImage(executor->detector()->colorImage()));
-        resultPackage.set_allocated_contour_image(allocateProtoJPEGImage(executor->detector()->contourImage()));
-        resultPackage.set_allocated_armor_image(allocateProtoJPEGImage(executor->detector()->armorImage()));
-
-        socketServer.sendBytes("res", resultPackage);
+void sendResult() {
+    // Always send a package, but non-empty only if the executor is running
+    resultPackage.Clear();
+    if (executor->getCurrentAction() != Executor::NONE) {
+        executor->detectorOutputMutex().lock();
+        // If can't lock immediately, simply wait. Detector only performs several non-copy assignments
+        {
+            // Empty handled in allocateProtoJPEGImage
+            resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->detector()->originalImage()));
+            resultPackage.set_allocated_brightness_image(allocateProtoJPEGImage(executor->detector()->brightnessImage()));
+            resultPackage.set_allocated_color_image(allocateProtoJPEGImage(executor->detector()->colorImage()));
+            resultPackage.set_allocated_contour_image(allocateProtoJPEGImage(executor->detector()->contourImage()));
+            resultPackage.set_allocated_armor_image(allocateProtoJPEGImage(executor->detector()->armorImage()));
+        }
+        executor->detectorOutputMutex().unlock();
+        if (executor->getCurrentAction() == meta::Executor::SINGLE_IMAGE_DETECTION) {
+            executor->stop();
+        }
     }
+    socketServer.sendBytes("res", resultPackage);
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
@@ -81,13 +83,12 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
             sendStatusBarMsg("Failed to load data set " + string(s));
         } else {
             socketServer.sendListOfStrings("imageList", executor->imageSet()->getImageList());
-            sendStatusBarMsg("Image set \"" + string(s) + "\" loaded");
+            sendStatusBarMsg("image set \"" + string(s) + "\" loaded");
         }
 
     } else if (name == "runImage") {
         executor->startSingleImageDetection(string(s));  // blocking
-        sendStatusBarMsg("Run on image " + string(s));
-        sendResult(true);  // always send result
+        socketServer.sendSingleString("executionStarted", "image " + string(s));  // let terminal fetch
 
     } else if (name == "switchParamSet") {
         executor->switchParamSet(string(s));
@@ -102,17 +103,20 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
 
 void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
     if (name == "fetch") {
-        sendResult();
+        sendResult();  // reply anyway, whether the executor is running or not
 
     } else if (name == "fps") {
-        socketServer.sendSingleInt("fps", executor->fetchAndClearFrameCounter());
+        socketServer.sendListOfStrings("fps", {
+            std::to_string(executor->fetchAndClearInputFrameCounter()),
+            std::to_string(executor->fetchAndClearExecutorFrameCounter()),
+        });
 
-    } else if (name == "setParams") {
+    }  else if (name == "setParams") {
         if (!recvParams.ParseFromArray(buf, size)) {
-            sendStatusBarMsg("Invalid ParamSet package");
+            sendStatusBarMsg("invalid ParamSet package");
         } else {
             executor->saveAndApplyParams(recvParams);
-            sendStatusBarMsg("Parameter set \"" + executor->dataManager()->currentParamSetName() + "\" saved and applied");
+            sendStatusBarMsg("parameter set \"" + executor->dataManager()->currentParamSetName() + "\" saved and applied");
         }
 
     } else if (name == "getParams") {
@@ -126,16 +130,16 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
     } else if (name == "runCamera") {
         if (!executor->startRealTimeDetection()) {
-            sendStatusBarMsg("Failed to start real time detection");
+            sendStatusBarMsg("failed to start real time detection on camera");
         } else {
-            sendStatusBarMsg("Start real time detection");
+            socketServer.sendSingleString("executionStarted", "camera");
         }
 
     } else if (name == "runImageSet") {
         if (!executor->startImageSetDetection()) {
-            sendStatusBarMsg("Failed to start streaming on image set");
+            sendStatusBarMsg("failed to start streaming on image set");
         } else {
-            sendStatusBarMsg("Start streaming on image set");
+            socketServer.sendSingleString("executionStarted", "image set");
         }
 
     } else if (name == "fetchLists") {
@@ -156,15 +160,18 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 std::unique_ptr<Camera> camera;
 std::unique_ptr<ImageSet> imageSet;
 std::unique_ptr<ArmorDetector> detector;
-std::unique_ptr<ParamSetManager> dataManager;
+std::unique_ptr<ParamSetManager> paramSetManager;
 
 int main(int argc, char *argv[]) {
+
+    std::cout << "CUDA device count: "<< cv::cuda::getCudaEnabledDeviceCount() << std::endl;
+    std::cout << cv::getBuildInformation() << std::endl;
 
     camera = std::make_unique<Camera>();
     imageSet = std::make_unique<ImageSet>();
     detector = std::make_unique<ArmorDetector>();
-    dataManager = std::make_unique<ParamSetManager>();
-    executor = std::make_unique<Executor>(camera.get(), imageSet.get(), detector.get(), dataManager.get());
+    paramSetManager = std::make_unique<ParamSetManager>();
+    executor = std::make_unique<Executor>(camera.get(), imageSet.get(), detector.get(), paramSetManager.get());
 
     socketServer.startAccept();
     socketServer.setCallbacks(handleRecvSingleString,

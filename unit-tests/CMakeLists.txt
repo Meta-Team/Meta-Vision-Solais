@@ -7,7 +7,7 @@ endif ()
 
 if (TARGET libSerial)
     add_executable(SerialUnitTest SerialUnitTest.cpp)
-    target_link_libraries(SerialUnitTest libSerial)
+    target_link_libraries(SerialUnitTest libSerial pthread)
 else()
     message(WARNING "=> Target SerialUnitTest is not available to build. Depends: libSerial")
 endif ()

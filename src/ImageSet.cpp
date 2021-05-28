@@ -9,7 +9,9 @@
 namespace meta {
 
 ImageSet::ImageSet() : imageSetRoot(fs::path(DATA_SET_ROOT) / "images") {
-
+    if (!fs::exists(imageSetRoot)) {
+        fs::create_directories(imageSetRoot);
+    }
 }
 
 void ImageSet::reloadImageSetList() {
@@ -73,6 +75,18 @@ bool ImageSet::open(const ParamSet &params) {
         return false;
     }
 
+    std::cout << "ImageSet: loading " << images.size() << " images into memory\n";
+    imageMats.clear();
+    imageMats.reserve(images.size());
+    for (const auto &image : images) {
+        fs::path imageFile = fs::path(currentImageSetPath) / image;
+        auto img = cv::imread(imageFile.string());
+        if (img.rows != params.image_height() || img.cols != params.image_width()) {
+            cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
+        }
+        imageMats.emplace_back(img);
+    }
+
     threadShouldExit = false;
     th = new std::thread(&ImageSet::loadFrameFromImageSet, this, params);
     return true;
@@ -81,28 +95,21 @@ bool ImageSet::open(const ParamSet &params) {
 void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
     shouldFetchNextFrame = true;
 
-    auto it = images.begin();  // next frame iterator
-    while(true) {
+    auto it = imageMats.begin();  // next frame iterator
+    while (true) {
 
         while (!shouldFetchNextFrame && !threadShouldExit) std::this_thread::yield();
 
-        int workingBuffer = 1 - lastBuffer;
+        uint8_t workingBuffer = 1 - lastBuffer;
 
-        if (threadShouldExit || it == images.end()) {  // no more image
+        if (threadShouldExit || it == imageMats.end()) {  // no more image
             bufferFrameID[workingBuffer] = -1;  // indicate invalid frame
             break;
         }
 
-        // Get path of next image
-        fs::path imageFile = fs::path(currentImageSetPath) / *it;
+        // Set the image
+        buffer[workingBuffer] = *it;
         ++it;
-
-        // Read and resize image
-        auto img = cv::imread(imageFile.string());
-        if (img.rows != params.image_height() || img.cols != params.image_width()) {
-            cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
-        }
-        buffer[workingBuffer] = img;
 
         // Increment frame ID
         bufferFrameID[workingBuffer] = bufferFrameID[lastBuffer] + 1;
@@ -111,9 +118,13 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
         // Switch
         lastBuffer = workingBuffer;
 
+        // The only place of incrementing
+        ++cumulativeFrameCounter;
+
         shouldFetchNextFrame = false;
     }
 
+    imageMats.clear();
     std::cout << "ImageSet: closed\n";
 }
 

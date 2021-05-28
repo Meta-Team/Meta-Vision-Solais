@@ -3,21 +3,17 @@
 //
 
 #include "Executor.h"
-#include "Camera.h"
-#include "ImageSet.h"
-#include "ArmorDetector.h"
-#include "ParamSetManager.h"
+#include <iostream>
 
 namespace meta {
 
 Executor::Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager)
-        : camera_(camera), imageSet_(imageSet), detector_(detector), paramSetManager_(paramSetManager),
-          threadShouldExit(false), frameCounter(0) {
+        : camera_(camera), imageSet_(imageSet), detector_(detector), paramSetManager_(paramSetManager)  {
 
     reloadLists();
 }
 
-void Executor::switchParamSet(const string &paramSetName) {
+void Executor::switchParamSet(const std::string &paramSetName) {
     paramSetManager_->switchToParamSet(paramSetName);
     applyParams(paramSetManager_->loadCurrentParamSet());
 }
@@ -51,9 +47,12 @@ void Executor::applyParams(const ParamSet &p) {
     detector_->setParams(p);
 }
 
-int Executor::fetchAndClearFrameCounter() {
-    int ret = frameCounter;
-    frameCounter = 0;
+unsigned int Executor::fetchAndClearExecutorFrameCounter() {
+    unsigned int ret = cumulativeFrameCounter - lastFetchFrameCounter;  // only read cumulativeFrameCounter
+
+    // Even if cumulativeFrameCounter overflows, the subtraction should still be correct?
+
+    lastFetchFrameCounter += ret;  // avoid reading cumulativeFrameCounter as it may have changed
     return ret;
 }
 
@@ -98,7 +97,7 @@ bool Executor::startImageSetDetection() {
     return true;
 }
 
-bool Executor::startSingleImageDetection(const string &imageName) {
+bool Executor::startSingleImageDetection(const std::string &imageName) {
     if (th) stop();
 
     curAction = SINGLE_IMAGE_DETECTION;
@@ -112,12 +111,16 @@ bool Executor::startSingleImageDetection(const string &imageName) {
     // Discard the result for now
     (void) targets;
 
-    curAction = NONE;
+    // Do not set curAction to NONE so that the result can be fetched
+    // curAction = NONE;
     return true;
 }
 
 void Executor::runStreamingDetection(VideoSource *source) {
-    frameCounter = 0;
+    std::cout << "Executor: start streaming\n";
+
+    currentInput_ = source;
+    currentInput_->fetchAndClearFrameCounter();
 
     unsigned int lastFrameID = source->getFrameID();  // use last frame ID to wait for new frame
     while (true) {
@@ -140,12 +143,13 @@ void Executor::runStreamingDetection(VideoSource *source) {
         (void) targets;
 
         // Increment frame counter
-        frameCounter++;
+        cumulativeFrameCounter++;
     }
 
     std::cout << "Executor: stopped\n";
 
     source->close();
+    currentInput_ = nullptr;
     curAction = NONE;
 }
 
@@ -155,8 +159,17 @@ void Executor::reloadLists() {
     applyParams(paramSetManager_->loadCurrentParamSet());
 }
 
-int Executor::switchImageSet(const string &path) {
+int Executor::switchImageSet(const std::string &path) {
     return imageSet_->switchImageSet(path);
+}
+
+unsigned int Executor::fetchAndClearInputFrameCounter() {
+    VideoSource *input = currentInput_;  // make a copy
+    if (input) {
+        return input->fetchAndClearFrameCounter();
+    } else {
+        return 0;
+    }
 }
 
 }

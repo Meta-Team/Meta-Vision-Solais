@@ -4,7 +4,7 @@ project(Meta_Vision_Solais)
 set(CMAKE_CXX_STANDARD 17)
 
 # Find Boost
-find_package(Boost COMPONENTS system filesystem json)
+find_package(Boost COMPONENTS system filesystem)
 if (Boost_FOUND)
     string(REPLACE ";" ", " Boost_LIBRARIES_STRING "${Boost_LIBRARIES}")
     #    message("Boost ${Boost_VERSION} found: ${Boost_LIBRARIES_STRING}")
@@ -21,9 +21,11 @@ else ()
 endif ()
 
 # Find Protocol Buffers
+include(FindProtobuf)
 find_package(Protobuf)
 if (Protobuf_FOUND)
     #    message("Protobuf ${Protobuf_VERSION} found")
+    include_directories(${PROTOBUF_INCLUDE_DIR})
 else ()
     message(WARNING "Protobuf not found so some targets may not be available")
 endif ()
@@ -50,8 +52,17 @@ if (Qt5_DIR)
         #        endforeach ()
     endif ()
 else ()
-    message("Qt5_DIR is not defined, and therefore Qt is disabled. If you want to use Qt, you may need to set it "
+    message("Qt5_DIR is not defined, and therefore Qt is disabled. "
+            "If you want to use Qt, you may need to set it "
             "(-DQt5_DIR=\"path/to/Qt/lib/cmake\" or -DQt5_DIR=/usr/include/{host}/qt{version}/ on Ubuntu)")
+endif ()
+
+# Find pugixml
+find_package(pugixml)
+if (pugixml_FOUND)
+    #    message("Protobuf ${Protobuf_VERSION} found")
+else ()
+    message(WARNING "pugixml not found so some targets may not be available")
 endif ()
 
 # Shared include directory

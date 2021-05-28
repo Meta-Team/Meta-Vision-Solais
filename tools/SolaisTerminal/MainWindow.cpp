@@ -19,6 +19,9 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup UI
     ui->setupUi(this);
     phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout, this);
+    if (ui->transferImagesCheck->isChecked()) {
+        holdingFetchPackage = true;
+    }
 
     // Setup IO
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
@@ -47,10 +50,17 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connection
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->transferImagesCheck, &QCheckBox::stateChanged, [this](auto state) {
-        if (state == Qt::Checked) socket.sendBytes("fetch"); else phases->resetImageLabels();
+        if (state == Qt::Checked) {
+            socket.sendBytes("fetch");
+        } else {
+            phases->resetImageLabels();
+        }
+        holdingFetchPackage = false;  // the on-hold fetch package is either sent or discarded
     });
     connect(ui->reloadListsButton, &QPushButton::clicked, [this] {
-        socket.sendBytes("reloadLists"); socket.sendBytes("fetchLists"); });
+        socket.sendBytes("reloadLists");
+        socket.sendBytes("fetchLists");
+    });
 
     // Execution
     connect(ui->stopButton, &QPushButton::clicked, [this] {
@@ -58,7 +68,6 @@ MainWindow::MainWindow(QWidget *parent) :
     });
     connect(ui->runCameraButton, &QPushButton::clicked, [this] {
         socket.sendBytes("runCamera");
-        socket.sendBytes("fetch");
         lastRunSingleImage = false;
     });
     connect(ui->imageSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
@@ -68,7 +77,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->imageList, &QListWidget::currentItemChanged, this, &MainWindow::runOnCurrentSelectedImage);
     connect(ui->runImageSetButton, &QPushButton::clicked, [this] {
         socket.sendBytes("runImageSet");
-        socket.sendBytes("fetch");
         lastRunSingleImage = false;
     });
 
@@ -101,7 +109,6 @@ void MainWindow::connectToServer() {
             ui->connectButton->setText("Disconnect");
 
             socket.sendBytes("fetchLists");  // will trigger data set and param set reloads
-            if (ui->transferImagesCheck->isChecked()) socket.sendBytes("fetch");  // start fetching cycle
 
         } else {
             showStatusMessage("Failed to connected to " + ui->serverCombo->currentText() + ":" +
@@ -136,6 +143,9 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
             }
             if (resultMessage.has_camera_image()) {
                 socket.sendBytes("fetch");  // continue for next cycle
+            } else {
+                // Do not send another fetch, but hold the fetch package
+                holdingFetchPackage = true;
             }
         }  // Otherwise, discard result and do not send next fetching request
 
@@ -164,6 +174,13 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
         ui->paramSetCombo->setCurrentText(QString::fromStdString(string(s)));
         ui->paramSetCombo->blockSignals(false);
 
+    } else if (name == "executionStarted") {
+        showStatusMessage("Start execution on " + QString::fromStdString(string(s)));
+        if (holdingFetchPackage || lastRunSingleImage) {
+            socket.sendBytes("fetch");
+            holdingFetchPackage = false;
+        }
+
     } else goto INVALID_PACKAGE;
 
     return;
@@ -173,16 +190,23 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
 }
 
 void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
-    if (name == "fps") {
-        ui->fpsLabel->setText(QString::number(val) + " frame/s");
-    } else {
+    {
         showStatusMessage("Unknown int package <" + QString(name.data()) + ">");
     }
 }
 
 
 void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
-    if (name == "imageList") {
+    if (name == "fps") {
+        if (list.size() == 2) {
+            ui->inputFPSLabel->setText(QString(list[0]) + " frames/s");
+            ui->fpsLabel->setText(QString(list[1]) + " frames/s");
+        } else {
+            showStatusMessage("Invalid fps package size " + QString::number(list.size()));
+        }
+
+
+    } else if (name == "imageList") {
         ui->imageList->blockSignals(true);
         ui->imageList->clear();
         for (const auto &image : list) ui->imageList->addItem(image);
@@ -218,7 +242,6 @@ void MainWindow::runOnCurrentSelectedImage() {
 }
 
 MainWindow::~MainWindow() {
-//    for (auto &viewer : viewers) delete viewer;
     delete phases;
     delete ui;
 }

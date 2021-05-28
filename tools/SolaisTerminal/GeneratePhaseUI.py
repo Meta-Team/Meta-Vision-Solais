@@ -116,7 +116,7 @@ def parse_groups(filename: str) -> [Group]:
                             if current_group_name not in groups.keys():
                                 groups[current_group_name] = Group(name=current_group_name, params=[])
                         else:
-                            if g := re.match(r"^(?:optional +)?(\S+?) +(\S+?) *= *\d+ *; *// *(.*) *", line):
+                            if g := re.match(r"^(?:(?:optional|required) +)?(\S+?) +(\S+?) *= *\d+ *; *// *(.*) *", line):
                                 kind = g.group(1)
                                 if kind in enums.keys():
                                     # Add an enumeration parameter

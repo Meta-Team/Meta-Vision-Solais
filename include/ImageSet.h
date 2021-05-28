@@ -48,15 +48,16 @@ protected:
     fs::path currentImageSetPath;
     std::vector<std::string> imageSets;      // directory name
     std::vector<std::string> images;         // jpg filenames
+    std::vector<cv::Mat> imageMats;
 
     // Double buffering
-    std::atomic<bool> shouldFetchNextFrame;
-    std::atomic<int> lastBuffer;
+    bool shouldFetchNextFrame;
+    uint8_t lastBuffer = 0;
     cv::Mat buffer[2];
     int bufferFrameID[2] = {0, 0};
 
     std::thread *th = nullptr;
-    std::atomic<bool> threadShouldExit;
+    bool threadShouldExit = false;
 
     void loadFrameFromImageSet(const ParamSet &params);
 };

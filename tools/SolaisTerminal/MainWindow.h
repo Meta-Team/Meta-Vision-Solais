@@ -56,6 +56,13 @@ private:
 
     bool lastRunSingleImage = false;
 
+    /*
+     * Solais Core always responses a Result package for a fetch package, but non-empty only if there are meaningful
+     * results (the executor is running, for example). If an empty Result package is received, Solais Terminal hold
+     * the fetch package until the start of next execution, which is triggered by the executionStarted package.
+     */
+    bool holdingFetchPackage = false;
+
 private slots:
 
     void connectToServer();

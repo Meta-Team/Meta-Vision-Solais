@@ -8,24 +8,40 @@ Meta-Vision-Solais
 * pugixml
 * ZBar (for ArmorSolverUnitTest)
 
-# Setup on Jetson Nano
+# Setup on Jetson Nano (Ubuntu)
 
 Ubuntu 18.04 for Jetson Nano has OpenCV 4.1.1 pre-installed.
 
+## Install or Upgrade CMake
+```shell
+# Remove the existing version
+sudo apt remove --purge cmake
+
+# If snap fails to download, consider using proxy
+sudo snap set system proxy.http="http://<ip>:<port>"
+sudo snap set system proxy.https="http://<ip>:<port>"
+
+# Install
+sudo snap install cmake --classic
+cmake --version
+```
+
 ## Install Boost
 The Boost library from apt-get of Ubuntu 18.04 is too old. Building from source can be time-consuming as Jetson Nano 
-doesn't have powerful CPU. Instead, install newer Boost from other source.
+doesn't have powerful CPU. Instead, install newer Boost from third-party source.
 ```shell
 sudo add-apt-repository ppa:mhier/libboost-latest
 sudo apt-get update
-sudo apt install -y libboost1.74-dev
+sudo apt install libboost1.74-dev
 ```
 
-If the error `dpkg-deb: error: paste subprocess was killed by signal (Broken pipe)` occurs, run the following commands.
+_Note: this package only provides dynamic libraries. Do not use `set(Boost_USE_STATIC_LIBS ON)`._
 
+_Note: tried install Boost 1.76 from source but encountered `boost::filesystem::status: Function not implemented`..._
+
+## Install Protocol Buffer
 ```shell
-sudo dpkg -i --force-overwrite /var/cache/apt/archives/libboost1.74-dev_1.74-0~16~ubuntu18.04.1_arm64.deb
-sudo apt install -f libboost1.74-dev
+sudo snap install protobuf --classic
 ```
 
 ## Install pugixml
@@ -38,7 +54,7 @@ cd pugixml-1.11.4
 mkdir build
 cd build
 cmake ..
-make
+make -j4
 sudo make install
 ```
 
@@ -50,9 +66,17 @@ sudo apt-get install libzbar-dev libzbar0
 # Setup on macOS
 
 ```shell
-brew install cmake opencv boost pugixml zbar
+brew install cmake opencv boost pugixml zbar protobuf
 ```
 
+# CMake Options for Jetson Nano (Ubuntu)
+```shell
+-DCMAKE_PREFIX_PATH=/snap/protobuf/current
+```
+
+# Design Ideas
+* Near-zero overhead for terminal-related code in Solais Core
+    * Fetch initiated
 
 
 # Packages
@@ -60,21 +84,21 @@ brew install cmake opencv boost pugixml zbar
 `NameOnly` is `Bytes` with empty content.
 
 ## Terminal -> Core
-| Name   | Type   | Argument         |Note|
-|--------|--------|------------------|----|
-| fetch | NameOnly |  | Fetch result |
-| stop | NameOnly | | Stop execution |
-| runCamera | Bytes | nullptr | Start execution on camera |
-| fps | NameOnly | | Fetch frame processed |
-| switchParamSet | String | ParamSet name | |
-| setParams | Bytes | ParamSet | |
-| getParams | NameOnly | | Fetch current params |
-| switchImageSet | String | Path of the data set | |
-| runImage | String | Image Name | Result sent back automatically |
-| runImageSet | NameOnly |  | Use current ImageSet set by switchImageSet |
-| reloadLists | NameOnly | | Reload at core, need to fetch manually |
-| fetchLists | NameOnly | | Fetch data set list and parameter set list |
-| getCurrentParamSetName | NameOnly | | |
+| Name   | Type   | Argument         |Description| Note |
+|--------|--------|------------------|----|----|
+| fetch | NameOnly |  | Fetch result | |
+| stop | NameOnly | | Stop execution | |
+| fps | NameOnly | | Fetch frame processed in each components | See reply fps package below |
+| switchParamSet | String | ParamSet name | | |
+| setParams | Bytes | ParamSet | | |
+| getParams | NameOnly | | Fetch current params | |
+| getCurrentParamSetName | NameOnly | | | |
+| switchImageSet | String | Path of the data set | | |
+| runCamera | Bytes | nullptr | Start execution on camera | |
+| runImage | String | Image Name | | Result sent back automatically |
+| runImageSet | NameOnly |  | | Use current ImageSet set by switchImageSet |
+| reloadLists | NameOnly | | Reload at core  | Need to fetch manually |
+| fetchLists | NameOnly | | Fetch data set list and parameter set list | |
 
 
 ## Core -> Terminal
@@ -82,7 +106,8 @@ brew install cmake opencv boost pugixml zbar
 |--------|--------|------------------|
 | msg | String | Message to be shown in the status bar |
 | res | Bytes | Result protobuf message |
-| fps | Int | Frame processed since last fetch |
+| executionStarted | String | "camera"/"image <filename>"/"image set" |
+| fps | ListOfStrings | Frame processed in Input and Executor since last fetch, each number as a string |
 | params | Bytes | Current params |
 | imageList | ListOfStrings | Image names |
 | imageSetList | ListOfStrings | Data set names |
