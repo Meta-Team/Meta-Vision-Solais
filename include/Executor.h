@@ -55,6 +55,8 @@ public:
 
     const ParamSet &getCurrentParams() const { return params; }
 
+    std::string captureImageFromCamera();
+
     /** Execution **/
 
     enum Action {
@@ -90,6 +92,9 @@ public:
 
     std::mutex &detectorOutputMutex() { return detector_->outputMutex; }
 
+    std::mutex armorsOutputMutex;
+    const std::vector<AimingSolver::ArmorInfo> &armorsOutput() const { return armorsOutput_; }
+
 private:
 
     Camera *camera_;
@@ -108,6 +113,8 @@ private:
 
     std::thread *th = nullptr;
     bool threadShouldExit = false;
+
+    std::vector<AimingSolver::ArmorInfo> armorsOutput_;
 
     void applyParams(const ParamSet &p);
 

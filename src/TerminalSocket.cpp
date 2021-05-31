@@ -15,7 +15,7 @@ TerminalSocketBase::TerminalSocketBase(boost::asio::io_context &ioContext)
 
 }
 
-bool TerminalSocketBase::sendSingleString(const string &name, const string &s) {
+bool TerminalSocketBase::sendSingleString(const std::string &name, const std::string &s) {
     if (!connected()) return false;
 
     auto buf = allocateBuffer(SINGLE_STRING, name, s.length() + 1);
@@ -32,7 +32,7 @@ bool TerminalSocketBase::sendSingleString(const string &name, const string &s) {
     return true;
 }
 
-bool TerminalSocketBase::sendSingleInt(const string &name, int32_t n) {
+bool TerminalSocketBase::sendSingleInt(const std::string &name, int32_t n) {
     if (!connected()) return false;
 
     auto buf = allocateBuffer(SINGLE_INT, name, 4);
@@ -48,7 +48,7 @@ bool TerminalSocketBase::sendSingleInt(const string &name, int32_t n) {
     return true;
 }
 
-bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t size) {
+bool TerminalSocketBase::sendBytes(const std::string &name, uint8_t *data, size_t size) {
     if (!connected()) return false;
 
     auto buf = allocateBuffer(BYTES, name, size);
@@ -68,7 +68,7 @@ bool TerminalSocketBase::sendBytes(const string &name, uint8_t *data, size_t siz
     return true;
 }
 
-bool TerminalSocketBase::sendBytes(const string &name, const google::protobuf::Message &message) {
+bool TerminalSocketBase::sendBytes(const std::string &name, const google::protobuf::Message &message) {
     if (!connected()) return false;
 
     size_t size = message.ByteSizeLong();
@@ -86,7 +86,7 @@ bool TerminalSocketBase::sendBytes(const string &name, const google::protobuf::M
     return true;
 }
 
-bool TerminalSocketBase::sendListOfStrings(const string &name, const vector<string> &list) {
+bool TerminalSocketBase::sendListOfStrings(const std::string &name, const std::vector<std::string> &list) {
     if (!connected()) return false;
 
     // Iterate through strings to count the size
@@ -111,9 +111,9 @@ bool TerminalSocketBase::sendListOfStrings(const string &name, const vector<stri
     return true;
 }
 
-std::shared_ptr<vector<uint8_t>>
-TerminalSocketBase::allocateBuffer(PackageType type, const string &name, size_t contentSize) {
-    auto buf = std::make_shared<vector<uint8_t>>();
+std::shared_ptr<std::vector<uint8_t>> TerminalSocketBase::allocateBuffer(PackageType type, const std::string &name,
+                                                                         size_t contentSize) {
+    auto buf = std::make_shared<std::vector<uint8_t>>();
 
     size_t bufSize = 1 + 1 + (name.length() + 1) + 4 + contentSize;
     buf->reserve(bufSize);
@@ -134,7 +134,7 @@ TerminalSocketBase::allocateBuffer(PackageType type, const string &name, size_t 
     return buf;
 }
 
-void TerminalSocketBase::emplaceInt32(vector<uint8_t> &buf, int32_t n) {
+void TerminalSocketBase::emplaceInt32(std::vector<uint8_t> &buf, int32_t n) {
     // Little endian
     buf.emplace_back((uint8_t) (n & 0xFF));
     buf.emplace_back((uint8_t) ((n >> 8) & 0xFF));
@@ -142,7 +142,7 @@ void TerminalSocketBase::emplaceInt32(vector<uint8_t> &buf, int32_t n) {
     buf.emplace_back((uint8_t) ((n >> 24) & 0xFF));
 }
 
-void TerminalSocketBase::handleSend(std::shared_ptr<vector<uint8_t>> buf, const boost::system::error_code &error,
+void TerminalSocketBase::handleSend(std::shared_ptr<std::vector<uint8_t>> buf, const boost::system::error_code &error,
                                     size_t numBytes) {
     if (error == boost::asio::error::eof || error == boost::asio::error::connection_reset ||
         error == boost::asio::error::operation_aborted || error == boost::asio::error::broken_pipe) {
@@ -206,7 +206,7 @@ void TerminalSocketBase::handleRecv(const boost::system::error_code &error, size
      * To avoid copying, strings and bytes are passed as const pointers, which however requires data to be continuous
      * in the memory.
      *
-     * Here a vector is used as the buffer. All bytes are discarded at once if the end of the buffer is exactly the end
+     * Here a std::vector is used as the buffer. All bytes are discarded at once if the end of the buffer is exactly the end
      * of one package. Before starting the next async_recv, the buffer is extended as needed. It's possible that the
      * buffer can grow large (if packages are always received partially), but if the data flow is not heavy, it may not
      * occur at all. An warning message is printed everytime the buffer is enlarged. Pay close attention to these
@@ -314,12 +314,12 @@ void TerminalSocketBase::handlePackage() const {
             break;
         case LIST_OF_STRINGS:
             if (listOfStringsCallBack) {
-                vector<const char *> list;
+                std::vector<const char *> list;
                 size_t strStart = recvContentStart;
                 while (strStart < recvContentStart + recvContentSize) {
                     list.emplace_back((const char *) (recvBuf.data() + strStart));
 
-                    // Find the end of the string
+                    // Find the end of the std::string
                     while (strStart < recvContentStart + recvContentSize && recvBuf[strStart] != '\0') {
                         strStart++;
                     }
@@ -388,7 +388,7 @@ void TerminalSocketServer::disconnect() {
     }
 }
 
-bool TerminalSocketClient::connect(const string &server, const string &port) {
+bool TerminalSocketClient::connect(const std::string &server, const std::string &port) {
 
     tcp::resolver::results_type endpoints = resolver.resolve(server, port);
 

@@ -19,9 +19,6 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup UI
     ui->setupUi(this);
     phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout, this);
-    if (ui->transferImagesCheck->isChecked()) {
-        holdingFetchPackage = true;
-    }
 
     // Setup IO
     socket.setCallbacks([this](auto name, auto s) { handleRecvSingleString(name, s); },
@@ -70,6 +67,9 @@ MainWindow::MainWindow(QWidget *parent) :
         socket.sendBytes("runCamera");
         lastRunSingleImage = false;
     });
+    connect(ui->captureImageButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("captureImage");
+    });
     connect(ui->imageSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
         if (current) socket.sendSingleString("switchImageSet", current->text().toStdString());
         lastRunSingleImage = false;
@@ -103,6 +103,10 @@ void MainWindow::connectToServer() {
         if (socket.connect(ui->serverCombo->currentText().toStdString(), TCP_SOCKET_PORT_STR)) {
 
             showStatusMessage("Connected to " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
+
+            if (ui->transferImagesCheck->isChecked()) {
+                holdingFetchPackage = true;
+            }
 
             // Update UI
             ui->serverCombo->setEnabled(false);
@@ -172,11 +176,11 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
 
     } else if (name == "currentParamSetName") {
         ui->paramSetCombo->blockSignals(true);
-        ui->paramSetCombo->setCurrentText(QString::fromStdString(string(s)));
+        ui->paramSetCombo->setCurrentText(QString::fromStdString(std::string(s)));
         ui->paramSetCombo->blockSignals(false);
 
     } else if (name == "executionStarted") {
-        showStatusMessage("Start execution on " + QString::fromStdString(string(s)));
+        showStatusMessage("Start execution on " + QString::fromStdString(std::string(s)));
         if (holdingFetchPackage || lastRunSingleImage) {
             socket.sendBytes("fetch");
             holdingFetchPackage = false;
@@ -197,7 +201,7 @@ void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
 }
 
 
-void MainWindow::handleRecvListOfStrings(std::string_view name, const vector<const char *> &list) {
+void MainWindow::handleRecvListOfStrings(std::string_view name, const std::vector<const char *> &list) {
     if (name == "fps") {
         if (list.size() == 3) {
             ui->inputFPSLabel->setText(QString(list[0]) + " frames/s");

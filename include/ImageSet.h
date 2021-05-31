@@ -41,6 +41,8 @@ public:
 
     void fetchNextFrame() override;
 
+    std::string saveCapturedImage(const cv::Mat &image, const package::ParamSet &params);
+
 protected:
 
     const fs::path imageSetRoot;
@@ -60,6 +62,8 @@ protected:
     bool threadShouldExit = false;
 
     void loadFrameFromImageSet(const ParamSet &params);
+
+    static std::string currentTimeString();
 };
 
 }

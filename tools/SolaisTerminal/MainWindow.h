@@ -49,7 +49,7 @@ private:
 
     void handleRecvSingleInt(std::string_view name, int val);
 
-    void handleRecvListOfStrings(std::string_view name, const vector<const char *> &list);
+    void handleRecvListOfStrings(std::string_view name, const std::vector<const char *> &list);
 
     static QString bytesToDateRate(unsigned bytes);
 

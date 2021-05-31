@@ -224,7 +224,6 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                 print_line(f'connect({combo_obj}, SIGNAL(currentTextChanged(const QString &)), this, SIGNAL(parameterEdited()));')
                 for option in param.options:
                     print_line(f'{combo_obj}->addItem(QString::fromUtf8("{option}"));')
-                print_line(f'{g_layout_obj}->installEventFilter(mainWindow);')
                 print_line(f'{g_layout_obj}->addWidget({combo_obj}, {row_count}, 1, 1, 2);')  # span column 1-2
 
             else:  # not Enum, numerical types
@@ -246,7 +245,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                     print_line(f'{spin_obj}->setDecimals({decimal});')
                     print_line(f'{spin_obj}->setMaximum(9999);')
                     print_line(f'{spin_obj}->setFocusPolicy(Qt::StrongFocus);')
-                    print_line(f'{spin_obj}->installEventFilter(mainWindow);')
+                    print_line(f'{spin_obj}->installEventFilter(this);')
                     print_line(f'connect({spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
                     print_line(f'{g_layout_obj}->addWidget({spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
                 elif type_str == "Range":
@@ -257,7 +256,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                     print_line(f'{min_spin_obj}->setDecimals({decimal});')
                     print_line(f'{min_spin_obj}->setMaximum(9999);')
                     print_line(f'{min_spin_obj}->setFocusPolicy(Qt::StrongFocus);')
-                    print_line(f'{min_spin_obj}->installEventFilter(mainWindow);')
+                    print_line(f'{min_spin_obj}->installEventFilter(this);')
                     print_line(f'connect({min_spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
                     print_line(f'{g_layout_obj}->addWidget({min_spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
                     max_spin_obj = f'{param.name}MaxSpin'
@@ -266,7 +265,7 @@ def generate_ui_creation_code(groups: [Group]) -> [(str, str)]:
                     print_line(f'{max_spin_obj}->setDecimals({decimal});')
                     print_line(f'{max_spin_obj}->setMaximum(9999);')
                     print_line(f'{max_spin_obj}->setFocusPolicy(Qt::StrongFocus);')
-                    print_line(f'{max_spin_obj}->installEventFilter(mainWindow);')
+                    print_line(f'{max_spin_obj}->installEventFilter(this);')
                     print_line(f'connect({max_spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
                     print_line(f'{g_layout_obj}->addWidget({max_spin_obj}, {row_count}, 2, 1, 1);')  # span column 2
                 else:

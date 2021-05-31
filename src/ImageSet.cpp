@@ -44,7 +44,7 @@ int ImageSet::switchImageSet(const std::string &dataSetName) {
 
             if (!fs::exists(xmlFile)) {
                 std::cerr << "Missing xml file: " << entry.path().filename() << std::endl;
-                continue;
+                // continue;
             }
 
             images.emplace_back(entry.path().filename().string());
@@ -144,6 +144,61 @@ void ImageSet::close() {
         delete th;
         th = nullptr;
     }
+}
+
+std::string ImageSet::currentTimeString() {
+    // Reference: https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
+
+    using namespace std::chrono;
+
+    // Get current time
+    auto now = system_clock::now();
+
+    // Get number of milliseconds for the current second
+    // (remainder after division into seconds)
+    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+
+    // Convert to std::time_t in order to convert to std::tm (broken time)
+    auto timer = system_clock::to_time_t(now);
+
+    // Convert to broken time
+    std::tm bt = *std::localtime(&timer);
+
+    std::ostringstream oss;
+    oss << std::put_time(&bt, "%Y_%m_%d_%H_%M_%S");
+
+    return oss.str();
+}
+
+std::string ImageSet::saveCapturedImage(const cv::Mat &image, const package::ParamSet &params) {
+    // Directory: <width>_<height>_blue/red
+    fs::path dir = imageSetRoot /
+            fs::path(std::to_string(params.image_width()) + "_" + std::to_string(params.image_height()) + "_" +
+            (params.enemy_color() == package::ParamSet_EnemyColor_BLUE ? "blue" : "red"));
+
+    if (!fs::exists(dir)) {
+        fs::create_directories(dir);
+    }
+
+    // Filename: formatted current time with milliseconds
+    fs::path basename = dir / fs::path(currentTimeString());
+    fs::path filename = basename;
+    filename += ".jpg";
+    if (fs::exists(filename)) {
+        int i = -1;
+        do {
+            i++;
+            filename = basename;
+            filename += "_" + std::to_string(i) + ".jpg";
+        } while (fs::exists(filename));
+    }
+
+    // Save image
+    cv::imwrite(filename.string(), image);
+
+    // Let the user reload the image list
+
+    return filename.string();
 }
 
 }

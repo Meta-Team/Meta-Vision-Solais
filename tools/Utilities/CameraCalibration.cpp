@@ -15,10 +15,10 @@
 using namespace cv;
 using namespace std;
 
-const int cameraIndex = 1;
-const int cameraWidth = 1280;
-const int cameraHeight = 720;
-const int cameraFPS = 120;
+const int cameraIndex = 0;
+const int cameraWidth = 640;
+const int cameraHeight = 320;
+const int cameraFPS = 330;
 
 int main() {
     VideoCapture inputVideo(cameraIndex);
@@ -43,17 +43,17 @@ int main() {
     inputVideo >> frame;
 
     Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
-    cameraMatrix.at<double>(0, 0) = 1308.0;
-    cameraMatrix.at<double>(0, 1) = -5.8;
-    cameraMatrix.at<double>(0, 2) = 649.6;
-    cameraMatrix.at<double>(1, 1) = 1314.6;
-    cameraMatrix.at<double>(1, 2) = 370.3;
+    cameraMatrix.at<double>(0, 0) = 342.3936;
+    cameraMatrix.at<double>(0, 1) = -0.0265;
+    cameraMatrix.at<double>(0, 2) = 320.3885;
+    cameraMatrix.at<double>(1, 1) = 342.2803;
+    cameraMatrix.at<double>(1, 2) = 174.8987;
 
     Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
-    distCoeffs.at<double>(0, 0) = 0.1795;
-    distCoeffs.at<double>(1, 0) = -0.8530;
-    distCoeffs.at<double>(2, 0) = -0.0018;
-    distCoeffs.at<double>(3, 0) = 1.7887e-05;
+    distCoeffs.at<double>(0, 0) = 0.0396;
+    distCoeffs.at<double>(1, 0) = -0.0614;
+    distCoeffs.at<double>(2, 0) = 0.0008;
+    distCoeffs.at<double>(3, 0) = -0.0012;
     distCoeffs.at<double>(4, 0) = 0;
 
     float zScale = 0.5;

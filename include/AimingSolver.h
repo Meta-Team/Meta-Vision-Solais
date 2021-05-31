@@ -9,6 +9,7 @@
 #include <array>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "Parameters.h"
 
 namespace meta {
 
@@ -21,6 +22,8 @@ public:
         cv::Point3f offsets;
     };
 
+    void setParams(const package::ParamSet &p) { params = p; }
+
     void update(std::vector<ArmorInfo> armors);
 
     struct ControlCommand {
@@ -28,11 +31,15 @@ public:
         float pitchDelta = 0;
     };
 
+    bool shouldSendControlCommand() const { return shouldSendCommand; }
+
     ControlCommand getControlCommand() const;
 
 private:
 
+    package::ParamSet params;
     ControlCommand latestCommand;
+    bool shouldSendCommand = false;
 
     struct DistanceLess {
         inline bool operator()(const ArmorInfo &a, const ArmorInfo &b) const {

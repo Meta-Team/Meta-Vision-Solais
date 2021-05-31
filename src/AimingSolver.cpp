@@ -16,11 +16,22 @@ void AimingSolver::update(std::vector<ArmorInfo> armors) {
         auto &target = armors.front();
 
         latestCommand.yawDelta = -std::atan(target.offsets.x / target.offsets.z) * 180.0f / M_PI;
+        if (params.yaw_delta_offset().enabled()) {
+            latestCommand.yawDelta += params.yaw_delta_offset().val();
+        }
         latestCommand.pitchDelta = std::atan(target.offsets.y / target.offsets.z) * 180.0f / M_PI;
+        if (params.pitch_delta_offset().enabled()) {
+            latestCommand.pitchDelta += params.pitch_delta_offset().val();
+        }
+
+        shouldSendCommand = true;
+
     } else {
 
         latestCommand.yawDelta = 0;
         latestCommand.pitchDelta = 0;
+
+        shouldSendCommand = false;
 
     }
 }

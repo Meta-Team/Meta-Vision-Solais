@@ -53,12 +53,13 @@ message ParamSet {
   required EnemyColor enemy_color = 3;  // Enemy color
 
   // GROUP: Input
-  required int32 camera_id = 4;        // Camera ID
-  required int32 fps = 5;              // FPS
-  required ToggledDouble gamma = 6;    // Gamma
+  required int32 camera_id = 4;                // Camera ID
+  required int32 fps = 5;                      // FPS
+  required ToggledDouble gamma = 6;            // Gamma
+  required ToggledInt manual_exposure = 24;    // Manual exposure
 
   // GROUP: Brightness
-  required double brightness_threshold = 7;  // Threshold
+  required double brightness_threshold = 7;   // Threshold
 
   // GROUP: Color
   enum ColorThresholdMode {
@@ -94,7 +95,8 @@ message ParamSet {
   required ToggledDoubleRange armor_aspect_ratio = 22;    // Armor width/height
 
   // GROUP: Aiming
-
+  required ToggledDouble yaw_delta_offset = 25;           // Yaw delta offset
+  required ToggledDouble pitch_delta_offset = 26;         // Pitch delta offset
 }
 
 // =================================================== Results ===================================================

@@ -68,10 +68,10 @@ int main(int argc, char **argv) {
     GstAppSinkCallbacks callbacks = {appsink_eos, NULL, new_buffer};
 
     string launch_string = "v4l2src device=/dev/video0 io-mode=2 ! "
-                           "image/jpeg, width=(int)1280, height=(int)720, framerate=120/1 ! "
+                           "image/jpeg, width=(int)640, height=(int)360, framerate=330/1 ! "
                            "nvjpegdec ! video/x-raw ! "
-                           "nvvidconv ! video/x-raw, format=BGR !"
-//                           "videoconvert ! video/x-raw, format=BGR ! "
+//                           "nvvidconv ! video/x-raw, format=BGR !"
+                           "videoconvert ! video/x-raw, format=BGR ! "
                            "appsink name=mysink";
 
     g_print("Using launch string: %s\n", launch_string.c_str());

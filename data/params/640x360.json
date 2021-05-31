@@ -8,10 +8,6 @@
   "enabled": true,
   "val": 100
  },
- "manual_exposure": {
-  "enabled": false,
-  "val": 78
- },
  "brightness_threshold": 130,
  "color_threshold_mode": "RB_CHANNELS",
  "hsv_red_hue": {
@@ -22,7 +18,7 @@
   "min": 90,
   "max": 110
  },
- "rb_channel_threshold": 150,
+ "rb_channel_threshold": 130,
  "color_dilate": {
   "enabled": false,
   "val": 15
@@ -71,13 +67,5 @@
   "enabled": true,
   "min": 1.25,
   "max": 4.5
- },
- "yaw_delta_offset": {
-  "enabled": false,
-  "val": 0
- },
- "pitch_delta_offset": {
-  "enabled": false,
-  "val": 0
  }
 }

@@ -102,6 +102,7 @@ TODO...
 | runImageSet | NameOnly |  | | Use current ImageSet set by switchImageSet |
 | reloadLists | NameOnly | | Reload at core  | Need to fetch manually |
 | fetchLists | NameOnly | | Fetch data set list and parameter set list | |
+| captureImage | NameOnly | | Capture camera image and save to file | Require manual reload of the image list |
 
 
 ## Core -> Terminal

@@ -29,12 +29,19 @@ void Executor::applyParams(const ParamSet &p) {
     // For better user experience for parameter tuning, here we don't stop the detection thread
     // But if there is some changes in the streaming source, detection may terminate anyway
 
+    // Local copy
     params = p;
 
+    // Input
     // Skip re-opening the video source if the parameter doesn't change to save some time
-    if (!(p.camera_id() == params.camera_id() && p.fps() == p.fps() &&
-          p.image_width() == params.image_width() && p.image_height() == params.image_height() &&
-          p.gamma().enabled() == p.gamma().enabled() && p.gamma().val() == p.gamma().val())) {
+    if (!(p.camera_id() == params.camera_id() &&
+          p.fps() == params.fps() &&
+          p.image_width() == params.image_width() &&
+          p.image_height() == params.image_height() &&
+          p.gamma().enabled() == params.gamma().enabled() &&
+          p.gamma().val() == params.gamma().val() &&
+          p.manual_exposure().enabled() == params.manual_exposure().enabled() &&
+          p.manual_exposure().val() == params.manual_exposure().val())) {
 
         if (camera_->isOpened()) {
             camera_->close();
@@ -47,11 +54,13 @@ void Executor::applyParams(const ParamSet &p) {
         }
     }
 
-    detector_->setParams(p);
+    // Detector
+    detector_->setParams(params);
 
+    // PositionCalculator
     {
         std::string filename =
-                std::string(DATA_SET_ROOT) + "/params/" +
+                std::string(PARAM_SET_ROOT) + "/params/" +
                 std::to_string(params.image_width()) + "x" + std::to_string(params.image_height()) + ".xml";
 
         cv::Mat cameraMatrix;
@@ -71,6 +80,9 @@ void Executor::applyParams(const ParamSet &p) {
         // TODO: large armor?
         positionCalculator_->setParameters(120, 55, cameraMatrix, distCoeffs, zScale);
     }
+
+    // AimingSolver
+    aimingSolver_->setParams(params);
 }
 
 void Executor::stop() {
@@ -141,9 +153,18 @@ bool Executor::startSingleImageDetection(const std::string &imageName) {
     // Update
     aimingSolver_->update(armors);
 
-    // Send control command
-    const auto &command = aimingSolver_->getControlCommand();
-    serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
+    // Output armors
+    if (armorsOutputMutex.try_lock()) {
+        armorsOutput_ = armors;
+        armorsOutputMutex.unlock();
+    }
+    // Otherwise, simply discard the results
+
+    /*if (aimingSolver_->shouldSendControlCommand()) {
+        // Send control command
+        const auto &command = aimingSolver_->getControlCommand();
+        serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
+    }*/
 
     // Increment statistics
     ++cumulativeFrameCounter;
@@ -193,9 +214,18 @@ void Executor::runStreamingDetection(VideoSource *source) {
         // Update
         aimingSolver_->update(armors);
 
-        // Send control command
-        const auto &command = aimingSolver_->getControlCommand();
-        serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
+        // Output armors
+        if (armorsOutputMutex.try_lock()) {
+            armorsOutput_ = armors;
+            armorsOutputMutex.unlock();
+        }
+        // Otherwise, simply discard the results
+
+        if (aimingSolver_->shouldSendControlCommand()) {
+            // Send control command
+            const auto &command = aimingSolver_->getControlCommand();
+            serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
+        }
 
         // Increment frame counter
         cumulativeFrameCounter++;
@@ -225,6 +255,17 @@ unsigned int Executor::fetchAndClearInputFrameCounter() {
     } else {
         return 0;
     }
+}
+
+std::string Executor::captureImageFromCamera() {
+    if (!camera_->isOpened()) {
+        if (!camera_->open(params)) {
+            return "[Error: failed to open camera]";
+        }
+        while (camera_->getFrame().empty()) std::this_thread::yield();
+    }
+    cv::Mat img = camera_->getFrame();  // no actual data copy
+    return imageSet_->saveCapturedImage(img, params);
 }
 
 }

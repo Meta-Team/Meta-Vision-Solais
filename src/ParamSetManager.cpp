@@ -4,6 +4,7 @@
 
 #include "ParamSetManager.h"
 #include <iostream>
+#include <sstream>
 #include <pugixml.hpp>
 #include <google/protobuf/util/json_util.h>
 
@@ -13,6 +14,9 @@ namespace meta {
 ParamSetManager::ParamSetManager()
         : paramSetRoot(fs::path(PARAM_SET_ROOT) / "params"){
 
+    if (!fs::exists(paramSetRoot / "backup")) {
+        fs::create_directories(paramSetRoot / "backup");
+    }
 }
 
 void ParamSetManager::reloadParamSetList() {
@@ -28,6 +32,7 @@ void ParamSetManager::reloadParamSetList() {
         params.set_image_height(720);
         params.set_fps(120);
         params.set_allocated_gamma(allocToggledDouble(false));
+        params.set_allocated_manual_exposure(allocToggledInt(false));
 
         params.set_enemy_color(ParamSet::BLUE);
         params.set_brightness_threshold(155);
@@ -50,6 +55,9 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_light_angle_max_diff(allocToggledDouble(true, 10));
         params.set_allocated_armor_aspect_ratio(allocToggledDoubleRange(true, 1.25, 5));
 
+        params.set_allocated_yaw_delta_offset(allocToggledDouble(false));
+        params.set_allocated_pitch_delta_offset(allocToggledDouble(false));
+
         saveParamSetToJson(params, paramSetRoot / "default.json");
     }
 
@@ -69,13 +77,21 @@ ParamSet ParamSetManager::loadCurrentParamSet() const {
     std::ifstream file(filename.string());
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-    JsonStringToMessage(content, &p, google::protobuf::util::JsonParseOptions());
-
-    return p;
+    auto status = JsonStringToMessage(content, &p, google::protobuf::util::JsonParseOptions());
+    if (!status.ok()) {
+        std::cerr << "Failed to load " << filename << ": " << status.message() << std::endl;
+        return ParamSet();
+    } else {
+        return p;
+    }
 }
 
 void ParamSetManager::saveCurrentParamSet(const ParamSet &p) {
     saveParamSetToJson(p, paramSetRoot / (curParamSetName + ".json"));
+
+    // Backup
+    fs::path filename = paramSetRoot / "backup" / fs::path(currentTimeString() + ".json");
+    saveParamSetToJson(p, filename);  // simply overwrite if exists
 }
 
 void ParamSetManager::saveParamSetToJson(const ParamSet &p, const fs::path &filename) {
@@ -88,6 +104,30 @@ void ParamSetManager::saveParamSetToJson(const ParamSet &p, const fs::path &file
     MessageToJsonString(p, &content, options);
 
     std::ofstream(filename.string()) << content;
+}
+
+std::string ParamSetManager::currentTimeString() {
+    // Reference: https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
+
+    using namespace std::chrono;
+
+    // Get current time
+    auto now = system_clock::now();
+
+    // Get number of milliseconds for the current second
+    // (remainder after division into seconds)
+    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
+
+    // Convert to std::time_t in order to convert to std::tm (broken time)
+    auto timer = system_clock::to_time_t(now);
+
+    // Convert to broken time
+    std::tm bt = *std::localtime(&timer);
+
+    std::ostringstream oss;
+    oss << std::put_time(&bt, "%Y_%m_%d_%H_%M_%S");
+
+    return oss.str();
 }
 
 }

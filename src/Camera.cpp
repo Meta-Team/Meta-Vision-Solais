@@ -54,6 +54,18 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
             capInfoSS << "Failed to set gamma.\n";
         }
     }
+    if (params.manual_exposure().enabled()) {
+        if (!cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 1)) {  // manual
+            capInfoSS << "Failed to set manual exposure.\n";
+        }
+        if (!cap.set(cv::CAP_PROP_EXPOSURE, 78)) {
+            capInfoSS << "Failed to set exposure.\n";
+        }
+    } else {
+        if (!cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0)) {  // auto
+            capInfoSS << "Failed to set auto exposure.\n";
+        }
+    }
 
     // Get a test frame
     cap.read(buffer[0]);
@@ -74,7 +86,10 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
     capInfoSS << "Camera " << params.camera_id() << ", "
               << cap.get(cv::CAP_PROP_FRAME_WIDTH) << "x" << cap.get(cv::CAP_PROP_FRAME_HEIGHT)
               << " @ " << cap.get(cv::CAP_PROP_FPS) << " fps\n"
-              << "Gamma: " << cap.get(cv::CAP_PROP_GAMMA) << "\n";
+              << "Gamma: " << cap.get(cv::CAP_PROP_GAMMA) << "\n"
+              << "Auto Exposure: " << cap.get(cv::CAP_PROP_AUTO_EXPOSURE) << "\n"
+              << "Exposure: " << cap.get(cv::CAP_PROP_EXPOSURE) << "\n"
+              << "Aperture: " << cap.get(cv::CAP_PROP_APERTURE) << "\n";
     std::cout << capInfoSS.rdbuf();
 
     while(true) {

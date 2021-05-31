@@ -47,14 +47,14 @@ Image *allocateProtoJPEGImage(const cv::Mat &mat) {
         float ratio = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / (float) mat.rows;
 
         cv::resize(mat, outImage, cv::Size(), ratio, ratio);
-        cv::imencode(".jpg", outImage, buf, {cv::IMWRITE_JPEG_QUALITY, 80});
+        cv::imencode(".jpg", outImage, buf, {cv::IMWRITE_JPEG_QUALITY, 60});
 
         image->set_data(buf.data(), buf.size());
     }
     return image;
 }
 
-void sendStatusBarMsg(const string &msg) {
+void sendStatusBarMsg(const std::string &msg) {
     socketServer.sendSingleString("msg", "Core: " + msg);
 }
 
@@ -79,7 +79,17 @@ void sendResult() {
 
         // Armors
         {
-
+            std::stringstream ss;
+            executor->armorsOutputMutex.lock();
+            // If can't lock immediately, simply wait
+            {
+                for (int i = 0; i < executor->armorsOutput().size(); i++) {
+                    const auto &info = executor->armorsOutput()[i];
+                    ss << "[" << i << "] " << info.offsets.x << ", " << info.offsets.y << ", " << info.offsets.z << "\n";
+                }
+            }
+            executor->armorsOutputMutex.unlock();
+            resultPackage.set_armor_info(ss.str());
         }
 
         // Aiming
@@ -88,11 +98,11 @@ void sendResult() {
             resultPackage.set_aiming_info("Yaw: " + std::to_string(command.yawDelta) + "\n" +
                                           "Pitch: " + std::to_string(command.pitchDelta));
         }
+        socketServer.sendBytes("res", resultPackage);
 
         if (executor->getCurrentAction() == meta::Executor::SINGLE_IMAGE_DETECTION) {
             executor->stop();
         }
-        socketServer.sendBytes("res", resultPackage);
     } else {
         socketServer.sendBytes("res", nullptr, 0);
     }
@@ -101,20 +111,20 @@ void sendResult() {
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
     if (name == "switchImageSet") {
-        if (executor->switchImageSet(string(s)) == 0) {
-            sendStatusBarMsg("Failed to load data set " + string(s));
+        if (executor->switchImageSet(std::string(s)) == 0) {
+            sendStatusBarMsg("empty data set " + std::string(s));
         } else {
             socketServer.sendListOfStrings("imageList", executor->imageSet()->getImageList());
-            sendStatusBarMsg("image set \"" + string(s) + "\" loaded");
+            sendStatusBarMsg("image set \"" + std::string(s) + "\" loaded");
         }
 
     } else if (name == "runImage") {
-        executor->startSingleImageDetection(string(s));  // blocking
-        socketServer.sendSingleString("executionStarted", "image " + string(s));  // let terminal fetch
+        executor->startSingleImageDetection(std::string(s));  // blocking
+        socketServer.sendSingleString("executionStarted", "image " + std::string(s));  // let terminal fetch
 
     } else if (name == "switchParamSet") {
-        executor->switchParamSet(string(s));
-        sendStatusBarMsg("Switched to parameter set \"" + string(s) + "\"");
+        executor->switchParamSet(std::string(s));
+        sendStatusBarMsg("Switched to parameter set \"" + std::string(s) + "\"");
 
     } else goto INVALID_COMMAND;
 
@@ -157,6 +167,11 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
             sendStatusBarMsg("failed to start real time detection on camera");
         } else {
             socketServer.sendSingleString("executionStarted", "camera");
+
+            // Send camera info
+            resultPackage.Clear();
+            resultPackage.set_camera_info(executor->camera()->getCapInfo());
+            socketServer.sendBytes("res", resultPackage);
         }
 
     } else if (name == "runImageSet") {
@@ -174,6 +189,10 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
     } else if (name == "reloadLists") {
         executor->reloadLists();  // switch to default parameter set
+
+    } else if (name == "captureImage") {
+        std::string filename = executor->captureImageFromCamera();
+        sendStatusBarMsg("capture as " + filename);
 
     } else {
         std::cerr << "Unknown bytes package <" << name << ">" << std::endl;
@@ -205,7 +224,11 @@ int main(int argc, char *argv[]) {
     paramSetManager = std::make_unique<ParamSetManager>();
     positionCalculator = std::make_unique<PositionCalculator>();
     aimingSolver = std::make_unique<AimingSolver>();
-    serial = std::make_unique<Serial>(serialIOContext);
+    if (strlen(SERIAL_DEVICE) != 0) {
+        serial = std::make_unique<Serial>(serialIOContext);
+    } else {
+        std::cerr << "Serial disabled for debug purpose" << std::endl;
+    }
     executor = std::make_unique<Executor>(camera.get(), imageSet.get(), detector.get(), paramSetManager.get(),
                                           positionCalculator.get(), aimingSolver.get(), serial.get());
 

@@ -5,7 +5,6 @@
 #ifndef META_VISION_SOLAIS_TERMINALSOCKET_H
 #define META_VISION_SOLAIS_TERMINALSOCKET_H
 
-#include "Common.h"
 #include <thread>
 #include <boost/asio.hpp>
 #include <utility>
@@ -83,7 +82,7 @@ public:
      * @param s     The string to send. Doesn't need to be alive after this call (copied for async operation).
      * @return      Whether the operation succeeded.
      */
-    bool sendSingleString(const string &name, const string &s);
+    bool sendSingleString(const std::string &name, const std::string &s);
 
     /**
      * Async send a single integer
@@ -91,7 +90,7 @@ public:
      * @param n     The integer to send.
      * @return      Whether the operation succeeded.
      */
-    bool sendSingleInt(const string &name, int32_t n);
+    bool sendSingleInt(const std::string &name, int32_t n);
 
     /**
      * Async send bytes. Can be use to send only name (nullptr data and size 0).
@@ -100,7 +99,7 @@ public:
      * @param size  The number of bytes to send.
      * @return      Whether the operation succeeded.
      */
-    bool sendBytes(const string &name, uint8_t *data = nullptr, size_t size = 0);
+    bool sendBytes(const std::string &name, uint8_t *data = nullptr, size_t size = 0);
 
     /**
      * Async send bytes. Can be use to send only name (nullptr data and size 0).
@@ -108,7 +107,7 @@ public:
      * @param message  A protobuf message.
      * @return      Whether the operation succeeded.
      */
-    bool sendBytes(const string &name, const google::protobuf::Message &message);
+    bool sendBytes(const std::string &name, const google::protobuf::Message &message);
 
     /**
      * Async send a list of strings
@@ -116,7 +115,7 @@ public:
      * @param list  The list of strings to send. Doesn't need to be alive after this call (copied for async operation).
      * @return      Whether the operation succeeded.
      */
-    bool sendListOfStrings(const string &name, const vector<string> &list);
+    bool sendListOfStrings(const std::string &name, const std::vector<std::string> &list);
 
     /**
      * Callback function type for arrival of a single string. The name and the string are read-only and not persistent
@@ -140,7 +139,7 @@ public:
      * Callback function type for arrival of a list of strings. The name and the strings are read-only and not
      * persistent (need to be copied if they are to be used later).
      */
-    using ListOfStringsCallback = std::function<void(std::string_view name, const vector<const char *> &list)>;
+    using ListOfStringsCallback = std::function<void(std::string_view name, const std::vector<const char *> &list)>;
 
     /**
      * Set callback functions for arrivals of data.
@@ -202,11 +201,11 @@ private:
 
     // ================================ Sending ================================
 
-    void handleSend(std::shared_ptr<vector<uint8_t>> buf, const boost::system::error_code &error, size_t numBytes);
+    void handleSend(std::shared_ptr<std::vector<uint8_t>> buf, const boost::system::error_code &error, size_t numBytes);
 
-    static std::shared_ptr<vector<uint8_t>> allocateBuffer(PackageType type, const string &name, size_t contentSize);
+    static std::shared_ptr<std::vector<uint8_t>> allocateBuffer(PackageType type, const std::string &name, size_t contentSize);
 
-    static void emplaceInt32(vector<uint8_t> &buf, int32_t n);
+    static void emplaceInt32(std::vector<uint8_t> &buf, int32_t n);
 
     // ================================ Receiving ================================
 
@@ -227,7 +226,7 @@ private:
 
     ReceiverState recvState = RECV_PREAMBLE;
 
-    vector<uint8_t> recvBuf;  // use vector to ensure the support of large packages
+    std::vector<uint8_t> recvBuf;  // use std::vector to ensure the support of large packages
     ssize_t recvOffset = 0;
 
     ssize_t recvRemainingBytes = 0;
@@ -309,7 +308,7 @@ public:
      * @param port                The server port.
      * @return                    Whether the connection success. This function is sync.
      */
-    bool connect(const string &server, const string &port);
+    bool connect(const std::string &server, const std::string &port);
 
     /**
      * Disconnect the socket.
