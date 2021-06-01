@@ -5,6 +5,7 @@
 #include "ParamSetManager.h"
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 #include <pugixml.hpp>
 #include <google/protobuf/util/json_util.h>
 

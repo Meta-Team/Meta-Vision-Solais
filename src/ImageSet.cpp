@@ -4,6 +4,7 @@
 
 #include "ImageSet.h"
 #include <iostream>
+#include <iomanip>
 #include <opencv2/imgproc/imgproc.hpp>
 
 namespace meta {

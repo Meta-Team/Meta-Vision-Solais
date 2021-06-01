@@ -1,5 +1,6 @@
 cmake-build-*
 .idea/
+data/params/backup
 
 # Created by .ignore support plugin (hsz.mobi)
 ### C++ template
