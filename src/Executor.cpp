@@ -262,7 +262,6 @@ std::string Executor::captureImageFromCamera() {
         if (!camera_->open(params)) {
             return "[Error: failed to open camera]";
         }
-        while (camera_->getFrame().empty()) std::this_thread::yield();
     }
     cv::Mat img = camera_->getFrame();  // no actual data copy
     return imageSet_->saveCapturedImage(img, params);

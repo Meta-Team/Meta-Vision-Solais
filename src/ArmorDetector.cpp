@@ -36,8 +36,8 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
     // ================================ Setup ================================
     {
         assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
-        img.copyTo(imgOriginal);  // do make a copy
-        // TODO: this doesn't guarantee completion?
+        imgOriginal = img;  // FIXME: this doesn't guarantee completion?
+        imgGray = imgBrightness = imgColor = imgLights = imgContours = imgArmors = Mat();
     }
 
     // ================================ Brightness Threshold ================================

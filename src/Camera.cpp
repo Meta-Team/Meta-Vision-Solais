@@ -15,6 +15,8 @@ bool Camera::open(const package::ParamSet &params) {
     threadShouldExit = false;
     th = new std::thread(&Camera::readFrameFromCamera, this, params);
 
+    while (getFrame().empty()) std::this_thread::yield();
+
     return true;
 }
 
@@ -58,7 +60,7 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
         if (!cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 1)) {  // manual
             capInfoSS << "Failed to set manual exposure.\n";
         }
-        if (!cap.set(cv::CAP_PROP_EXPOSURE, 78)) {
+        if (!cap.set(cv::CAP_PROP_EXPOSURE, params.manual_exposure().val())) {
             capInfoSS << "Failed to set exposure.\n";
         }
     } else {

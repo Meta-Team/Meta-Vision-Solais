@@ -16,6 +16,7 @@ public:
 
     ~Camera() override;
 
+    // Block until a valid frame is retrieved
     bool open(const package::ParamSet &params) override;
 
     bool isOpened() const override { return cap.isOpened(); }

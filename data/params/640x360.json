@@ -6,13 +6,13 @@
  "fps": 120,
  "gamma": {
   "enabled": true,
-  "val": 100
+  "val": 150
  },
  "manual_exposure": {
   "enabled": true,
   "val": 78
  },
- "brightness_threshold": 130,
+ "brightness_threshold": 80,
  "color_threshold_mode": "RB_CHANNELS",
  "hsv_red_hue": {
   "min": 150,
@@ -22,12 +22,12 @@
   "min": 90,
   "max": 110
  },
- "rb_channel_threshold": 130,
+ "rb_channel_threshold": 105,
  "color_dilate": {
   "enabled": false,
-  "val": 15
+  "val": 3
  },
- "contour_fit_function": "ELLIPSE",
+ "contour_fit_function": "MIN_AREA_RECT",
  "contour_pixel_count": {
   "enabled": false,
   "val": 15
@@ -38,11 +38,11 @@
  },
  "long_edge_min_length": {
   "enabled": true,
-  "val": 7
+  "val": 4
  },
  "light_aspect_ratio": {
   "enabled": true,
-  "min": 1.2,
+  "min": 1,
   "max": 20
  },
  "light_max_rotation": {
@@ -61,23 +61,23 @@
  "light_y_dist_over_l": {
   "enabled": true,
   "min": 0,
-  "max": 0.9
+  "max": 0.8
  },
  "light_angle_max_diff": {
   "enabled": true,
-  "val": 10
+  "val": 20
  },
  "armor_aspect_ratio": {
   "enabled": true,
   "min": 1.25,
-  "max": 4.5
+  "max": 3
  },
  "yaw_delta_offset": {
-  "enabled": false,
+  "enabled": true,
   "val": 0
  },
  "pitch_delta_offset": {
-  "enabled": false,
-  "val": 0
+  "enabled": true,
+  "val": -4
  }
 }
