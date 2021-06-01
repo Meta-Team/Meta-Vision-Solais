@@ -243,6 +243,9 @@ int main(int argc, char *argv[]) {
                               handleRecvBytes,
                               nullptr);
 
+    // Start on camera
+    executor->startRealTimeDetection();
+
     // Main thread is then used for serial IO
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(serialIOContext.get_executor());
     serialIOContext.run();  // this operation is blocking, until ioContext is deleted
