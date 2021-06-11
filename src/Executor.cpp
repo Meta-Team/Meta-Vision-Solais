@@ -221,7 +221,7 @@ void Executor::runStreamingDetection(VideoSource *source) {
         }
         // Otherwise, simply discard the results
 
-        if (aimingSolver_->shouldSendControlCommand()) {
+        if (serial_ && aimingSolver_->shouldSendControlCommand()) {
             // Send control command
             const auto &command = aimingSolver_->getControlCommand();
             serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);

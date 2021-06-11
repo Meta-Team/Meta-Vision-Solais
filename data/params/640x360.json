@@ -2,6 +2,7 @@
  "image_width": 640,
  "image_height": 360,
  "enemy_color": "BLUE",
+ "camera_backend": "OPENCV",
  "camera_id": 0,
  "fps": 120,
  "gamma": {

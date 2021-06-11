@@ -6,8 +6,8 @@ if (Qt5_FOUND AND Boost_FOUND AND TARGET libParameters AND TARGET libTerminalSoc
     set(CMAKE_AUTOUIC ON)
 
     add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Parameters.ui.h
-            COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/GeneratePhaseUI.py ${PROJECT_SOURCE_DIR}/extra/Parameters.proto > ${CMAKE_CURRENT_BINARY_DIR}/Parameters.ui.h
-            MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/extra/Parameters.proto
+            COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/GeneratePhaseUI.py ${PROJECT_SOURCE_DIR}/src/Parameters.proto > ${CMAKE_CURRENT_BINARY_DIR}/Parameters.ui.h
+            MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/Parameters.proto
             DEPENDS GeneratePhaseUI.py)
 
     add_executable(SolarisTerminal

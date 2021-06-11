@@ -48,26 +48,26 @@ endif()
 # libCamera
 if (OpenCV_FOUND AND TARGET libParameters)
     add_library(libCamera Camera.cpp)
-    target_link_libraries(libCamera ${OpenCV_LIBRARIES} libParameters)
+    target_link_libraries(libCamera ${OpenCV_LIBRARIES} libParameters MVSDK)
 else()
-    message("=> Target libCamera is not available to build. Depends: OpenCV, libParameters")
+    message("=> Target libCamera is not available to build. Depends: OpenCV, libParameters, MVSDK")
 endif()
 
 # libGStreamerCamera
-if (OpenCV_FOUND AND TARGET libParameters)
-    add_library(libGStreamerCamera GStreamerCamera.cpp)
-    target_link_libraries(libGStreamerCamera
-            ${GSTREAMER_LIBRARIES}
-            ${GSTREAMER-APP_LIBRARIES}
-            ${GSTREAMER-AUDIO_LIBRARIES}
-            ${GSTREAMER-PBUTILS_LIBRARIES}
-            ${GSTREAMER-FFT_LIBRARIES}
-            ${OpenCV_LIBRARIES}
-            libParameters
-            )
-else()
-    message("=> Target libGStreamerCamera is not available to build. Depends: GStreamer, OpenCV, libParameters")
-endif ()
+#if (OpenCV_FOUND AND TARGET libParameters)
+#    add_library(libGStreamerCamera GStreamerCamera.cpp)
+#    target_link_libraries(libGStreamerCamera
+#            ${GSTREAMER_LIBRARIES}
+#            ${GSTREAMER-APP_LIBRARIES}
+#            ${GSTREAMER-AUDIO_LIBRARIES}
+#            ${GSTREAMER-PBUTILS_LIBRARIES}
+#            ${GSTREAMER-FFT_LIBRARIES}
+#            ${OpenCV_LIBRARIES}
+#            libParameters
+#            )
+#else()
+#    message("=> Target libGStreamerCamera is not available to build. Depends: GStreamer, OpenCV, libParameters")
+#endif ()
 
 # libSolais
 if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET libParameters AND TARGET libTerminalSocket AND TARGET libArmorSolver AND TARGET libSerial)
