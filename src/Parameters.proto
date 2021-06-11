@@ -78,9 +78,13 @@ message ParamSet {
   required DoubleRange hsv_blue_hue = 10;                // Blue hue range
   required double rb_channel_threshold = 11;             // RB channel threshold
 
+  required ToggledInt color_erode = 28;                   // Erode
   required ToggledInt color_dilate = 12;                  // Dilate
 
   // GROUP: Contours
+  required ToggledInt contour_open = 29;                  // Open
+  required ToggledInt contour_close = 30;                 // Close
+
   enum ContourFitFunction {
       MIN_AREA_RECT = 0;
       ELLIPSE = 1;

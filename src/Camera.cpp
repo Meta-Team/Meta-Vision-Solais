@@ -89,9 +89,11 @@ bool CameraCoreMVCamera::read(cv::Mat &image) {
         return false;
     }
 
-    image = cv::Mat(cv::Size(frameInfo.iWidth, frameInfo.iHeight), CV_8UC3, matBuffer);
+    cv::Mat img(cv::Size(frameInfo.iWidth, frameInfo.iHeight), CV_8UC3, matBuffer);
 
-    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+    image = img.clone();
+//    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+
 
     res = CameraReleaseImageBuffer(hCamera, rawBuffer);
     if (res != CAMERA_STATUS_SUCCESS) {
@@ -185,6 +187,7 @@ bool Camera::open(const package::ParamSet &params) {
     threadShouldExit = false;
     th = new std::thread(&Camera::readFrameFromCamera, this, params);
 
+    buffer[0] = buffer[1] = cv::Mat();
     while (getFrame().empty()) std::this_thread::yield();
 
     return true;

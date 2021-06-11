@@ -28,6 +28,12 @@ sudo snap install cmake --classic
 cmake --version
 ```
 
+cmake installed by snap is at `/snap/bin`, which is not in PATH by default. To add it to PATH:
+```shell
+echo 'export PATH="/snap/bin:$PATH"' >> .bashrc
+echo 'export PATH="/snap/bin:$PATH"' >> .zshrc
+```
+
 ## Install Boost
 The Boost library from apt-get of Ubuntu 18.04 is too old. Building from source can be time-consuming as Jetson Nano 
 doesn't have powerful CPU. Instead, install newer Boost from third-party source.

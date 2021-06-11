@@ -79,7 +79,15 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
 
         }
 
-        // Color filter dilate
+        // Color erode
+        if (params.color_erode().enabled()) {
+            Mat element = cv::getStructuringElement(
+                    cv::MORPH_ELLIPSE,
+                    cv::Size(params.color_erode().val(), params.color_erode().val()));
+            dilate(imgColor, imgColor, element);
+        }
+
+        // Color dilate
         if (params.color_dilate().enabled()) {
             Mat element = cv::getStructuringElement(
                     cv::MORPH_ELLIPSE,
@@ -92,6 +100,23 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
     }
 
     // ================================ Find Contours ================================
+
+    // Contour open
+    if (params.contour_open().enabled()) {
+        Mat element = cv::getStructuringElement(
+                cv::MORPH_ELLIPSE,
+                cv::Size(params.contour_open().val(), params.contour_open().val()));
+        dilate(imgLights, imgLights, element);
+    }
+
+    // Contour close
+    if (params.contour_close().enabled()) {
+        Mat element = cv::getStructuringElement(
+                cv::MORPH_ELLIPSE,
+                cv::Size(params.contour_close().val(), params.contour_close().val()));
+        dilate(imgLights, imgLights, element);
+    }
+
     std::vector<RotatedRect> lightRects;
     {
 

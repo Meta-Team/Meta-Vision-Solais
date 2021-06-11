@@ -24,7 +24,19 @@
   "max": 110
  },
  "rb_channel_threshold": 105,
+ "color_erode": {
+  "enabled": false,
+  "val": 3
+ },
  "color_dilate": {
+  "enabled": false,
+  "val": 3
+ },
+ "contour_open": {
+  "enabled": false,
+  "val": 3
+ },
+ "contour_close": {
   "enabled": false,
   "val": 3
  },

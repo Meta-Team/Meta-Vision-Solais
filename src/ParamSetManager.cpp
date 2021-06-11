@@ -28,21 +28,26 @@ void ParamSetManager::reloadParamSetList() {
 
         // Create default parameter file
         ParamSet params;
-        params.set_camera_id(0);
         params.set_image_width(1280);
         params.set_image_height(720);
+        params.set_enemy_color(ParamSet::BLUE);
+
+        params.set_camera_backend(ParamSet::OPENCV);
+        params.set_camera_id(0);
         params.set_fps(120);
         params.set_allocated_gamma(allocToggledDouble(false));
         params.set_allocated_manual_exposure(allocToggledInt(false));
 
-        params.set_enemy_color(ParamSet::BLUE);
         params.set_brightness_threshold(155);
         params.set_color_threshold_mode(ParamSet::RB_CHANNELS);
         params.set_allocated_hsv_red_hue(allocDoubleRange(150, 30));  // across the 0 (180) point
         params.set_allocated_hsv_blue_hue(allocDoubleRange(90, 150));
         params.set_rb_channel_threshold(55);
-        params.set_allocated_color_dilate(allocToggledInt(true, 6));
+        params.set_allocated_color_erode(allocToggledInt(false, 3));
+        params.set_allocated_color_dilate(allocToggledInt(false, 3));
 
+        params.set_allocated_contour_open(allocToggledInt(true, 3));
+        params.set_allocated_contour_close(allocToggledInt(true, 3));
         params.set_contour_fit_function(ParamSet::ELLIPSE);
         params.set_allocated_contour_pixel_count(allocToggledDouble(true, 15));
         params.set_allocated_contour_min_area(allocToggledDouble(false, 3));
