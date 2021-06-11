@@ -97,7 +97,7 @@ endif ()
 # Shared include directory
 include_directories(include)
 
-add_subdirectory(extra)
+add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(unit-tests)

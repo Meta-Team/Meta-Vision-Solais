@@ -1,0 +1,130 @@
+syntax = "proto2";
+package package;
+
+// ============================================== Data Structures ================================================
+
+message DoubleRange {
+  required double min = 1;
+  required double max = 2;
+}
+
+message ToggledDoubleRange {
+  required bool enabled = 1;
+  required double min = 2;
+  required double max = 3;
+}
+
+message ToggledDouble {
+  required bool enabled = 1;
+  required double val = 2;
+}
+
+message ToggledInt {
+  required bool enabled = 1;
+  required int32 val = 2;
+}
+
+message Image {
+
+  enum ImageFormat {
+    JPEG = 0;
+    BINARY = 1;
+  }
+
+  required ImageFormat format = 1;
+  optional bytes data = 2;
+}
+
+// ================================================ Parameter Set ================================================
+// This definition will be processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
+// Every field must be followed by a comment, which is used as its label in UI.
+// Group name must not contain spaces
+
+message ParamSet {
+
+  // GROUP: General
+  required int32 image_width = 1;      // Image Width
+  required int32 image_height = 2;     // Image Height
+
+  enum EnemyColor {
+      RED = 0;
+      BLUE = 1;
+  };
+  required EnemyColor enemy_color = 3;  // Enemy color
+
+  // GROUP: Input
+  required int32 camera_id = 4;                // Camera ID
+  required int32 fps = 5;                      // FPS
+  required ToggledDouble gamma = 6;            // Gamma
+  required ToggledInt manual_exposure = 24;    // Manual exposure
+
+  // GROUP: Brightness
+  required double brightness_threshold = 7;   // Threshold
+
+  // GROUP: Color
+  enum ColorThresholdMode {
+      HSV = 0;
+      RB_CHANNELS = 1;
+  };
+  required ColorThresholdMode color_threshold_mode = 8;  // Mode
+
+  required DoubleRange hsv_red_hue = 9;                  // Red hue range
+  required DoubleRange hsv_blue_hue = 10;                // Blue hue range
+  required double rb_channel_threshold = 11;             // RB channel threshold
+
+  required ToggledInt color_dilate = 12;                  // Dilate
+
+  // GROUP: Contours
+  enum ContourFitFunction {
+      MIN_AREA_RECT = 0;
+      ELLIPSE = 1;
+  };
+  required ContourFitFunction contour_fit_function = 13;  // Fit function
+
+  required ToggledDouble contour_pixel_count = 14;        // Min contour pixel count
+  required ToggledDouble contour_min_area = 15;           // Min contour area
+  required ToggledInt long_edge_min_length = 16;          // Min length of the long edge
+  required ToggledDoubleRange light_aspect_ratio = 17;    // Aspect ratio range
+  required ToggledDouble light_max_rotation = 23;         // min(angle, 180 - angle) <
+
+  // GROUP: Armors
+  required ToggledDouble light_length_max_ratio = 18;     // Long light / short light <
+  required ToggledDoubleRange light_x_dist_over_l = 19;   // abs(X1 - X2) / avgL
+  required ToggledDoubleRange light_y_dist_over_l = 20;   // abs(Y1 - Y2) / avgL
+  required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <
+  required ToggledDoubleRange armor_aspect_ratio = 22;    // Armor width/height
+
+  // GROUP: Aiming
+  required ToggledDouble yaw_delta_offset = 25;           // Yaw delta offset
+  required ToggledDouble pitch_delta_offset = 26;         // Pitch delta offset
+}
+
+// =================================================== Results ===================================================
+// This definition will be processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
+// Every field must be followed by a comment, which is used as its label in UI
+// Group name must not contain spaces
+
+message Result {
+
+  // GROUP: Input
+  optional string camera_info = 1;  // Camera info
+  optional Image camera_image = 2;  // Camera image
+
+  // GROUP: Brightness
+  optional Image brightness_image = 3;  // Brightness threshold image
+
+  // GROUP: Color
+  optional Image color_image = 4;  // Color threshold image
+
+  // GROUP: Contours
+  optional string contour_info = 5;  // Contour info
+  optional Image contour_image = 6;  // Contour image
+
+  // GROUP: Armors
+  optional string armor_info = 7;  // Armor info
+  optional Image armor_image = 8;  // Armor image
+
+  // GROUP: Aiming
+  optional string aiming_info = 9;  // Aiming info
+  optional Image aiming_image = 10;  // Aiming image
+}

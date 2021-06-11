@@ -1,3 +1,18 @@
+# Parameters and results ProtoBuf
+if (Protobuf_FOUND)
+    protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS Parameters.proto)
+    add_library(libParameters
+            ${PROTO_SRCS} ${PROTO_HDRS})
+    target_link_libraries(libParameters
+            PUBLIC ${Protobuf_LIBRARIES})
+    target_include_directories(libParameters
+            PUBLIC ${Protobuf_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR}  # for Parameters.pc.h
+            )
+else()
+    message("=> Target libParameters is not available to build. Depends: Protobuf")
+endif ()
+
+# libTerminalSocket
 if (Boost_FOUND)
     add_library(libTerminalSocket TerminalSocket.cpp)
     target_link_libraries(libTerminalSocket PUBLIC ${Boost_SYSTEM_LIBRARY})
@@ -5,6 +20,7 @@ else()
     message("=> Target libTerminalSocket is not available to build. Depends: Boost")
 endif ()
 
+# libSerial
 if (Boost_FOUND)
     if(DEFINED SERIAL_DEVICE)
         message("Serial device is set as \"${SERIAL_DEVICE}\"")
@@ -21,6 +37,7 @@ else()
     message("=> Target libSerial is not available to build. Depends: Boost")
 endif ()
 
+# libArmorSolver
 if (OpenCV_FOUND)
     add_library(libArmorSolver PositionCalculator.cpp)
     target_link_libraries(libArmorSolver ${OpenCV_LIBRARIES})
@@ -28,6 +45,7 @@ else()
     message("=> Target libArmorSolver is not available to build. Depends: OpenCV")
 endif()
 
+# libCamera
 if (OpenCV_FOUND AND TARGET libParameters)
     add_library(libCamera Camera.cpp)
     target_link_libraries(libCamera ${OpenCV_LIBRARIES} libParameters)
@@ -35,7 +53,7 @@ else()
     message("=> Target libCamera is not available to build. Depends: OpenCV, libParameters")
 endif()
 
-
+# libGStreamerCamera
 if (OpenCV_FOUND AND TARGET libParameters)
     add_library(libGStreamerCamera GStreamerCamera.cpp)
     target_link_libraries(libGStreamerCamera
@@ -51,7 +69,7 @@ else()
     message("=> Target libGStreamerCamera is not available to build. Depends: GStreamer, OpenCV, libParameters")
 endif ()
 
-
+# libSolais
 if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET libParameters AND TARGET libTerminalSocket AND TARGET libArmorSolver AND TARGET libSerial)
     add_library(libSolais
             ArmorDetector.cpp

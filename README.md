@@ -1,6 +1,8 @@
 Meta-Vision-Solais
 ===
 
+=> [Project Wiki](https://github.com/Meta-Team/Meta-Vision-Solais/wiki) :smiley:
+
 # Dependencies
 * CMake >= 3.10
 * OpenCV 4
