@@ -78,7 +78,8 @@ void Executor::applyParams(const ParamSet &p) {
         fs["zScale"] >> zScale;
 
         // TODO: large armor?
-        positionCalculator_->setParameters(120, 55, cameraMatrix, distCoeffs, zScale);
+        positionCalculator_->setParameters({120, 55}, {120, 55},
+                                           cameraMatrix, distCoeffs, zScale);
     }
 
     // AimingSolver
@@ -140,18 +141,21 @@ bool Executor::startSingleImageDetection(const std::string &imageName) {
     // Solve armor positions
     std::vector<AimingSolver::ArmorInfo> armors;
     for (const auto &detectedArmor : detectedArmors) {
-        cv::Point3f offset;
-        if (positionCalculator_->solve(detectedArmor.points, offset)) {
+        cv::Point3f offset, rotation;
+        if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset, rotation)) {
             armors.emplace_back(AimingSolver::ArmorInfo{
                     detectedArmor.points,
                     detectedArmor.center,
-                    offset
+                    offset,
+                    rotation,
+                    detectedArmor.largeArmor,
+                    detectedArmor.number
             });
         }
     }
 
     // Update
-    aimingSolver_->update(armors);
+    aimingSolver_->updateArmors(armors, std::chrono::steady_clock::now());
 
     // Output armors
     if (armorsOutputMutex.try_lock()) {
@@ -179,20 +183,21 @@ void Executor::runStreamingDetection(VideoSource *source) {
 
     currentInput_ = source;
     currentInput_->fetchAndClearFrameCounter();
-    // TODO: clear the solver
+    aimingSolver_->resetHistory();
 
-    unsigned int lastFrameID = source->getFrameID();  // use last frame ID to wait for new frame
+    TimePoint lastFrameTime = TimePoint();  // use last frame capture time to wait for new frame
+    TimePoint frameTime = TimePoint();
     while (true) {
 
-        // Wait for new frame
-        while (!threadShouldExit && lastFrameID == source->getFrameID());
+        // Wait for new frame, fetch and store time first and then compare
+        while (!threadShouldExit && lastFrameTime == (frameTime = source->getFrameCaptureTime()));
 
-        if (threadShouldExit || source->getFrameID() == -1) {
+        if (threadShouldExit || frameTime == TimePoint()) {
             break;
         }
-        lastFrameID = source->getFrameID();  // update frame ID
+        lastFrameTime = frameTime;
 
-        auto &img = source->getFrame();  // no need for copying due to double buffering
+        auto &img = source->getFrame();  // no need for deep copying
         source->fetchNextFrame();
 
         // Run armor detection algorithm
@@ -201,18 +206,21 @@ void Executor::runStreamingDetection(VideoSource *source) {
         // Solve armor positions
         std::vector<AimingSolver::ArmorInfo> armors;
         for (const auto &detectedArmor : detectedArmors) {
-            cv::Point3f offset;
-            if (positionCalculator_->solve(detectedArmor.points, offset)) {
+            cv::Point3f offset, rotation;
+            if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset, rotation)) {
                 armors.emplace_back(AimingSolver::ArmorInfo{
                         detectedArmor.points,
                         detectedArmor.center,
-                        offset
+                        offset,
+                        rotation,
+                        detectedArmor.largeArmor,
+                        detectedArmor.number
                 });
             }
         }
 
         // Update
-        aimingSolver_->update(armors);
+        aimingSolver_->updateArmors(armors, frameTime);
 
         // Output armors
         if (armorsOutputMutex.try_lock()) {

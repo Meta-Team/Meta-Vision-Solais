@@ -55,6 +55,8 @@ private:
 
     void showStatusMessage(const QString &text);
 
+    void applyResultMessage();
+
     void runOnCurrentSelectedImage();
 
     bool lastRunSingleImage = false;

@@ -35,11 +35,24 @@ message Image {
   optional bytes data = 2;
 }
 
-// ================================================ Parameter Set ================================================
-// This definition will be processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
-// Every field must be followed by a comment, which is used as its label in UI.
-// Group name must not contain spaces
+/* Parameter Set
 
+ The following message definition is processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
+ Each field becomes one UI components, grouped into QGroupBoxes.
+
+ Group label: "// GROUP: <name>". Group name should be capitalized and must not contain spaces.
+ Supported types:
+   int32/int64          ->  QDoubleSpinBox with 0 decimal
+   float/double         ->  QDoubleSpinBox with 2 decimal
+   ToggledInt           ->  QCheckBox + QDoubleSpinBox with 0 decimal
+   ToggledDouble        ->  QCheckBox + QDoubleSpinBox with 2 decimal
+   DoubleRange          ->  2 QDoubleSpinBox with 2 decimal
+   ToggledDoubleRange   ->  QCheckBox + 2 QDoubleSpinBox with 2 decimal
+   enumeration          ->  QComboBox
+ Every field must be followed by a comment, which is used as its label in UI.
+ All fields must be required.
+
+ */
 message ParamSet {
 
   // GROUP: General
@@ -101,12 +114,17 @@ message ParamSet {
   required ToggledDouble light_length_max_ratio = 18;     // Long light / short light <
   required ToggledDoubleRange light_x_dist_over_l = 19;   // abs(X1 - X2) / avgL
   required ToggledDoubleRange light_y_dist_over_l = 20;   // abs(Y1 - Y2) / avgL
-  required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <
-  required ToggledDoubleRange armor_aspect_ratio = 22;    // Armor width/height
+  required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [degree] <
+  required DoubleRange small_armor_aspect_ratio = 22;     // Small Armor width/height
+  required DoubleRange large_armor_aspect_ratio = 31;     // Large Armor width/height
 
   // GROUP: Aiming
   required ToggledDouble yaw_delta_offset = 25;           // Yaw delta offset
   required ToggledDouble pitch_delta_offset = 26;         // Pitch delta offset
+
+  required int32 gimbal_delay = 32;                       // Gimbal feedback delay [ms]
+
+  required int32 armor_life_time = 33;                    // Forget armor after [ms]
 }
 
 // =================================================== Results ===================================================
@@ -114,27 +132,49 @@ message ParamSet {
 // Every field must be followed by a comment, which is used as its label in UI
 // Group name must not contain spaces
 
+/* Result Package
+
+ Special comments in the following message definition are processed by GeneratePhaseUI.py to generate PhaseController
+ for SolaisTerminal. Fields are not processed.
+
+ Group label: "// GROUP: <name>". Group name should be capitalized and must not contain spaces.
+ Supported option (at most one for each):
+  "// INFO: <name>" -> QLabel called "<name>Label"
+  "// IMAGE: <name>" -> QLabel called "<name>Label" + QImage* called "<name>"
+
+ */
+
 message Result {
 
   // GROUP: Input
+  // INFO: cameraInfo
+  // IMAGE: cameraImage
   optional string camera_info = 1;  // Camera info
   optional Image camera_image = 2;  // Camera image
 
   // GROUP: Brightness
+  // IMAGE: brightnessImage
   optional Image brightness_image = 3;  // Brightness threshold image
 
   // GROUP: Color
+  // IMAGE: colorImage
   optional Image color_image = 4;  // Color threshold image
 
   // GROUP: Contours
+  // INFO: contourInfo
+  // IMAGE: contourImage
   optional string contour_info = 5;  // Contour info
   optional Image contour_image = 6;  // Contour image
 
   // GROUP: Armors
+  // INFO: armorInfo
+  // IMAGE: armorImage
   optional string armor_info = 7;  // Armor info
   optional Image armor_image = 8;  // Armor image
 
   // GROUP: Aiming
+  // INFO: aimingInfo
+  // IMAGE: aimingImage
   optional string aiming_info = 9;  // Aiming info
   optional Image aiming_image = 10;  // Aiming image
 }

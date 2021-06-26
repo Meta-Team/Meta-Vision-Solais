@@ -80,10 +80,13 @@
   "enabled": true,
   "val": 20
  },
- "armor_aspect_ratio": {
-  "enabled": true,
+ "small_armor_aspect_ratio": {
   "min": 1.25,
-  "max": 3
+  "max": 2
+ },
+ "large_armor_aspect_ratio": {
+  "min": 1.25,
+  "max": 4
  },
  "yaw_delta_offset": {
   "enabled": true,
@@ -92,5 +95,7 @@
  "pitch_delta_offset": {
   "enabled": true,
   "val": -4
- }
+ },
+ "gimbal_delay": 0,
+ "armor_life_time": 2000
 }

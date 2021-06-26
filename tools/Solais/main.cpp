@@ -85,7 +85,7 @@ void sendResult() {
             {
                 for (int i = 0; i < executor->armorsOutput().size(); i++) {
                     const auto &info = executor->armorsOutput()[i];
-                    ss << "[" << i << "] " << info.offsets.x << ", " << info.offsets.y << ", " << info.offsets.z << "\n";
+                    ss << "[" << i << "] " << info.offset.x << ", " << info.offset.y << ", " << info.offset.z << "\n";
                 }
             }
             executor->armorsOutputMutex.unlock();

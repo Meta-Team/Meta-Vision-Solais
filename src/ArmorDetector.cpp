@@ -36,7 +36,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
     // ================================ Setup ================================
     {
         assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
-        imgOriginal = img;  // FIXME: this doesn't guarantee completion?
+        imgOriginal = img;
         imgGray = imgBrightness = imgColor = imgLights = imgContours = imgArmors = Mat();
     }
 
@@ -314,11 +314,15 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
                 double armorWidth = (cv::norm(topVector) + cv::norm(bottomVector)) / 2;
 
                 // Filter armor aspect ratio
-                if (params.armor_aspect_ratio().enabled()) {
-                    if (!inRange(armorWidth / armorHeight, params.armor_aspect_ratio())) {
-                        continue;
-                    }
+                bool largeArmor;
+                if (inRange(armorWidth / armorHeight, params.small_armor_aspect_ratio())) {
+                    largeArmor = false;
+                } else if (inRange(armorWidth / armorHeight, params.large_armor_aspect_ratio())) {
+                    largeArmor = true;
+                } else {
+                    continue;
                 }
+
 
                 // Accept the armor
                 Point2f center = {0, 0};
@@ -335,7 +339,9 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
 
                 acceptedArmors.emplace_back(DetectedArmor{
                     armorPoints,
-                    center
+                    center,
+                    largeArmor,
+                    // TODO: template matching
                 });
 
                 cv::circle(imgArmors, center, 2, Scalar(0, 0, 255), 2);

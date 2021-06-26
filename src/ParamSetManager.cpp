@@ -59,10 +59,13 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_light_x_dist_over_l(allocToggledDoubleRange(false, 1, 3));
         params.set_allocated_light_y_dist_over_l(allocToggledDoubleRange(false, 0, 1));
         params.set_allocated_light_angle_max_diff(allocToggledDouble(true, 10));
-        params.set_allocated_armor_aspect_ratio(allocToggledDoubleRange(true, 1.25, 5));
+        params.set_allocated_small_armor_aspect_ratio(allocDoubleRange(1.25, 2));
+        params.set_allocated_large_armor_aspect_ratio(allocDoubleRange(2, 5));
 
         params.set_allocated_yaw_delta_offset(allocToggledDouble(false));
         params.set_allocated_pitch_delta_offset(allocToggledDouble(false));
+        params.set_gimbal_delay(0);
+        params.set_armor_life_time(2000);
 
         saveParamSetToJson(params, paramSetRoot / "default.json");
     }

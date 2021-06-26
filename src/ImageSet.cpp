@@ -105,7 +105,7 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
         uint8_t workingBuffer = 1 - lastBuffer;
 
         if (threadShouldExit || it == imageMats.end()) {  // no more image
-            bufferFrameID[workingBuffer] = -1;  // indicate invalid frame
+            bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
             break;
         }
 
@@ -113,9 +113,8 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
         buffer[workingBuffer] = *it;
         ++it;
 
-        // Increment frame ID
-        bufferFrameID[workingBuffer] = bufferFrameID[lastBuffer] + 1;
-        if (bufferFrameID[workingBuffer] > FRAME_ID_MAX) bufferFrameID[workingBuffer] = 0;
+        // Increment frame time
+        bufferCaptureTime[workingBuffer] = std::chrono::steady_clock::now();
 
         // Switch
         lastBuffer = workingBuffer;

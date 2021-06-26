@@ -17,29 +17,33 @@ public:
 
     /**
      *
-     * @param armorWidth  [mm]
-     * @param armorHeight [mm]
+     * @param smallArmorSize  [mm]
+     * @param largeArmorSize  [mm]
      * @param cameraMatrix
      * @param distCoeffs
      * @param zScale
      */
-    void setParameters(float armorWidth, float armorHeight, const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs,
-                       float zScale);
+    void setParameters(cv::Point2f smallArmorSize, cv::Point2f largeArmorSize,
+                       const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs, float zScale);
 
     /**
      * Solve armor position in physical world.
      * @param imagePoints
+     * @param largeArmor
      * @param offset       Displacement: x, y, z(distance) in mm
+     * @param offset       Displacement: yaw, pitch, roll in degree
      * @return
      */
-    bool solve(const std::array<cv::Point2f, 4> &imagePoints, cv::Point3f &offset) const;
+    bool solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor,
+               cv::Point3f &offset, cv::Point3f &rotation) const;
 
 private:
 
-    float armorWidth = 0;
-    float armorHeight = 0;
+    cv::Point2f smallArmorSize;
+    cv::Point2f largeArmorSize;
 
-    std::vector<cv::Point3f> armorObjectPoints;
+    std::vector<cv::Point3f> smallArmorObjectPoints;
+    std::vector<cv::Point3f> largeArmorObjectPoints;
 
     cv::Mat cameraMatrix;
     cv::Mat distCoeffs;

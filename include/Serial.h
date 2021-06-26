@@ -21,6 +21,47 @@ public:
 
 private:
 
+    // General package header
+
+    static constexpr uint8_t PREAMBLE = 0xA5;
+
+    struct __attribute__((packed, aligned(1))) Header {
+        uint8_t sof;  // start of header, 0xA5
+        uint16_t dataLength;
+        uint8_t seq;
+        uint8_t crc8;
+    };
+
+    // Control command from Vision to Control
+
+    static constexpr uint16_t VISION_CONTROL_CMD_ID = 0xEA01;
+
+    enum VisionControlMode : uint8_t {
+        RELATIVE_ANGLE = 0,
+        ABSOLUTE_ANGLE
+    };
+
+    struct __attribute__((packed, aligned(1))) VisionControl {
+        VisionControlMode mode;
+        float yaw;
+        float pitch;
+    };
+
+    // Gimbal information from Control to Vision
+
+    // General package structure
+
+    struct __attribute__((packed, aligned(1))) Package {
+        Header header;
+        uint16_t cmdID;
+        union {
+            VisionControl vision;
+        };
+        uint16_t tail;
+    };
+
+private:
+
     boost::asio::io_context &ioContext;
     boost::asio::serial_port serial;
 
@@ -32,32 +73,8 @@ private:
         RECV_BODY,      // cmd_id, data section and 2-byte CRC16 tailing
     };
 
-    static constexpr uint8_t PREAMBLE = 0xA5;
     static constexpr size_t RECV_BUFFER_SIZE = 0x10000;
-
     ReceiverState recvState = RECV_PREAMBLE;
-
-    struct __attribute__((packed, aligned(1))) Header {
-        uint8_t sof;  // start of header, 0xA5
-        uint16_t dataLength;
-        uint8_t seq;
-        uint8_t crc8;
-    };
-
-    static constexpr uint16_t VISION_CONTROL_CMD_ID = 0xEA01;
-    struct __attribute__((packed, aligned(1))) VisionControl {
-        float yawDelta;
-        float pitchDelta;
-    };
-
-    struct __attribute__((packed, aligned(1))) Package {
-        Header header;
-        uint16_t cmdID;
-        union {
-            VisionControl vision;
-        };
-        uint16_t tail;
-    };
 
     uint16_t sendSeq = 0;
 

@@ -37,8 +37,9 @@ bool Serial::sendTargetAngles(float yawDelta, float pitchDelta) {
 
     pkg->cmdID = VISION_CONTROL_CMD_ID;
 
-    pkg->vision.yawDelta = yawDelta;
-    pkg->vision.pitchDelta = pitchDelta;
+    // TODO
+    pkg->vision.yaw = yawDelta;
+    pkg->vision.pitch = pitchDelta;
     rm::appendCRC16CheckSum((uint8_t *) pkg.get(),
                             sizeof(pkg->header) + sizeof(pkg->cmdID) +
                             sizeof(pkg->vision) + sizeof(pkg->tail));

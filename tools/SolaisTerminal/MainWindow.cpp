@@ -70,7 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->captureImageButton, &QPushButton::clicked, [this] {
         socket.sendBytes("captureImage");
     });
-    connect(ui->imageSetList, &QListWidget::currentItemChanged, [this] (auto current, auto previous) {
+    connect(ui->imageSetList, &QListWidget::currentItemChanged, [this](auto current, auto previous) {
         if (current) socket.sendSingleString("switchImageSet", current->text().toStdString());
         lastRunSingleImage = false;
     });
@@ -116,7 +116,7 @@ void MainWindow::connectToServer() {
 
         } else {
             showStatusMessage("Failed to connected to " + ui->serverCombo->currentText() + ":" +
-                                       TCP_SOCKET_PORT_STR);
+                              TCP_SOCKET_PORT_STR);
         }
     } else {
         socket.disconnect();  // update UI at handleClientDisconnection
@@ -148,7 +148,7 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
                     showStatusMessage("Received an invalid Result package");
                 } else {
                     ++resultPackageCounter;
-                    phases->applyResults(resultMessage);
+                    applyResultMessage();
                 }
                 socket.sendBytes("fetch");  // continue for next cycle
             }
@@ -191,7 +191,7 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
     return;
     INVALID_PACKAGE:
     showStatusMessage("Invalid single-string package <" +
-                               QString(name.data()) + ">\"" + QString(s.data()) + "\"");
+                      QString(name.data()) + ">\"" + QString(s.data()) + "\"");
 }
 
 void MainWindow::handleRecvSingleInt(std::string_view name, int val) {
@@ -254,6 +254,88 @@ MainWindow::~MainWindow() {
 
 void MainWindow::showStatusMessage(const QString &text) {
     ui->statusBar->showMessage(text, 5000);
+}
+
+void MainWindow::applyResultMessage() {
+
+    // GROUP: Input
+    if (resultMessage.has_camera_info()) {
+        phases->cameraInfoLabel->setText(QString::fromStdString(resultMessage.camera_info()));
+    }
+    if (resultMessage.has_camera_image()) {
+        if (!resultMessage.camera_image().data().empty()) {
+            phases->cameraImage = QImage::fromData((const uint8_t *) resultMessage.camera_image().data().c_str(),
+                                                  resultMessage.camera_image().data().size()).copy();
+            phases->cameraImageLabel->setPixmap(QPixmap::fromImage(phases->cameraImage));
+        } else {
+            phases->cameraImageLabel->setText("Empty");
+        }
+    }
+
+    // GROUP: Brightness
+    if (resultMessage.has_brightness_image()) {
+        if (!resultMessage.brightness_image().data().empty()) {
+            phases->brightnessImage = QImage::fromData(
+                    (const uint8_t *) resultMessage.brightness_image().data().c_str(),
+                    resultMessage.brightness_image().data().size()).copy();
+            phases->brightnessImageLabel->setPixmap(QPixmap::fromImage(phases->brightnessImage));
+        } else {
+            phases->brightnessImageLabel->setText("Empty");
+        }
+    }
+
+    // GROUP: Color
+    if (resultMessage.has_color_image()) {
+        if (!resultMessage.color_image().data().empty()) {
+            phases->colorImage = QImage::fromData((const uint8_t *) resultMessage.color_image().data().c_str(),
+                                                  resultMessage.color_image().data().size()).copy();
+            phases->colorImageLabel->setPixmap(QPixmap::fromImage(phases->colorImage));
+        } else {
+            phases->colorImageLabel->setText("Empty");
+        }
+    }
+
+    // GROUP: Contours
+    if (resultMessage.has_contour_info()) {
+        phases->contourInfoLabel->setText(QString::fromStdString(resultMessage.contour_info()));
+    }
+    if (resultMessage.has_contour_image()) {
+        if (!resultMessage.contour_image().data().empty()) {
+            phases->contourImage = QImage::fromData((const uint8_t *) resultMessage.contour_image().data().c_str(),
+                                                     resultMessage.contour_image().data().size()).copy();
+            phases->contourImageLabel->setPixmap(QPixmap::fromImage(phases->contourImage));
+        } else {
+            phases->contourImageLabel->setText("Empty");
+        }
+    }
+
+    // GROUP: Armors
+    if (resultMessage.has_armor_info()) {
+        phases->armorInfoLabel->setText(QString::fromStdString(resultMessage.armor_info()));
+    }
+    if (resultMessage.has_armor_image()) {
+        if (!resultMessage.armor_image().data().empty()) {
+            phases->armorImage = QImage::fromData((const uint8_t *) resultMessage.armor_image().data().c_str(),
+                                                   resultMessage.armor_image().data().size()).copy();
+            phases->armorImageLabel->setPixmap(QPixmap::fromImage(phases->armorImage));
+        } else {
+            phases->armorImageLabel->setText("Empty");
+        }
+    }
+
+    // GROUP: Aiming
+    if (resultMessage.has_aiming_info()) {
+        phases->aimingInfoLabel->setText(QString::fromStdString(resultMessage.aiming_info()));
+    }
+    if (resultMessage.has_aiming_image()) {
+        if (!resultMessage.aiming_image().data().empty()) {
+            phases->aimingImage = QImage::fromData((const uint8_t *) resultMessage.aiming_image().data().c_str(),
+                                                   resultMessage.aiming_image().data().size()).copy();
+            phases->aimingImageLabel->setPixmap(QPixmap::fromImage(phases->aimingImage));
+        } else {
+            phases->aimingImageLabel->setText("Empty");
+        }
+    }
 }
 
 void MainWindow::updateStats() {

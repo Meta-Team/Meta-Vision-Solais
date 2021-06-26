@@ -7,10 +7,13 @@
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/videoio.hpp>
+#include <chrono>
 #include "Parameters.pb.h"
 #include "FrameCounterBase.h"
 
 namespace meta {
+
+using TimePoint = std::chrono::steady_clock::time_point;
 
 class VideoSource : public FrameCounterBase {
 public:
@@ -36,10 +39,10 @@ public:
     virtual void close() = 0;
 
     /**
-     * Get current frame ID. -1 indicates the end of the stream.
+     * Get current frame capture time. TimePoint() indicates the end of the stream.
      * @return
      */
-    virtual int getFrameID() const = 0;
+    virtual TimePoint getFrameCaptureTime() const = 0;
 
     /**
      * Get current frame. No need for data copying due to double buffering.
@@ -51,10 +54,6 @@ public:
      * Fetch next frame. Called after current frame is accepted (no copy needed due to double buffering).
      */
     virtual void fetchNextFrame() {};
-
-protected:
-
-    static constexpr int FRAME_ID_MAX = 0x7FFF;
 
 };
 

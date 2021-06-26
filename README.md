@@ -1,7 +1,7 @@
 Meta-Vision-Solais
 ===
 
-=> [Project Wiki](https://github.com/Meta-Team/Meta-Vision-Solais/wiki) :smiley:
+=> Please make sure to read [Project Wiki](https://github.com/Meta-Team/Meta-Vision-Solais/wiki) :smiley:
 
 # Dependencies
 * CMake >= 3.10
@@ -30,8 +30,8 @@ cmake --version
 
 cmake installed by snap is at `/snap/bin`, which is not in PATH by default. To add it to PATH:
 ```shell
-echo 'export PATH="/snap/bin:$PATH"' >> .bashrc
-echo 'export PATH="/snap/bin:$PATH"' >> .zshrc
+echo 'export PATH="/snap/bin:$PATH"' >> ~/.bashrc
+echo 'export PATH="/snap/bin:$PATH"' >> ~/.zshrc
 ```
 
 ## Install Boost
@@ -39,7 +39,7 @@ The Boost library from apt-get of Ubuntu 18.04 is too old. Building from source 
 doesn't have powerful CPU. Instead, install newer Boost from third-party source.
 ```shell
 sudo add-apt-repository ppa:mhier/libboost-latest
-sudo apt-get update
+sudo apt-get updateArmors
 sudo apt install libboost1.74-dev
 ```
 
@@ -87,7 +87,12 @@ TODO...
 
 # Design Ideas
 * Near-zero overhead for terminal-related code in Solais Core
-    * Fetch initiated
+  * Solais Core never sends actively
+  * Result images, frame rates, parameters and other data are fetched by Solais Terminal
+* Gimbal rotates fast, vehicles move slow
+  * Locate armors/vehicles based on absolute angle
+  * Current gimbal angles (from AHRS) and velocities are sent by Control
+  * Assuming the latency (AHRS, serial, processing) of the received angles is a constant, offset each angle with velocity * some time
 
 
 # Packages

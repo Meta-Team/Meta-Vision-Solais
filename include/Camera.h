@@ -98,7 +98,7 @@ public:
 
     void close() override;
 
-    int getFrameID() const override { return bufferFrameID[lastBuffer]; }
+    TimePoint getFrameCaptureTime() const override { return bufferCaptureTime[lastBuffer]; }
 
     const cv::Mat &getFrame() const override { return buffer[lastBuffer]; }
 
@@ -111,7 +111,7 @@ private:
     // Double buffering
     uint8_t lastBuffer = 0;
     cv::Mat buffer[2];
-    int bufferFrameID[2] = {0, 0};
+    TimePoint bufferCaptureTime[2] = {TimePoint(), TimePoint()};
 
     std::thread *th = nullptr;
     bool threadShouldExit;

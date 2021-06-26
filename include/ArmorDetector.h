@@ -22,6 +22,8 @@ public:
     struct DetectedArmor {
         std::array<cv::Point2f, 4> points;
         cv::Point2f center;
+        bool largeArmor = false;
+        int number = 0;
     };
 
     std::vector<DetectedArmor> detect(const cv::Mat &img);

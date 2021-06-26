@@ -281,7 +281,7 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
         uint8_t workingBuffer = 1 - lastBuffer;
 
         if (threadShouldExit || !cap->isOpened()) {
-            bufferFrameID[workingBuffer] = -1;  // indicate invalid frame
+            bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
             break;
         }
 
@@ -289,8 +289,8 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
             continue;  // try again
         }
 
-        bufferFrameID[workingBuffer] = bufferFrameID[lastBuffer] + 1;
-        if (bufferFrameID[workingBuffer] >= FRAME_ID_MAX) bufferFrameID[workingBuffer] = 0;
+        bufferCaptureTime[workingBuffer] = std::chrono::steady_clock::now();
+
         lastBuffer = workingBuffer;
 
         ++cumulativeFrameCounter;  // the only place of incrementing
