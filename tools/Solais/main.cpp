@@ -37,7 +37,7 @@ std::unique_ptr<Executor> executor;
 ParamSet recvParams;
 Result resultPackage;
 
-Image *allocateProtoJPEGImage(const cv::Mat &mat) {
+Image *allocProtoJPG(const cv::Mat &mat) {
     auto image = new package::Image;
     image->set_format(package::Image::JPEG);
 
@@ -64,32 +64,43 @@ void sendResult() {
         resultPackage.Clear();
 
         // Detector images
-        executor->detectorOutputMutex().lock();
-        // If can't lock immediately, simply wait. Detector only performs several non-copy assignments
         {
-            // Empty handled in allocateProtoJPEGImage
-            resultPackage.set_allocated_camera_image(allocateProtoJPEGImage(executor->detector()->originalImage()));
-            resultPackage.set_allocated_brightness_image(
-                    allocateProtoJPEGImage(executor->detector()->brightnessImage()));
-            resultPackage.set_allocated_color_image(allocateProtoJPEGImage(executor->detector()->colorImage()));
-            resultPackage.set_allocated_contour_image(allocateProtoJPEGImage(executor->detector()->contourImage()));
-            resultPackage.set_allocated_armor_image(allocateProtoJPEGImage(executor->detector()->armorImage()));
+            executor->detectorOutputMutex().lock();
+            // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
+            {
+                // Empty handled in allocateProtoJPEGImage
+                resultPackage.set_allocated_camera_image(allocProtoJPG(executor->detector()->originalImage()));
+                resultPackage.set_allocated_brightness_image(allocProtoJPG(executor->detector()->brightnessImage()));
+                resultPackage.set_allocated_color_image(allocProtoJPG(executor->detector()->colorImage()));
+                resultPackage.set_allocated_contour_image(allocProtoJPG(executor->detector()->contourImage()));
+            }
+            executor->detectorOutputMutex().unlock();
         }
-        executor->detectorOutputMutex().unlock();
 
         // Armors
         {
-            std::stringstream ss;
             executor->armorsOutputMutex.lock();
-            // If can't lock immediately, simply wait
+            // If can't lock immediately, simply wait. Executor only performs a copy.
             {
-                for (int i = 0; i < executor->armorsOutput().size(); i++) {
-                    const auto &info = executor->armorsOutput()[i];
-                    ss << "[" << i << "] " << info.offset.x << ", " << info.offset.y << ", " << info.offset.z << "\n";
+                float imageScale =
+                        (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().image_height();
+                for (const auto &armor : executor->armorsOutput()) {
+                    auto armorInfo = resultPackage.add_armors();
+                    for (int i = 0; i < 4; i++) {
+                        auto imagePoint = armorInfo->add_image_points();
+                        imagePoint->set_x(armor.imgPoints[i].x * imageScale);
+                        imagePoint->set_y(armor.imgPoints[i].y * imageScale);
+                    }
+                    armorInfo->set_allocated_image_center(allocResultPoint2f(
+                            armor.imgCenter.x * imageScale, armor.imgCenter.y * imageScale));
+                    armorInfo->set_allocated_offset(allocResultPoint3f(armor.offset.x, armor.offset.y, armor.offset.z));
+                    armorInfo->set_allocated_rotation(
+                            allocResultPoint3f(armor.rotation.x, armor.rotation.y, armor.rotation.z));
+                    armorInfo->set_large_armor(armor.largeArmor);
+                    armorInfo->set_number(armor.number);
                 }
             }
             executor->armorsOutputMutex.unlock();
-            resultPackage.set_armor_info(ss.str());
         }
 
         // Aiming

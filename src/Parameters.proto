@@ -35,7 +35,7 @@ message Image {
   optional bytes data = 2;
 }
 
-/* Parameter Set
+/* ============================================== Parameter Set ==============================================
 
  The following message definition is processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
  Each field becomes one UI components, grouped into QGroupBoxes.
@@ -127,12 +127,28 @@ message ParamSet {
   required int32 armor_life_time = 33;                    // Forget armor after [ms]
 }
 
-// =================================================== Results ===================================================
-// This definition will be processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
-// Every field must be followed by a comment, which is used as its label in UI
-// Group name must not contain spaces
+// ============================================== Result Structures ==============================================
+message ResultPoint2f {
+  required float x = 1;
+  required float y = 2;
+}
 
-/* Result Package
+message ResultPoint3f {
+  required float x = 1;
+  required float y = 2;
+  required float z = 3;
+}
+
+message ArmorInfo {
+  repeated ResultPoint2f image_points = 1;
+  required ResultPoint2f image_center = 2;
+  required ResultPoint3f offset = 3;
+  required ResultPoint3f rotation = 4;
+  required bool large_armor = 5;
+  required int32 number = 6;
+}
+
+/* ============================================== Result Package ==============================================
 
  Special comments in the following message definition are processed by GeneratePhaseUI.py to generate PhaseController
  for SolaisTerminal. Fields are not processed.
@@ -141,9 +157,9 @@ message ParamSet {
  Supported option (at most one for each):
   "// INFO: <name>" -> QLabel called "<name>Label"
   "// IMAGE: <name>" -> QLabel called "<name>Label" + QImage* called "<name>"
+ Fields shall be optional or repeated.
 
  */
-
 message Result {
 
   // GROUP: Input
@@ -169,8 +185,7 @@ message Result {
   // GROUP: Armors
   // INFO: armorInfo
   // IMAGE: armorImage
-  optional string armor_info = 7;  // Armor info
-  optional Image armor_image = 8;  // Armor image
+  repeated ArmorInfo armors = 7;
 
   // GROUP: Aiming
   // INFO: aimingInfo

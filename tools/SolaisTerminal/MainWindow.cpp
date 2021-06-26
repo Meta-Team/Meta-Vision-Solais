@@ -4,6 +4,7 @@
 #include <QTextStream>
 #include <QTimer>
 #include <iostream>
+#include <QPainter>
 #include "Parameters.ui.h"
 #include "TerminalParameters.h"
 
@@ -310,17 +311,43 @@ void MainWindow::applyResultMessage() {
     }
 
     // GROUP: Armors
-    if (resultMessage.has_armor_info()) {
-        phases->armorInfoLabel->setText(QString::fromStdString(resultMessage.armor_info()));
-    }
-    if (resultMessage.has_armor_image()) {
-        if (!resultMessage.armor_image().data().empty()) {
-            phases->armorImage = QImage::fromData((const uint8_t *) resultMessage.armor_image().data().c_str(),
-                                                   resultMessage.armor_image().data().size()).copy();
-            phases->armorImageLabel->setPixmap(QPixmap::fromImage(phases->armorImage));
-        } else {
-            phases->armorImageLabel->setText("Empty");
+    if (resultMessage.armors_size() != 0) {
+
+        phases->armorImage = phases->cameraImage.copy();
+        QPainter painter(&phases->armorImage);
+
+        QString s;
+        QTextStream ss(&s);
+        for (const auto &armorInfo : resultMessage.armors()) {
+
+            // Image points
+            if (armorInfo.image_points_size() != 4) {
+                showStatusMessage("Invalid armor points");
+                continue;
+            }
+            painter.setPen(Qt::red);
+            const auto &points = armorInfo.image_points();
+            for (int i = 0; i < 4; i++) {
+                painter.drawLine(points[i].x(), points[i].y(), points[(i + 1) % 4].x(), points[(i + 1) % 4].y());
+            }
+
+            // Image center
+            painter.drawPoint(armorInfo.image_center().x(), armorInfo.image_center().y());
+
+            // Large/small armor, number, and offset
+            if (armorInfo.large_armor()) {
+                ss << "{" << armorInfo.number() << "} ";
+            } else {
+                ss << "[" << armorInfo.number() << "] ";
+            }
+            ss << armorInfo.offset().x() << ", " << armorInfo.offset().y() << ", " << armorInfo.offset().z() << "\n";
         }
+
+        phases->armorInfoLabel->setText(s);
+        phases->armorImageLabel->setPixmap(QPixmap::fromImage(phases->armorImage));
+    } else {
+        phases->armorInfoLabel->setText("");
+        phases->armorImageLabel->setText("Empty");
     }
 
     // GROUP: Aiming

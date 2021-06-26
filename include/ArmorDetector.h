@@ -28,7 +28,7 @@ public:
 
     std::vector<DetectedArmor> detect(const cv::Mat &img);
 
-    void clearImages() { imgOriginal = imgGray = imgBrightness = imgColor = imgLights = imgArmors = cv::Mat(); }
+    void clearImages() { imgOriginal = imgGray = imgBrightness = imgColor = imgLights = cv::Mat(); }
 
     // Acquire the lock before accessing the images
     std::mutex outputMutex;
@@ -37,7 +37,6 @@ public:
     const cv::Mat &brightnessImage() const { return imgBrightnessOutput; };
     const cv::Mat &colorImage() const { return imgColorOutput; };
     const cv::Mat &contourImage() const { return imgContoursOutput; };
-    const cv::Mat &armorImage() const { return imgArmorsOutput; };
 
 private:
 
@@ -50,9 +49,6 @@ private:
     cv::Mat imgLights;
     cv::Mat imgContours;
 
-    int acceptedContourCount;
-    cv::Mat imgArmors;
-
     // Output Mats are assigned (no copying) after a completed detection so there is no intermediate result
     cv::Mat imgOriginalOutput;
     cv::Mat imgGrayOutput;
@@ -60,7 +56,6 @@ private:
     cv::Mat imgColorOutput;
     cv::Mat imgLightsOutput;
     cv::Mat imgContoursOutput;
-    cv::Mat imgArmorsOutput;
 
     std::vector<DetectedArmor> detect_(const cv::Mat &img);
 

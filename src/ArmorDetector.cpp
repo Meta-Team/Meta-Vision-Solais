@@ -18,7 +18,6 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
         imgColorOutput = imgColor;
         imgLightsOutput = imgLights;
         imgContoursOutput = imgContours;
-        imgArmorsOutput = imgArmors;
         outputMutex.unlock();
     }
     // Otherwise, simple discard the results of current run
@@ -37,7 +36,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
     {
         assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
         imgOriginal = img;
-        imgGray = imgBrightness = imgColor = imgLights = imgContours = imgArmors = Mat();
+        imgGray = imgBrightness = imgColor = imgLights = imgContours = Mat();
     }
 
     // ================================ Brightness Threshold ================================
@@ -180,9 +179,8 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
             lightRects.emplace_back(rect);
         }
     }
-    acceptedContourCount = lightRects.size();
 
-    // FIXME: this may be costly in non-debug mode
+    // FIXME: is this costly?
     cv::cvtColor(imgLights, imgContours, COLOR_GRAY2BGR);
     for (const auto &rect : lightRects) {
         drawRotatedRect(imgContours, rect, Scalar(0, 255, 255));
@@ -206,8 +204,6 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
     // ================================ Combine Lights to Armors ================================
     std::vector<DetectedArmor> acceptedArmors;
     {
-        imgOriginal.copyTo(imgArmors);
-
         std::array<Point2f, 4> armorPoints;
         /*
          *              1 ----------- 2
@@ -329,8 +325,6 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
                 for (int i = 0; i < 4; i++) {
                     center.x += armorPoints[i].x;
                     center.y += armorPoints[i].y;
-                    // Draw in red
-                    cv::line(imgArmors, armorPoints[i], armorPoints[(i + 1) % 4], Scalar(0, 0, 255), 2);
                 }
 
                 // Just use the average X and Y coordinate for the four point
@@ -343,8 +337,6 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
                     largeArmor,
                     // TODO: template matching
                 });
-
-                cv::circle(imgArmors, center, 2, Scalar(0, 0, 255), 2);
             }
         }
     }

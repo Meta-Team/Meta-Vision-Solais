@@ -15,6 +15,8 @@ using package::DoubleRange;
 using package::ToggledDoubleRange;
 using package::ToggledDouble;
 using package::ToggledInt;
+using package::ResultPoint2f;
+using package::ResultPoint3f;
 
 inline bool inRange(double value, const DoubleRange &range) {
     return range.min() <= value && value <= range.max();
@@ -50,6 +52,21 @@ inline ToggledInt *allocToggledInt(bool enabled = false, int val = 0) {
     auto ret = new ToggledInt;
     ret->set_enabled(enabled);
     ret->set_val(val);
+    return ret;
+}
+
+inline ResultPoint2f *allocResultPoint2f(float x, float y) {
+    auto ret = new ResultPoint2f;
+    ret->set_x(x);
+    ret->set_y(y);
+    return ret;
+}
+
+inline ResultPoint3f *allocResultPoint3f(float x, float y, float z) {
+    auto ret = new ResultPoint3f;
+    ret->set_x(x);
+    ret->set_y(y);
+    ret->set_z(z);
     return ret;
 }
 

@@ -33,11 +33,11 @@
   "val": 3
  },
  "contour_open": {
-  "enabled": false,
+  "enabled": true,
   "val": 3
  },
  "contour_close": {
-  "enabled": false,
+  "enabled": true,
   "val": 3
  },
  "contour_fit_function": "MIN_AREA_RECT",
