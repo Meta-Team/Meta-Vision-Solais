@@ -8,12 +8,15 @@
 #include <iomanip>
 #include <pugixml.hpp>
 #include <google/protobuf/util/json_util.h>
+#include <boost/asio/ip/host_name.hpp>
 
 namespace meta {
 
 // PARAM_SET_ROOT defined in CMakeLists.txt
 ParamSetManager::ParamSetManager()
-        : paramSetRoot(fs::path(PARAM_SET_ROOT) / "params"){
+        : paramSetRoot(fs::path(PARAM_SET_ROOT) / "params"), defaultParamSetName(boost::asio::ip::host_name()) {
+
+    std::cout << "ParamSetManager: using default ParamSet " << defaultParamSetName << ".json" << std::endl;
 
     if (!fs::exists(paramSetRoot / "backup")) {
         fs::create_directories(paramSetRoot / "backup");
@@ -23,7 +26,7 @@ ParamSetManager::ParamSetManager()
 void ParamSetManager::reloadParamSetList() {
     paramsSetNames.clear();
 
-    if (!fs::is_directory(paramSetRoot) || !fs::exists(paramSetRoot / "default.json")) {
+    if (!fs::is_directory(paramSetRoot) || !fs::exists(paramSetRoot / (defaultParamSetName + ".json"))) {
         fs::create_directories(paramSetRoot);
 
         // Create default parameter file
@@ -67,7 +70,8 @@ void ParamSetManager::reloadParamSetList() {
         params.set_gimbal_delay(0);
         params.set_armor_life_time(2000);
 
-        saveParamSetToJson(params, paramSetRoot / "default.json");
+        std::cout << "ParamSetManager: create default ParamSet " << defaultParamSetName << ".json" << std::endl;
+        saveParamSetToJson(params, paramSetRoot / (defaultParamSetName + ".json"));
     }
 
     for (const auto &entry : fs::directory_iterator(paramSetRoot)) {
@@ -76,7 +80,7 @@ void ParamSetManager::reloadParamSetList() {
         }
     }
 
-    curParamSetName = "default";  // switch to default
+    curParamSetName = defaultParamSetName;  // switch to default
 }
 
 ParamSet ParamSetManager::loadCurrentParamSet() const {
@@ -99,7 +103,7 @@ void ParamSetManager::saveCurrentParamSet(const ParamSet &p) {
     saveParamSetToJson(p, paramSetRoot / (curParamSetName + ".json"));
 
     // Backup
-    fs::path filename = paramSetRoot / "backup" / fs::path(currentTimeString() + ".json");
+    fs::path filename = paramSetRoot / "backup" / fs::path(curParamSetName + "_" + currentTimeString() + ".json");
     saveParamSetToJson(p, filename);  // simply overwrite if exists
 }
 
@@ -134,7 +138,7 @@ std::string ParamSetManager::currentTimeString() {
     std::tm bt = *std::localtime(&timer);
 
     std::ostringstream oss;
-    oss << std::put_time(&bt, "%Y_%m_%d_%H_%M_%S");
+    oss << std::put_time(&bt, "%Y%m%d%H%M%S");
 
     return oss.str();
 }

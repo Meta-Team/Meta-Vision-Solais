@@ -2,8 +2,8 @@
 // Created by liuzikai on 3/6/21.
 //
 
-#ifndef META_VISION_SOLAIS_DETECTORTUNER_H
-#define META_VISION_SOLAIS_DETECTORTUNER_H
+#ifndef META_VISION_SOLAIS_PARAMSETMANAGER_H
+#define META_VISION_SOLAIS_PARAMSETMANAGER_H
 
 #include "Parameters.h"
 #include <boost/filesystem.hpp>
@@ -32,6 +32,9 @@ public:
 private:
 
     const fs::path paramSetRoot;
+
+    const std::string defaultParamSetName;      // use host name as default (without the extension)
+
     std::vector<std::string> paramsSetNames;    // json filenames without the extension
     std::string curParamSetName;                // json filenames without the extension
 
@@ -42,4 +45,4 @@ private:
 
 }
 
-#endif //META_VISION_SOLAIS_DETECTORTUNER_H
+#endif //META_VISION_SOLAIS_PARAMSETMANAGER_H

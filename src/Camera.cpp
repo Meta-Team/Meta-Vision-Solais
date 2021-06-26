@@ -203,7 +203,7 @@ Camera::~Camera() {
 }
 
 void Camera::readFrameFromCamera(const package::ParamSet &params) {
-    capInfoSS.str(std::string()); // clear capInfoSS
+    capInfoSS.str(std::string());  // clear capInfoSS
 
     delete cap;
     switch (params.camera_backend()) {
