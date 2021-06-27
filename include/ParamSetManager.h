@@ -39,8 +39,6 @@ private:
     std::string curParamSetName;                // json filenames without the extension
 
     void saveParamSetToJson(const ParamSet &p, const fs::path &filename);
-
-    static std::string currentTimeString();
 };
 
 }

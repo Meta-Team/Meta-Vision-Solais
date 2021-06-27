@@ -109,13 +109,17 @@ TODO...
 | setParams | Bytes | ParamSet | | |
 | getParams | NameOnly | | Fetch current params | |
 | getCurrentParamSetName | NameOnly | | | |
+| reloadLists | NameOnly | | Reload at core  | Need to fetch manually |
+| fetchLists | NameOnly | | Fetch data set list and parameter set list | |
 | switchImageSet | String | Path of the data set | | |
 | runCamera | Bytes | nullptr | Start execution on camera | |
 | runImage | String | Image Name | | Result sent back automatically |
 | runImageSet | NameOnly |  | | Use current ImageSet set by switchImageSet |
-| reloadLists | NameOnly | | Reload at core  | Need to fetch manually |
-| fetchLists | NameOnly | | Fetch data set list and parameter set list | |
+| previewImage | String | Video file name | Fetch the first frame of the specific video | Result package sent by Core |
+| runVideo | String | Video file name | | |
 | captureImage | NameOnly | | Capture camera image and save to file | Require manual reload of the image list |
+| startRecord  | NameOnly | | Start recording video from camera | |
+| stopRecord  | NameOnly | | Stop recording video from camera | |
 
 
 ## Core -> Terminal
@@ -128,4 +132,7 @@ TODO...
 | params | Bytes | Current params |
 | imageList | ListOfStrings | Image names |
 | imageSetList | ListOfStrings | Data set names |
+| videoList | ListOfStrings | Video names |
 | currentParamSetName | String | |
+ 
+NameOnly res package (size of 0) is sent if the Executor is not running. Terminal then holds the fetch command.

@@ -76,6 +76,7 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET
             AimingSolver.cpp
             ParamSetManager.cpp
             ImageSet.cpp
+            VideoSet.cpp
             Executor.cpp)
     target_link_libraries(libSolais
             ${OpenCV_LIBRARIES}

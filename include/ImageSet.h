@@ -8,13 +8,13 @@
 #include <thread>
 #include <boost/filesystem.hpp>
 #include "Parameters.h"
-#include "VideoSource.h"
+#include "InputSource.h"
 
 namespace meta {
 
 namespace fs = boost::filesystem;
 
-class ImageSet : public VideoSource {
+class ImageSet : public InputSource {
 public:
 
     ImageSet();
@@ -27,11 +27,11 @@ public:
 
     const std::vector<std::string> &getImageList() const { return images; }
 
-    cv::Mat getSingleImage(const std::string &imageName, const ParamSet &params) const;
+    bool openSingleImage(const std::string &imageName, const ParamSet &params);
 
-    bool open(const package::ParamSet &params) override;
+    bool openCurrentImageSet(const package::ParamSet &params);
 
-    bool isOpened() const override { return (th != nullptr); }
+    bool isOpened() const override { return !imageMats.empty(); }
 
     void close() override;
 
@@ -50,7 +50,7 @@ protected:
     fs::path currentImageSetPath;
     std::vector<std::string> imageSets;      // directory name
     std::vector<std::string> images;         // jpg filenames
-    std::vector<cv::Mat> imageMats;
+    std::vector<cv::Mat> imageMats;          // empty if not running
 
     // Double buffering
     bool shouldFetchNextFrame;
@@ -62,8 +62,6 @@ protected:
     bool threadShouldExit = false;
 
     void loadFrameFromImageSet(const ParamSet &params);
-
-    static std::string currentTimeString();
 };
 
 }

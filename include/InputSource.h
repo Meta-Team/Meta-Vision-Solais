@@ -2,8 +2,8 @@
 // Created by liuzikai on 5/25/21.
 //
 
-#ifndef META_VISION_SOLAIS_VIDEOSOURCE_H
-#define META_VISION_SOLAIS_VIDEOSOURCE_H
+#ifndef META_VISION_SOLAIS_INPUTSOURCE_H
+#define META_VISION_SOLAIS_INPUTSOURCE_H
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/videoio.hpp>
@@ -14,18 +14,14 @@
 namespace meta {
 
 using TimePoint = std::chrono::steady_clock::time_point;
+using Duration = std::chrono::steady_clock::duration;
 
-class VideoSource : public FrameCounterBase {
+class InputSource : public FrameCounterBase {
 public:
 
-    virtual ~VideoSource() {}
+    virtual ~InputSource() {}
 
-    /**
-     * Start streaming and fetch the first frame.
-     * @param params
-     * @return
-     */
-    virtual bool open(const package::ParamSet &params) = 0;
+    // Open function can be implemented differently
 
     /**
      * Whether the streaming source is opened
@@ -59,4 +55,4 @@ public:
 
 }
 
-#endif //META_VISION_SOLAIS_VIDEOSOURCE_H
+#endif //META_VISION_SOLAIS_INPUTSOURCE_H

@@ -92,8 +92,6 @@ bool CameraCoreMVCamera::read(cv::Mat &image) {
     cv::Mat img(cv::Size(frameInfo.iWidth, frameInfo.iHeight), CV_8UC3, matBuffer);
 
     image = img.clone();
-//    cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
-
 
     res = CameraReleaseImageBuffer(hCamera, rawBuffer);
     if (res != CAMERA_STATUS_SUCCESS) {
@@ -128,6 +126,10 @@ bool CameraCoreMVCamera::set(int propId, double value) {
             break;
         case cv::CAP_PROP_EXPOSURE:
             res = CameraSetExposureTime(hCamera, value);
+            break;
+        case cv::CAP_PROP_FPS:
+            fps = (int) value;  // only store the value, doesn't influence the camera
+            res = CAMERA_STATUS_SUCCESS;
             break;
         default:
             std::cerr << "CameraCoreMVCamera: setting " << propId << " is not implemented" << std::endl;
@@ -165,6 +167,12 @@ double CameraCoreMVCamera::get(int propId) const {
             break;
         case cv::CAP_PROP_EXPOSURE:
             res = CameraGetExposureTime(hCamera, &result);
+            break;
+        case cv::CAP_PROP_FPS:
+            // res = CameraGetFrameRate(hCamera, &intVal);
+            intVal = fps;  // only report the setting value
+            res = CAMERA_STATUS_SUCCESS;
+            result = intVal;
             break;
         default:
             std::cerr << "CameraCoreMVCamera: getting " << propId << " is not implemented" << std::endl;
@@ -282,6 +290,7 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
 
         if (threadShouldExit || !cap->isOpened()) {
             bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
+            lastBuffer = workingBuffer;  // switch
             break;
         }
 

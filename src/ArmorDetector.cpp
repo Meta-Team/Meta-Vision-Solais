@@ -83,7 +83,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
             Mat element = cv::getStructuringElement(
                     cv::MORPH_ELLIPSE,
                     cv::Size(params.color_erode().val(), params.color_erode().val()));
-            dilate(imgColor, imgColor, element);
+            erode(imgColor, imgColor, element);
         }
 
         // Color dilate
@@ -105,7 +105,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
         Mat element = cv::getStructuringElement(
                 cv::MORPH_ELLIPSE,
                 cv::Size(params.contour_open().val(), params.contour_open().val()));
-        dilate(imgLights, imgLights, element);
+        morphologyEx(imgLights, imgLights, MORPH_OPEN, element);
     }
 
     // Contour close
@@ -113,7 +113,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
         Mat element = cv::getStructuringElement(
                 cv::MORPH_ELLIPSE,
                 cv::Size(params.contour_close().val(), params.contour_close().val()));
-        dilate(imgLights, imgLights, element);
+        morphologyEx(imgLights, imgLights, MORPH_CLOSE, element);
     }
 
     std::vector<RotatedRect> lightRects;

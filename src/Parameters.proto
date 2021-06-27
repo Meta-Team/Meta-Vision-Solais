@@ -56,8 +56,8 @@ message Image {
 message ParamSet {
 
   // GROUP: General
-  required int32 image_width = 1;      // Image Width
-  required int32 image_height = 2;     // Image Height
+  required int32 image_width = 1;      // Image/ROI width
+  required int32 image_height = 2;     // Image/ROI height
 
   enum EnemyColor {
       RED = 0;

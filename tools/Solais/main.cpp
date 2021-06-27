@@ -59,6 +59,7 @@ void sendStatusBarMsg(const std::string &msg) {
 }
 
 void sendResult() {
+
     // Always send a package, but non-empty only if the executor is running
     if (executor->getCurrentAction() != Executor::NONE) {
         resultPackage.Clear();
@@ -115,6 +116,7 @@ void sendResult() {
             executor->stop();
         }
     } else {
+
         socketServer.sendBytes("res", nullptr, 0);
     }
 
@@ -130,12 +132,22 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
         }
 
     } else if (name == "runImage") {
-        executor->startSingleImageDetection(std::string(s));  // blocking
-        socketServer.sendSingleString("executionStarted", "image " + std::string(s));  // let terminal fetch
+        executor->startSingleImageDetection(std::string(s));
+        socketServer.sendSingleString("executionStarted", "image " + std::string(s));
+
+    } else if (name == "runVideo") {
+        executor->startVideoDetection(std::string(s));
+        socketServer.sendSingleString("executionStarted", "video " + std::string(s));
 
     } else if (name == "switchParamSet") {
         executor->switchParamSet(std::string(s));
         sendStatusBarMsg("Switched to parameter set \"" + std::string(s) + "\"");
+
+    } else if (name == "previewVideo") {
+        auto img = executor->getVideoPreview(std::string(s));
+        resultPackage.Clear();
+        resultPackage.set_allocated_camera_image(allocProtoJPG(img));
+        socketServer.sendBytes("res", resultPackage);
 
     } else goto INVALID_COMMAND;
 
@@ -194,6 +206,7 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
     } else if (name == "fetchLists") {
         socketServer.sendListOfStrings("imageSetList", executor->imageSet()->getImageSetList());
+        socketServer.sendListOfStrings("videoList", executor->videoSet()->getVideoList());
         socketServer.sendListOfStrings("paramSetList", executor->dataManager()->getParamSetList());
         socketServer.sendSingleString("currentParamSetName", executor->dataManager()->currentParamSetName());
         socketServer.sendBytes("params", executor->getCurrentParams());
@@ -204,6 +217,14 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
     } else if (name == "captureImage") {
         std::string filename = executor->captureImageFromCamera();
         sendStatusBarMsg("capture as " + filename);
+
+    } else if (name == "startRecord") {
+        std::string filename = executor->startRecordToVideo();
+        sendStatusBarMsg("record as " + filename);
+
+    } else if (name == "stopRecord") {
+        executor->stopRecordToVideo();
+        sendStatusBarMsg("stop recording video");
 
     } else {
         std::cerr << "Unknown bytes package <" << name << ">" << std::endl;
@@ -218,6 +239,7 @@ boost::asio::io_context serialIOContext;
 // TCP handling should not operates on these components directly, so they are put at last
 std::unique_ptr<Camera> camera;
 std::unique_ptr<ImageSet> imageSet;
+std::unique_ptr<VideoSet> videoSet;
 std::unique_ptr<ArmorDetector> detector;
 std::unique_ptr<ParamSetManager> paramSetManager;
 std::unique_ptr<PositionCalculator> positionCalculator;
@@ -231,6 +253,7 @@ int main(int argc, char *argv[]) {
 
     camera = std::make_unique<Camera>();
     imageSet = std::make_unique<ImageSet>();
+    videoSet = std::make_unique<VideoSet>();
     detector = std::make_unique<ArmorDetector>();
     paramSetManager = std::make_unique<ParamSetManager>();
     positionCalculator = std::make_unique<PositionCalculator>();
@@ -240,8 +263,8 @@ int main(int argc, char *argv[]) {
     } else {
         std::cerr << "Serial disabled for debug purpose" << std::endl;
     }
-    executor = std::make_unique<Executor>(camera.get(), imageSet.get(), detector.get(), paramSetManager.get(),
-                                          positionCalculator.get(), aimingSolver.get(), serial.get());
+    executor = std::make_unique<Executor>(camera.get(), imageSet.get(), videoSet.get(), paramSetManager.get(),
+                                          detector.get(), positionCalculator.get(), aimingSolver.get(), serial.get());
 
     tcpIOThread = new std::thread([] {
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(tcpIOContext.get_executor());

@@ -3,6 +3,7 @@
 //
 
 #include "ImageSet.h"
+#include "Utilities.h"
 #include <iostream>
 #include <iomanip>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -59,17 +60,28 @@ int ImageSet::switchImageSet(const std::string &dataSetName) {
     return images.size();
 }
 
-cv::Mat ImageSet::getSingleImage(const std::string &imageName, const ParamSet &params) const {
-    if (currentImageSetPath.empty()) return cv::Mat();
+bool ImageSet::openSingleImage(const std::string &imageName, const ParamSet &params) {
+    if (currentImageSetPath.empty()) {
+        std::cerr << "ImageSet: failed to open as no image set is selected\n";
+        return false;
+    }
+
     fs::path imageFile = fs::path(currentImageSetPath) / imageName;
     auto img = cv::imread(imageFile.string());
     if (img.rows != params.image_height() || img.cols != params.image_width()) {
         cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
     }
-    return img;
+
+    // Load the image to the latest buffer
+    buffer[lastBuffer] = img;
+    bufferCaptureTime[lastBuffer] = std::chrono::steady_clock::now();
+
+    if (th) close();
+    th = nullptr;  // do not start thread and clear the pointer for fetchNextFrame
+    return true;
 }
 
-bool ImageSet::open(const ParamSet &params) {
+bool ImageSet::openCurrentImageSet(const ParamSet &params) {
     if (th) close();
 
     if (currentImageSetPath.empty()) {
@@ -106,6 +118,7 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
 
         if (threadShouldExit || it == imageMats.end()) {  // no more image
             bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
+            lastBuffer = workingBuffer;  // switch
             break;
         }
 
@@ -131,10 +144,20 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
 
 
 void ImageSet::fetchNextFrame() {
-    while (shouldFetchNextFrame) {  // check for flag set last time
-        std::this_thread::yield();
+
+    if (th) {  // if the thread is created
+
+        while (shouldFetchNextFrame) {  // check for flag set last time
+            std::this_thread::yield();
+        }
+        shouldFetchNextFrame = true;
+
+    } else {  // for single image, the thread is not created
+
+        uint8_t workingBuffer = 1 - lastBuffer;
+        bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
+        lastBuffer = workingBuffer;  // switch
     }
-    shouldFetchNextFrame = true;
 }
 
 void ImageSet::close() {
@@ -146,35 +169,11 @@ void ImageSet::close() {
     }
 }
 
-std::string ImageSet::currentTimeString() {
-    // Reference: https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
-
-    using namespace std::chrono;
-
-    // Get current time
-    auto now = system_clock::now();
-
-    // Get number of milliseconds for the current second
-    // (remainder after division into seconds)
-    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000;
-
-    // Convert to std::time_t in order to convert to std::tm (broken time)
-    auto timer = system_clock::to_time_t(now);
-
-    // Convert to broken time
-    std::tm bt = *std::localtime(&timer);
-
-    std::ostringstream oss;
-    oss << std::put_time(&bt, "%Y_%m_%d_%H_%M_%S");
-
-    return oss.str();
-}
-
 std::string ImageSet::saveCapturedImage(const cv::Mat &image, const package::ParamSet &params) {
     // Directory: <width>_<height>_blue/red
     fs::path dir = imageSetRoot /
-            fs::path(std::to_string(params.image_width()) + "_" + std::to_string(params.image_height()) + "_" +
-            (params.enemy_color() == package::ParamSet_EnemyColor_BLUE ? "blue" : "red"));
+                   fs::path(std::to_string(params.image_width()) + "_" + std::to_string(params.image_height()) + "_" +
+                            (params.enemy_color() == package::ParamSet_EnemyColor_BLUE ? "blue" : "red"));
 
     if (!fs::exists(dir)) {
         fs::create_directories(dir);

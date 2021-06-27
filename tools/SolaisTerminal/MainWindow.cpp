@@ -71,14 +71,26 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->captureImageButton, &QPushButton::clicked, [this] {
         socket.sendBytes("captureImage");
     });
+    connect(ui->startRecordButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("startRecord");
+    });
+    connect(ui->stopRecordButton, &QPushButton::clicked, [this] {
+        socket.sendBytes("stopRecord");
+    });
     connect(ui->imageSetList, &QListWidget::currentItemChanged, [this](auto current, auto previous) {
         if (current) socket.sendSingleString("switchImageSet", current->text().toStdString());
         lastRunSingleImage = false;
     });
     connect(ui->imageList, &QListWidget::currentItemChanged, this, &MainWindow::runOnCurrentSelectedImage);
+    connect(ui->videoList, &QListWidget::currentItemChanged, [this](auto current, auto previous) {
+        if (current) socket.sendSingleString("previewVideo", current->text().toStdString());
+    });
     connect(ui->runImageSetButton, &QPushButton::clicked, [this] {
         socket.sendBytes("runImageSet");
         lastRunSingleImage = false;
+    });
+    connect(ui->runVideoButton, &QPushButton::clicked, [this] {
+        socket.sendSingleString("runVideo", ui->videoList->currentItem()->text().toStdString());
     });
 
     // Parameters
@@ -144,6 +156,8 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
             if (size == 0) {
                 // Do not send another fetch, but hold the fetch package
                 holdingFetchPackage = true;
+
+                showStatusMessage("Execution stopped");
             } else {
                 if (!resultMessage.ParseFromArray(buf, size)) {
                     showStatusMessage("Received an invalid Result package");
@@ -214,16 +228,13 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const std::vecto
 
 
     } else if (name == "imageList") {
-        ui->imageList->blockSignals(true);
-        ui->imageList->clear();
-        for (const auto &image : list) ui->imageList->addItem(image);
-        ui->imageList->blockSignals(false);
+        loadListOfStringsToQListWidget(list, ui->imageList);
+
+    } else if (name == "videoList") {
+        loadListOfStringsToQListWidget(list, ui->videoList);
 
     } else if (name == "imageSetList") {
-        ui->imageSetList->blockSignals(true);
-        ui->imageSetList->clear();
-        for (const auto &image : list) ui->imageSetList->addItem(image);
-        ui->imageSetList->blockSignals(false);
+        loadListOfStringsToQListWidget(list, ui->imageSetList);
         ui->imageList->clear();  // current data set is reset
 
     } else if (name == "paramSetList") {
@@ -239,6 +250,13 @@ void MainWindow::handleRecvListOfStrings(std::string_view name, const std::vecto
     } else {
         showStatusMessage("Unknown list-of-string package <" + QString(name.data()) + ">");
     }
+}
+
+void MainWindow::loadListOfStringsToQListWidget(const std::vector<const char *> &list, QListWidget *listWidget) {
+    listWidget->blockSignals(true);
+    listWidget->clear();
+    for (const auto &image : list) listWidget->addItem(image);
+    listWidget->blockSignals(false);
 }
 
 void MainWindow::runOnCurrentSelectedImage() {

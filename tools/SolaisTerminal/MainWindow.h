@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QtWidgets/QListWidget>
 //#include "AnnotatedMatViewer.h"
 #include "TerminalSocket.h"
 #include "Parameters.pb.h"
@@ -76,6 +77,7 @@ private slots:
 
     void performIO();
 
+    void loadListOfStringsToQListWidget(const std::vector<const char *> &list, QListWidget *listWidget);
 };
 
 }

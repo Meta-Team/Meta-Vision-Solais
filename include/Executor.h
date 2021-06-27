@@ -7,9 +7,10 @@
 
 // Include as few modules as possible and use forward declarations
 #include "Parameters.h"
-#include "VideoSource.h"
+#include "InputSource.h"
 #include "Camera.h"
 #include "ImageSet.h"
+#include "VideoSet.h"
 #include "ArmorDetector.h"
 #include "ParamSetManager.h"
 #include "PositionCalculator.h"
@@ -22,8 +23,9 @@ namespace meta {
 class Executor : protected FrameCounterBase /* we would like to rename the function */ {
 public:
 
-    explicit Executor(Camera *camera, ImageSet *imageSet, ArmorDetector *detector, ParamSetManager *paramSetManager,
-                      PositionCalculator *positionCalculator, AimingSolver *aimingSolver, Serial *serial);
+    explicit Executor(Camera *camera, ImageSet *imageSet, VideoSet *videoSet, ParamSetManager *paramSetManager,
+                      ArmorDetector *detector, PositionCalculator *positionCalculator, AimingSolver *aimingSolver,
+                      Serial *serial);
 
     /** Read-Only Components **/
 
@@ -31,7 +33,9 @@ public:
 
     const ImageSet *imageSet() const { return imageSet_; }
 
-    const VideoSource *currentInput() const { return currentInput_; };
+    const VideoSet *videoSet() const { return videoSet_; }
+
+    const InputSource *currentInputSource() const { return currentInput_; };
 
     const ArmorDetector *detector() const { return detector_; }
 
@@ -43,7 +47,7 @@ public:
 
     const Serial *serial() const { return serial_; }
 
-    /** Parameter Sets and Image Lists Control **/
+    /** Parameter Sets, Image List, and Video List Control **/
 
     void reloadLists();
 
@@ -55,20 +59,35 @@ public:
 
     const ParamSet &getCurrentParams() const { return params; }
 
+    cv::Mat getVideoPreview(const std::string &videoName) const { return videoSet_->getVideoFirstFrame(videoName, params); }
+
+    /** Capture and Record **/
+
     std::string captureImageFromCamera();
+
+    std::string startRecordToVideo();
+
+    void stopRecordToVideo();
 
     /** Execution **/
 
     enum Action {
         NONE,
-        REAL_TIME_DETECTION,
+        STREAMING_DETECTION,
         SINGLE_IMAGE_DETECTION
     };
 
     Action getCurrentAction() const { return curAction; }
 
+    /**
+     * Stop execution.
+     */
     void stop();
 
+    /**
+     * Start continuous detection on camera.
+     * @return Success or not.
+     */
     bool startRealTimeDetection();
 
     /**
@@ -76,11 +95,22 @@ public:
      * without resetting to NONE after completion. TCP socket can sent the result based on getCurrentAction() != NONE,
      * but should call stop() if the current action is SINGLE_IMAGE_DETECTION.
      * @param imageName
-     * @return
+     * @return Success or not.
      */
     bool startSingleImageDetection(const std::string &imageName);
 
+    /**
+     * Start continuous detection on current image set.
+     * @return  Success or not.
+     */
     bool startImageSetDetection();
+
+    /**
+     * Start continuous detection on video.
+     * @param videoName
+     * @return  Success or not.
+     */
+    bool startVideoDetection(const std::string &videoName);
 
     /** Statistics and Output **/
 
@@ -99,13 +129,14 @@ private:
 
     Camera *camera_;
     ImageSet *imageSet_;
+    VideoSet *videoSet_;
     ArmorDetector *detector_;
     ParamSetManager *paramSetManager_;
     PositionCalculator *positionCalculator_;
     AimingSolver *aimingSolver_;
     Serial *serial_;
 
-    VideoSource *currentInput_ = nullptr;
+    InputSource *currentInput_ = nullptr;
 
     ParamSet params;
 
@@ -118,7 +149,10 @@ private:
 
     void applyParams(const ParamSet &p);
 
-    void runStreamingDetection(VideoSource *source);
+    void runStreamingDetection(InputSource *source);
+
+    cv::VideoWriter videoWriter;
+    std::mutex videoWriterMutex;
 
 };
 

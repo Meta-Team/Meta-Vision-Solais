@@ -4,7 +4,7 @@
  "enemy_color": "BLUE",
  "camera_backend": "MV_CAMERA",
  "camera_id": 0,
- "fps": 211,
+ "fps": 80,
  "gamma": {
   "enabled": true,
   "val": 50
@@ -23,22 +23,22 @@
   "min": 90,
   "max": 110
  },
- "rb_channel_threshold": 100,
+ "rb_channel_threshold": 105,
  "color_erode": {
   "enabled": false,
-  "val": 3
+  "val": 5
  },
  "color_dilate": {
   "enabled": false,
-  "val": 3
+  "val": 5
  },
  "contour_open": {
-  "enabled": true,
-  "val": 3
+  "enabled": false,
+  "val": 5
  },
  "contour_close": {
   "enabled": true,
-  "val": 3
+  "val": 5
  },
  "contour_fit_function": "MIN_AREA_RECT",
  "contour_pixel_count": {
@@ -46,17 +46,17 @@
   "val": 15
  },
  "contour_min_area": {
-  "enabled": true,
+  "enabled": false,
   "val": 10
  },
  "long_edge_min_length": {
   "enabled": true,
-  "val": 4
+  "val": 2
  },
  "light_aspect_ratio": {
   "enabled": true,
   "min": 1,
-  "max": 20
+  "max": 10
  },
  "light_max_rotation": {
   "enabled": true,
@@ -64,7 +64,7 @@
  },
  "light_length_max_ratio": {
   "enabled": true,
-  "val": 2.5
+  "val": 1.2
  },
  "light_x_dist_over_l": {
   "enabled": true,
@@ -74,18 +74,18 @@
  "light_y_dist_over_l": {
   "enabled": true,
   "min": 0,
-  "max": 0.8
+  "max": 0.5
  },
  "light_angle_max_diff": {
   "enabled": true,
-  "val": 20
+  "val": 10
  },
  "small_armor_aspect_ratio": {
   "min": 1.25,
-  "max": 2
+  "max": 3
  },
  "large_armor_aspect_ratio": {
-  "min": 1.25,
+  "min": 3,
   "max": 4
  },
  "yaw_delta_offset": {

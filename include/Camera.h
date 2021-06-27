@@ -7,7 +7,7 @@
 
 #include <thread>
 #include "Parameters.pb.h"
-#include "VideoSource.h"
+#include "InputSource.h"
 
 namespace meta {
 
@@ -53,7 +53,7 @@ public:
 
     void release() override { cap.release(); }
 
-private:
+protected:
     cv::VideoCapture cap;
 };
 
@@ -81,20 +81,23 @@ protected:
 
     int hCamera = 0;
     unsigned char *matBuffer = nullptr;  // buffer for cv::Mat
+    int fps = 211;  // internal variable for setting FPS
 
 };
 
-class Camera : public VideoSource {
+class Camera : public InputSource {
 public:
 
     ~Camera() override;
 
     // Block until a valid frame is retrieved
-    bool open(const package::ParamSet &params) override;
+    bool open(const package::ParamSet &params);
 
     bool isOpened() const override { return cap != nullptr && cap->isOpened(); }
 
     std::string getCapInfo() const { return capInfoSS.str(); };
+
+    int getFPS() const { return cap ? ((int) cap->get(cv::CAP_PROP_FPS)) : 0; }
 
     void close() override;
 

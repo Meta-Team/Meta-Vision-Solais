@@ -16,9 +16,9 @@ using namespace cv;
 using namespace std;
 
 const int cameraIndex = 0;
-const int cameraWidth = 640;
-const int cameraHeight = 320;
-const int cameraFPS = 330;
+const int cameraWidth = 1280;
+const int cameraHeight = 1024;
+const int cameraFPS = 211;
 
 int main() {
     VideoCapture inputVideo(cameraIndex);
@@ -42,18 +42,56 @@ int main() {
 
     inputVideo >> frame;
 
-    Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
+    /*
+     >> cameraParams.IntrinsicMatrix
+
+        ans =
+
+          342.3936         0         0
+           -0.0265  342.2803         0
+          320.3885  174.8987    1.0000
+     */
+    /*Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
     cameraMatrix.at<double>(0, 0) = 342.3936;
     cameraMatrix.at<double>(0, 1) = -0.0265;
     cameraMatrix.at<double>(0, 2) = 320.3885;
     cameraMatrix.at<double>(1, 1) = 342.2803;
-    cameraMatrix.at<double>(1, 2) = 174.8987;
+    cameraMatrix.at<double>(1, 2) = 174.8987;*/
 
-    Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
+
+    Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
+    cameraMatrix.at<double>(0, 0) = 1.3844E3;
+    cameraMatrix.at<double>(0, 1) = 0;
+    cameraMatrix.at<double>(0, 2) = 0.6167E3;
+    cameraMatrix.at<double>(1, 1) = 1.3799E3;
+    cameraMatrix.at<double>(1, 2) = 0.4678E3;
+
+    /*
+     >> cameraParams.RadialDistortion
+
+        ans =
+
+            0.0396   -0.0614
+
+        >> cameraParams.TangentialDistortion
+
+        ans =
+
+            0.0008   -0.0012
+     */
+
+    /*Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
     distCoeffs.at<double>(0, 0) = 0.0396;
     distCoeffs.at<double>(1, 0) = -0.0614;
     distCoeffs.at<double>(2, 0) = 0.0008;
     distCoeffs.at<double>(3, 0) = -0.0012;
+    distCoeffs.at<double>(4, 0) = 0;*/
+
+    Mat distCoeffs = Mat::zeros(5, 1, CV_64F);
+    distCoeffs.at<double>(0, 0) = -0.0697;
+    distCoeffs.at<double>(1, 0) = 0.1052;
+    distCoeffs.at<double>(2, 0) = 0;
+    distCoeffs.at<double>(3, 0) = 0;
     distCoeffs.at<double>(4, 0) = 0;
 
     float zScale = 0.5;
@@ -62,6 +100,7 @@ int main() {
     fs << "cameraMatrix" << cameraMatrix;
     fs << "distCoeffs" << distCoeffs;
     fs << "zScale" << zScale;
+    fs.release();
 
     Mat view, rview, map1, map2;
     Size imageSize;
