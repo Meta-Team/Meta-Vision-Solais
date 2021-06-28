@@ -24,6 +24,16 @@ message ToggledInt {
   required int32 val = 2;
 }
 
+message IntPair {
+  required int32 x = 1;
+  required int32 y = 2;
+}
+
+message DoublePair {
+  required double x = 1;
+  required double y = 2;
+}
+
 message Image {
 
   enum ImageFormat {
@@ -56,14 +66,16 @@ message Image {
 message ParamSet {
 
   // GROUP: General
-  required int32 image_width = 1;      // Image/ROI width
-  required int32 image_height = 2;     // Image/ROI height
+  required int32 image_width = 1;             // Image/ROI width
+  required int32 image_height = 2;            // Image/ROI height
 
   enum EnemyColor {
       RED = 0;
       BLUE = 1;
   };
-  required EnemyColor enemy_color = 3;  // Enemy color
+  required EnemyColor enemy_color = 3;         // Enemy color
+
+  required double video_playback_speed = 36;   // Video playback speed
 
   // GROUP: Input
   enum CameraBackend {
@@ -78,25 +90,24 @@ message ParamSet {
   required ToggledInt manual_exposure = 24;    // Manual exposure
 
   // GROUP: Brightness
-  required double brightness_threshold = 7;   // Threshold
+  required double brightness_threshold = 7;    // Brightness threshold
 
   // GROUP: Color
   enum ColorThresholdMode {
       HSV = 0;
       RB_CHANNELS = 1;
   };
-  required ColorThresholdMode color_threshold_mode = 8;  // Mode
+  required ColorThresholdMode color_threshold_mode = 8;   // Mode
 
-  required DoubleRange hsv_red_hue = 9;                  // Red hue range
-  required DoubleRange hsv_blue_hue = 10;                // Blue hue range
-  required double rb_channel_threshold = 11;             // RB channel threshold
-
-  required ToggledInt color_erode = 28;                   // Erode
-  required ToggledInt color_dilate = 12;                  // Dilate
+  required DoubleRange hsv_red_hue = 9;                   // Red hue range (for HSV)
+  required DoubleRange hsv_blue_hue = 10;                 // Blue hue range (for HSV)
+  required double rb_channel_threshold = 11;              // RB diff threshold (for RB_CHANNELS)
 
   // GROUP: Contours
-  required ToggledInt contour_open = 29;                  // Open
-  required ToggledInt contour_close = 30;                 // Close
+  required ToggledInt contour_erode = 28;                 // Erode
+  required ToggledInt contour_dilate = 12;                // Dilate
+  required ToggledInt contour_open = 29;                  // Open (to reduce noise)
+  required ToggledInt contour_close = 30;                 // Close (to fill holes)
 
   enum ContourFitFunction {
       MIN_AREA_RECT = 0;
@@ -114,17 +125,23 @@ message ParamSet {
   required ToggledDouble light_length_max_ratio = 18;     // Long light / short light <
   required ToggledDoubleRange light_x_dist_over_l = 19;   // abs(X1 - X2) / avgL
   required ToggledDoubleRange light_y_dist_over_l = 20;   // abs(Y1 - Y2) / avgL
-  required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [degree] <
+  required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <
   required DoubleRange small_armor_aspect_ratio = 22;     // Small Armor width/height
   required DoubleRange large_armor_aspect_ratio = 31;     // Large Armor width/height
+
+  // GROUP: Position
+  required IntPair small_armor_size = 34;                 // Small armor detected region size [mm]
+  required IntPair large_armor_size = 35;                 // Large armor detected region size [mm]
 
   // GROUP: Aiming
   required ToggledDouble yaw_delta_offset = 25;           // Yaw delta offset
   required ToggledDouble pitch_delta_offset = 26;         // Pitch delta offset
-
   required int32 gimbal_delay = 32;                       // Gimbal feedback delay [ms]
-
   required int32 armor_life_time = 33;                    // Forget armor after [ms]
+  required bool enable_absolute_angle_mode = 37;          // Enable absolute angle mode
+  required double tracking_max_velocity = 38;             // Track armor with max velocity [mm/s]
+  required int32 predict_backward_count = 39;             // Predict using K velocity records (K >= 1)
+  required double predict_backward_fraction = 40;         // kth recorded velocity weights w^k for k = 2..K
 }
 
 // ============================================== Result Structures ==============================================
@@ -187,9 +204,10 @@ message Result {
   // IMAGE: armorImage
   repeated ArmorInfo armors = 7;
 
+  // GROUP: Position
+
   // GROUP: Aiming
   // INFO: aimingInfo
   // IMAGE: aimingImage
   optional string aiming_info = 9;  // Aiming info
-  optional Image aiming_image = 10;  // Aiming image
 }

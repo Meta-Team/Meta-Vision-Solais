@@ -61,47 +61,42 @@ void sendStatusBarMsg(const std::string &msg) {
 void sendResult() {
 
     // Always send a package, but non-empty only if the executor is running
-    if (executor->getCurrentAction() != Executor::NONE) {
+    if (executor->hasOutputs()) {
         resultPackage.Clear();
+
+        // Fetch outputs
+        cv::Mat originalImage, brightnessImage, colorImage, contourImage;
+        std::vector<AimingSolver::DetectedArmorInfo> armors;
+        executor->fetchOutputs(originalImage, brightnessImage, colorImage, contourImage, armors);
+        // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
 
         // Detector images
         {
-            executor->detectorOutputMutex().lock();
-            // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
-            {
-                // Empty handled in allocateProtoJPEGImage
-                resultPackage.set_allocated_camera_image(allocProtoJPG(executor->detector()->originalImage()));
-                resultPackage.set_allocated_brightness_image(allocProtoJPG(executor->detector()->brightnessImage()));
-                resultPackage.set_allocated_color_image(allocProtoJPG(executor->detector()->colorImage()));
-                resultPackage.set_allocated_contour_image(allocProtoJPG(executor->detector()->contourImage()));
-            }
-            executor->detectorOutputMutex().unlock();
+            // Empty handled in allocateProtoJPG
+            resultPackage.set_allocated_camera_image(allocProtoJPG(originalImage));
+            resultPackage.set_allocated_brightness_image(allocProtoJPG(brightnessImage));
+            resultPackage.set_allocated_color_image(allocProtoJPG(colorImage));
+            resultPackage.set_allocated_contour_image(allocProtoJPG(contourImage));
         }
 
         // Armors
         {
-            executor->armorsOutputMutex.lock();
-            // If can't lock immediately, simply wait. Executor only performs a copy.
-            {
-                float imageScale =
-                        (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().image_height();
-                for (const auto &armor : executor->armorsOutput()) {
-                    auto armorInfo = resultPackage.add_armors();
-                    for (int i = 0; i < 4; i++) {
-                        auto imagePoint = armorInfo->add_image_points();
-                        imagePoint->set_x(armor.imgPoints[i].x * imageScale);
-                        imagePoint->set_y(armor.imgPoints[i].y * imageScale);
-                    }
-                    armorInfo->set_allocated_image_center(allocResultPoint2f(
-                            armor.imgCenter.x * imageScale, armor.imgCenter.y * imageScale));
-                    armorInfo->set_allocated_offset(allocResultPoint3f(armor.offset.x, armor.offset.y, armor.offset.z));
-                    armorInfo->set_allocated_rotation(
-                            allocResultPoint3f(armor.rotation.x, armor.rotation.y, armor.rotation.z));
-                    armorInfo->set_large_armor(armor.largeArmor);
-                    armorInfo->set_number(armor.number);
+            float imageScale = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().image_height();
+            for (const auto &armor : armors) {
+                auto armorInfo = resultPackage.add_armors();
+                for (int i = 0; i < 4; i++) {
+                    auto imagePoint = armorInfo->add_image_points();
+                    imagePoint->set_x(armor.imgPoints[i].x * imageScale);
+                    imagePoint->set_y(armor.imgPoints[i].y * imageScale);
                 }
+                armorInfo->set_allocated_image_center(allocResultPoint2f(
+                        armor.imgCenter.x * imageScale, armor.imgCenter.y * imageScale));
+                armorInfo->set_allocated_offset(allocResultPoint3f(armor.offset.x, armor.offset.y, armor.offset.z));
+                armorInfo->set_allocated_rotation(
+                        allocResultPoint3f(armor.rotation.x, armor.rotation.y, armor.rotation.z));
+                armorInfo->set_large_armor(armor.largeArmor);
+                armorInfo->set_number(armor.number);
             }
-            executor->armorsOutputMutex.unlock();
         }
 
         // Aiming
@@ -112,9 +107,6 @@ void sendResult() {
         }
         socketServer.sendBytes("res", resultPackage);
 
-        if (executor->getCurrentAction() == meta::Executor::SINGLE_IMAGE_DETECTION) {
-            executor->stop();
-        }
     } else {
 
         socketServer.sendBytes("res", nullptr, 0);
@@ -220,7 +212,7 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
     } else if (name == "startRecord") {
         std::string filename = executor->startRecordToVideo();
-        sendStatusBarMsg("record as " + filename);
+        socketServer.sendSingleString("executionStarted", "recording " + filename);
 
     } else if (name == "stopRecord") {
         executor->stopRecordToVideo();
@@ -260,6 +252,9 @@ int main(int argc, char *argv[]) {
     aimingSolver = std::make_unique<AimingSolver>();
     if (strlen(SERIAL_DEVICE) != 0) {
         serial = std::make_unique<Serial>(serialIOContext);
+        serial->setGimbalInfoCallback([](float yawAngle, float pitchAngle, float yawVelocity, float pitchVelocity) {
+            aimingSolver->updateGimbal(yawAngle, pitchAngle, yawVelocity, pitchVelocity);
+        });
     } else {
         std::cerr << "Serial disabled for debug purpose" << std::endl;
     }

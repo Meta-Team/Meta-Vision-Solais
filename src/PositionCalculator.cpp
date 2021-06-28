@@ -46,11 +46,7 @@ bool PositionCalculator::solve(const std::array<cv::Point2f, 4> &imagePoints, bo
     offset = {static_cast<float>(tVec.at<double>(0, 0)),
               static_cast<float>(tVec.at<double>(1, 0)),
               static_cast<float>(tVec.at<double>(2, 0)) * zScale};
-    // FIXME: transform rotation matrix to yaw, pitch and roll
-//    abaaba
-    rotation = {static_cast<float>(rVec.at<double>(0, 0)),
-                static_cast<float>(rVec.at<double>(1, 0)),
-                static_cast<float>(rVec.at<double>(2, 0))};
+    // TODO: transform rotation matrix to yaw, pitch and roll
     return true;
 }
 

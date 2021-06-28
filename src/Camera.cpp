@@ -298,6 +298,13 @@ void Camera::readFrameFromCamera(const package::ParamSet &params) {
             continue;  // try again
         }
 
+        // Save frame if required
+        videoWriterMutex.lock();
+        {
+            if (videoWriter.isOpened()) videoWriter << buffer[workingBuffer];
+        }
+        videoWriterMutex.unlock();
+
         bufferCaptureTime[workingBuffer] = std::chrono::steady_clock::now();
 
         lastBuffer = workingBuffer;
@@ -318,6 +325,36 @@ void Camera::close() {
         delete th;
         th = nullptr;
     }
+}
+
+bool Camera::startRecordToVideo(const std::string &filename, const cv::Size &size) {
+    bool ret;
+    videoWriterMutex.lock();
+    {
+        if (videoWriter.isOpened()) videoWriter.release();
+        videoWriter.open(filename, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), getFPS(), size);
+        ret = videoWriter.isOpened();
+    }
+    videoWriterMutex.unlock();
+    return ret;
+}
+
+void Camera::stopRecordToVideo() {
+    videoWriterMutex.lock();
+    {
+        videoWriter.release();
+    }
+    videoWriterMutex.unlock();
+}
+
+bool Camera::isRecordingVideo() {
+    bool ret;
+    videoWriterMutex.lock();
+    {
+        ret = videoWriter.isOpened();
+    }
+    videoWriterMutex.unlock();
+    return ret;
 }
 
 }

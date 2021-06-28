@@ -9,22 +9,6 @@ using namespace cv;
 namespace meta {
 
 std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) {
-    auto ret = detect_(img);
-    // Assign (no copying) the result all at once, if the result is not being processed
-    if (outputMutex.try_lock()) {
-        imgOriginalOutput = imgOriginal;
-        imgGrayOutput = imgGray;
-        imgBrightnessOutput = imgBrightness;
-        imgColorOutput = imgColor;
-        imgLightsOutput = imgLights;
-        imgContoursOutput = imgContours;
-        outputMutex.unlock();
-    }
-    // Otherwise, simple discard the results of current run
-    return ret;
-}
-
-std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img) {
 
     /*
      * Note: in this mega function, steps are wrapped with {} to reduce local variable pollution and make it easier to
@@ -79,18 +63,18 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect_(const Mat &img)
         }
 
         // Color erode
-        if (params.color_erode().enabled()) {
+        if (params.contour_erode().enabled()) {
             Mat element = cv::getStructuringElement(
                     cv::MORPH_ELLIPSE,
-                    cv::Size(params.color_erode().val(), params.color_erode().val()));
+                    cv::Size(params.contour_erode().val(), params.contour_erode().val()));
             erode(imgColor, imgColor, element);
         }
 
         // Color dilate
-        if (params.color_dilate().enabled()) {
+        if (params.contour_dilate().enabled()) {
             Mat element = cv::getStructuringElement(
                     cv::MORPH_ELLIPSE,
-                    cv::Size(params.color_dilate().val(), params.color_dilate().val()));
+                    cv::Size(params.contour_dilate().val(), params.contour_dilate().val()));
             dilate(imgColor, imgColor, element);
         }
 

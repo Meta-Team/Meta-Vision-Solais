@@ -35,6 +35,7 @@ void ParamSetManager::reloadParamSetList() {
         params.set_image_width(1280);
         params.set_image_height(720);
         params.set_enemy_color(ParamSet::BLUE);
+        params.set_video_playback_speed(1);
 
         params.set_camera_backend(ParamSet::OPENCV);
         params.set_camera_id(0);
@@ -47,8 +48,8 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_hsv_red_hue(allocDoubleRange(150, 30));  // across the 0 (180) point
         params.set_allocated_hsv_blue_hue(allocDoubleRange(90, 150));
         params.set_rb_channel_threshold(55);
-        params.set_allocated_color_erode(allocToggledInt(false, 3));
-        params.set_allocated_color_dilate(allocToggledInt(false, 3));
+        params.set_allocated_contour_erode(allocToggledInt(false, 3));
+        params.set_allocated_contour_dilate(allocToggledInt(false, 3));
 
         params.set_allocated_contour_open(allocToggledInt(true, 3));
         params.set_allocated_contour_close(allocToggledInt(true, 3));
@@ -66,10 +67,17 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_small_armor_aspect_ratio(allocDoubleRange(1.25, 2));
         params.set_allocated_large_armor_aspect_ratio(allocDoubleRange(2, 5));
 
+        params.set_allocated_small_armor_size(allocIntPair(120, 60));
+        params.set_allocated_large_armor_size(allocIntPair(240, 60));
+
         params.set_allocated_yaw_delta_offset(allocToggledDouble(false));
         params.set_allocated_pitch_delta_offset(allocToggledDouble(false));
         params.set_gimbal_delay(0);
-        params.set_armor_life_time(2000);
+        params.set_armor_life_time(1000);
+        params.set_enable_absolute_angle_mode(true);
+        params.set_tracking_max_velocity(2000);
+        params.set_predict_backward_count(3);
+        params.set_predict_backward_fraction(0.4);
 
         std::cout << "ParamSetManager: create default ParamSet " << defaultParamSetName << ".json" << std::endl;
         saveParamSetToJson(params, paramSetRoot / (defaultParamSetName + ".json"));
@@ -104,7 +112,7 @@ void ParamSetManager::saveCurrentParamSet(const ParamSet &p) {
     saveParamSetToJson(p, paramSetRoot / (curParamSetName + ".json"));
 
     // Backup
-    fs::path filename = paramSetRoot / "backup" / fs::path(curParamSetName + "_" + currentTimeString() + ".json");
+    fs::path filename = paramSetRoot / ".." / "params_backup" / fs::path(curParamSetName + "_" + currentTimeString() + ".json");
     saveParamSetToJson(p, filename);  // simply overwrite if exists
 }
 

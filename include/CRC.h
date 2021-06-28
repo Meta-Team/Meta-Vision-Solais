@@ -9,10 +9,9 @@ namespace rm {
  * Get CRC16 checksum.
  * @param pchMessage  Data to check
  * @param dwLength    Data length
- * @param wCRC        Initialized checksum
  * @return            CRC checksum
  */
-uint8_t getCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength, uint8_t ucCRC8);
+uint8_t getCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength);
 
 /**
  * Append CRC8 to the end of data.
@@ -32,10 +31,9 @@ void appendCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength);
  * Get CRC16 checksum.
  * @param pchMessage  Data to check
  * @param dwLength    Data length
- * @param wCRC        Initialized checksum
  * @return            CRC checksum
  */
-uint16_t getCRC16CheckSum(uint8_t *pchMessage, uint32_t dwLength, uint16_t wCRC);
+uint16_t getCRC16CheckSum(uint8_t *pchMessage, uint32_t dwLength);
 
 /**
  * CRC16 verification function.

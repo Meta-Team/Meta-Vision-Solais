@@ -78,13 +78,14 @@ void Executor::applyParams(const ParamSet &p) {
         fs["distCoeffs"] >> distCoeffs;
         fs["zScale"] >> zScale;
 
-        // TODO: large armor?
-        positionCalculator_->setParameters({120, 55}, {120, 55},
-                                           cameraMatrix, distCoeffs, zScale);
+        positionCalculator_->setParameters(
+                {(float) params.small_armor_size().x(), (float) params.small_armor_size().y()},
+                {(float) params.large_armor_size().x(), (float) params.large_armor_size().y()},
+                cameraMatrix, distCoeffs, zScale);
     }
 
     // AimingSolver
-    aimingSolver_->setParams(params);
+    aimingSolver_->setParams(params);  // reset history inside
 }
 
 void Executor::stop() {
@@ -172,60 +173,60 @@ void Executor::runStreamingDetection(InputSource *source) {
         auto &img = source->getFrame();  // no need for deep copying
         source->fetchNextFrame();
 
-        // Save frame if required
-        videoWriterMutex.lock();
-        {
-            if (videoWriter.isOpened()) videoWriter << img;
+
+        // Run armor detection algorithm
+        std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
+
+        // Solve armor positions
+        std::vector<AimingSolver::DetectedArmorInfo> armors;
+        for (const auto &detectedArmor : detectedArmors) {
+            cv::Point3f offset, rotation;
+            if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset, rotation)) {
+                armors.emplace_back(AimingSolver::DetectedArmorInfo{
+                        detectedArmor.points,
+                        detectedArmor.center,
+                        offset,
+                        rotation,
+                        detectedArmor.largeArmor,
+                        detectedArmor.number
+                });
+            }
         }
-        videoWriterMutex.unlock();
 
-        if (curAction != NONE) {  // this thread may be used for video recording only
+        // Update
+        aimingSolver_->updateArmors(armors, frameTime);
 
-            // Run armor detection algorithm
-            std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
-
-            // Solve armor positions
-            std::vector<AimingSolver::ArmorInfo> armors;
-            for (const auto &detectedArmor : detectedArmors) {
-                cv::Point3f offset, rotation;
-                if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset, rotation)) {
-                    armors.emplace_back(AimingSolver::ArmorInfo{
-                            detectedArmor.points,
-                            detectedArmor.center,
-                            offset,
-                            rotation,
-                            detectedArmor.largeArmor,
-                            detectedArmor.number
-                    });
-                }
-            }
-
-            // Update
-            aimingSolver_->updateArmors(armors, frameTime);
-
-            // Output armors
-            if (armorsOutputMutex.try_lock()) {
-                armorsOutput_ = armors;
-                armorsOutputMutex.unlock();
-            }
-            // Otherwise, simply discard the results
-
-            if (serial_ && aimingSolver_->shouldSendControlCommand()) {
-                // Send control command
-                const auto &command = aimingSolver_->getControlCommand();
-                serial_->sendTargetAngles(command.yawDelta, command.pitchDelta);
-            }
-
-            // Increment frame counter
-            cumulativeFrameCounter++;
+        if (serial_ && aimingSolver_->shouldSendControlCommand()) {
+            // Send control command
+            const auto &command = aimingSolver_->getControlCommand();
+            serial_->sendControlCommand(
+                    {(command.mode == AimingSolver::RELATIVE_ANGLE ? Serial::RELATIVE_ANGLE : Serial::ABSOLUTE_ANGLE),
+                     command.yaw, command.pitch});
         }
+
+        // Assign (no copying) results all at once, if the result is not being processed
+        if (outputMutex.try_lock()) {
+            originalOutput = detector_->imgOriginal;
+            brightnessOutput = detector_->imgBrightness;
+            colorOutput = detector_->imgColor;
+            contoursOutput = detector_->imgContours;
+
+            armorsOutput = armors;
+            outputMutex.unlock();
+        }
+        // Otherwise, simple discard the results of current run
+
+        // Increment frame counter
+        cumulativeFrameCounter++;
     }
 
     std::cout << "Executor: stopped\n";
 
     source->close();
     currentInput_ = nullptr;
-    if (curAction != SINGLE_IMAGE_DETECTION) curAction = NONE;  // do not reset SINGLE_IMAGE_DETECTION for result fetching
+    if (curAction != SINGLE_IMAGE_DETECTION) {  // do not reset SINGLE_IMAGE_DETECTION for result fetching
+        curAction = NONE;
+    }
 }
 
 void Executor::reloadLists() {
@@ -244,7 +245,11 @@ unsigned int Executor::fetchAndClearInputFrameCounter() {
     if (input) {
         return input->fetchAndClearFrameCounter();
     } else {
-        return 0;
+        if (camera_->isRecordingVideo()) {
+            return camera_->fetchAndClearFrameCounter();
+        } else {
+            return 0;
+        }
     }
 }
 
@@ -275,31 +280,40 @@ std::string Executor::startRecordToVideo() {
             (params.enemy_color() == package::ParamSet_EnemyColor_BLUE ? "blue" : "red") + "_" + currentTimeString() +
             ".avi");
 
-    videoWriterMutex.lock();
-    {
-        if (videoWriter.isOpened()) videoWriter.release();
-        videoWriter.open(filename.string(), cv::VideoWriter::fourcc('M', 'J', 'P', 'G'),
-                         camera_->getFPS(), cv::Size(params.image_width(), params.image_height()));
+    if (!camera_->startRecordToVideo(filename.string(), cv::Size(params.image_width(), params.image_height()))) {
+        return "[Error: failed to open videoWriter]";
     }
-    videoWriterMutex.unlock();
-
-    if (!videoWriter.isOpened()) return "[Error: failed to open videoWriter]";  // not protected by lock due to return, but anyway
-
-    // Start the thread only for video recording
-    if (th) stop();
-    curAction = NONE;
-    threadShouldExit = false;
-    th = new std::thread(&Executor::runStreamingDetection, this, camera_);
 
     return filename.string();
 }
 
-void Executor::stopRecordToVideo() {
-    videoWriterMutex.lock();
-    {
-        videoWriter.release();
+bool Executor::hasOutputs() {
+    if (curAction == SINGLE_IMAGE_DETECTION) {
+        curAction = NONE;  // reset
+        return true;
     }
-    videoWriterMutex.unlock();
+    if (curAction != NONE) return true;
+    if (camera_->isRecordingVideo()) return true;
+    return false;
+}
+
+void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
+                            cv::Mat &contourImage, std::vector<AimingSolver::DetectedArmorInfo> &armors) {
+    if (curAction != NONE) {
+        outputMutex.lock();
+        {
+            originalImage = originalOutput;
+            brightnessImage = brightnessOutput;
+            colorImage = colorOutput;
+            contourImage = contoursOutput;
+            armors = armorsOutput;
+        }
+        outputMutex.unlock();
+    } else {
+        if (camera_->isRecordingVideo()) {
+            originalImage = camera_->getFrame();
+        }
+    }
 }
 
 }

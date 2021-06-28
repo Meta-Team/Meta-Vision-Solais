@@ -25,7 +25,8 @@ const uint8_t CRC8_TAB[256] =
                 0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7, 0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35,
         };
 
-uint8_t getCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength, uint8_t ucCRC8) {
+uint8_t getCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength) {
+    uint8_t ucCRC8 = CRC8_INIT;
     uint8_t ucIndex;
 
     while (dwLength--) {
@@ -41,7 +42,7 @@ bool verifyCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength) {
 
     if ((pchMessage == nullptr) || (dwLength <= 2)) return false;
 
-    ucExpected = getCRC8CheckSum(pchMessage, dwLength - 1, CRC8_INIT);
+    ucExpected = getCRC8CheckSum(pchMessage, dwLength - 1);
     return (ucExpected == pchMessage[dwLength - 1]);
 }
 
@@ -50,7 +51,7 @@ void appendCRC8CheckSum(uint8_t *pchMessage, uint32_t dwLength) {
 
     if ((pchMessage == nullptr) || (dwLength <= 2)) return;
 
-    ucCRC = getCRC8CheckSum((unsigned char *) pchMessage, dwLength - 1, CRC8_INIT);
+    ucCRC = getCRC8CheckSum((unsigned char *) pchMessage, dwLength - 1);
     pchMessage[dwLength - 1] = ucCRC;
 }
 
@@ -91,7 +92,8 @@ const uint16_t wCRC_Table[256] =
                 0x7bc7, 0x6a4e, 0x58d5, 0x495c, 0x3de3, 0x2c6a, 0x1ef1, 0x0f78
         };
 
-uint16_t getCRC16CheckSum(uint8_t *pchMessage, uint32_t dwLength, uint16_t wCRC) {
+uint16_t getCRC16CheckSum(uint8_t *pchMessage, uint32_t dwLength) {
+    uint16_t wCRC = CRC_INIT;
     uint8_t chData;
 
     if (pchMessage == nullptr) {
@@ -113,7 +115,7 @@ bool verifyCRC16CheckSum(uint8_t *pchMessage, uint32_t dwLength) {
         return false;
     }
 
-    wExpected = getCRC16CheckSum(pchMessage, dwLength - 2, CRC_INIT);
+    wExpected = getCRC16CheckSum(pchMessage, dwLength - 2);
     return ((wExpected & 0xff) == pchMessage[dwLength - 2] && ((wExpected >> 8) & 0xff) == pchMessage[dwLength - 1]);
 }
 
@@ -124,7 +126,7 @@ void appendCRC16CheckSum(uint8_t *pchMessage, uint32_t dwLength) {
         return;
     }
 
-    wCRC = getCRC16CheckSum((uint8_t *) pchMessage, dwLength - 2, CRC_INIT);
+    wCRC = getCRC16CheckSum((uint8_t *) pchMessage, dwLength - 2);
     pchMessage[dwLength - 2] = (uint8_t) (wCRC & 0x00ff);
     pchMessage[dwLength - 1] = (uint8_t) ((wCRC >> 8) & 0x00ff);
 }

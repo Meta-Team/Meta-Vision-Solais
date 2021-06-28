@@ -30,14 +30,6 @@ public:
 
     void clearImages() { imgOriginal = imgGray = imgBrightness = imgColor = imgLights = cv::Mat(); }
 
-    // Acquire the lock before accessing the images
-    std::mutex outputMutex;
-    const cv::Mat &originalImage() const { return imgOriginalOutput; };
-    const cv::Mat &grayImage() const { return imgGrayOutput; };
-    const cv::Mat &brightnessImage() const { return imgBrightnessOutput; };
-    const cv::Mat &colorImage() const { return imgColorOutput; };
-    const cv::Mat &contourImage() const { return imgContoursOutput; };
-
 private:
 
     ParamSet params;
@@ -48,17 +40,6 @@ private:
     cv::Mat imgColor;
     cv::Mat imgLights;
     cv::Mat imgContours;
-
-    // Output Mats are assigned (no copying) after a completed detection so there is no intermediate result
-    cv::Mat imgOriginalOutput;
-    cv::Mat imgGrayOutput;
-    cv::Mat imgBrightnessOutput;
-    cv::Mat imgColorOutput;
-    cv::Mat imgLightsOutput;
-    cv::Mat imgContoursOutput;
-
-    std::vector<DetectedArmor> detect_(const cv::Mat &img);
-
 
     static void drawRotatedRect(cv::Mat &img, const cv::RotatedRect &rect, const cv::Scalar &boarderColor);
 
@@ -71,6 +52,8 @@ private:
      * @param rect
      */
     static void canonicalizeRotatedRect(cv::RotatedRect &rect);
+
+    friend class Executor;
 
 };
 

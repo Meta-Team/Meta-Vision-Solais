@@ -42,6 +42,7 @@ cv::Mat VideoSet::getVideoFirstFrame(const std::string &videoName, const ParamSe
 bool VideoSet::openVideo(const std::string &videoName, const ParamSet &params) {
     if (th) close();
 
+    playbackSpeed = params.video_playback_speed();
     threadShouldExit = false;
     th = new std::thread(&VideoSet::loadFrameFromVideo, this, videoName, params);
     return true;
@@ -67,8 +68,8 @@ void VideoSet::loadFrameFromVideo(const std::string &videoName, const ParamSet &
 
         // Wait for correct frame time
         TimePoint now = std::chrono::steady_clock::now();
-        TimePoint expectedTime =
-                startTime + std::chrono::nanoseconds((long long) (video.get(cv::CAP_PROP_POS_MSEC) * 1E6));
+        auto frameTimeMS = video.get(cv::CAP_PROP_POS_MSEC);
+        TimePoint expectedTime = startTime + std::chrono::nanoseconds((long long) (frameTimeMS * 1E6 / playbackSpeed));
         if (now < expectedTime) {
             std::this_thread::sleep_for(expectedTime - now);
         }
@@ -79,8 +80,8 @@ void VideoSet::loadFrameFromVideo(const std::string &videoName, const ParamSet &
         }
         buffer[workingBuffer] = img;
 
-        // Increment frame time
-        bufferCaptureTime[workingBuffer] = expectedTime;
+        // Increment frame time, using the actual capture time
+        bufferCaptureTime[workingBuffer] = startTime + std::chrono::nanoseconds((long long) (frameTimeMS * 1E6));;
 
         // Switch
         lastBuffer = workingBuffer;

@@ -105,6 +105,12 @@ public:
 
     const cv::Mat &getFrame() const override { return buffer[lastBuffer]; }
 
+    bool startRecordToVideo(const std::string &filename, const cv::Size &size);
+
+    void stopRecordToVideo();
+
+    bool isRecordingVideo();
+
 private:
 
     CameraCore *cap = nullptr;
@@ -120,6 +126,9 @@ private:
     bool threadShouldExit;
 
     void readFrameFromCamera(const package::ParamSet &params);
+
+    cv::VideoWriter videoWriter;
+    std::mutex videoWriterMutex;
 
 };
 

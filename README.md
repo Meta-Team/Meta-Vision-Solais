@@ -123,16 +123,16 @@ TODO...
 
 
 ## Core -> Terminal
-| Name   | Type   | Argument         |
-|--------|--------|------------------|
-| msg | String | Message to be shown in the status bar |
-| res | Bytes | Result protobuf message |
-| executionStarted | String | "camera"/"image <filename>"/"image set" |
-| fps | ListOfStrings | Frame processed in Input and Executor since last fetch, each number as a string |
-| params | Bytes | Current params |
-| imageList | ListOfStrings | Image names |
-| imageSetList | ListOfStrings | Data set names |
-| videoList | ListOfStrings | Video names |
-| currentParamSetName | String | |
+| Name   | Type   | Argument         | Note |
+|--------|--------|------------------| ---- |
+| msg | String | Message to be shown in the status bar | |
+| res | Bytes | Result protobuf message | |
+| executionStarted | String | "camera"/"image <filename>"/"image set"/"recording <filename>" | Allow Terminal to start fetching |
+| fps | ListOfStrings | Frame processed in Input and Executor since last fetch, each number as a string | |
+| params | Bytes | Current params | |
+| imageList | ListOfStrings | Image names | |
+| imageSetList | ListOfStrings | Data set names | |
+| videoList | ListOfStrings | Video names | |
+| currentParamSetName | String | | |
  
 NameOnly res package (size of 0) is sent if the Executor is not running. Terminal then holds the fetch command.

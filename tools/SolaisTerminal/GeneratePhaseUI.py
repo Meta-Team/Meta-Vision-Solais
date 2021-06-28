@@ -272,30 +272,30 @@ def generate_ui_creation_code(groups: [Group]) -> ([(str, str)], [(str, str)]):
                     print_line(f'connect({spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
                     print_line(f'{g_layout_obj}->addWidget({spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
 
-                elif type_str == "Range":
+                elif type_str == "Range" or type_str == "Pair":
                     # Two spin boxes
-                    min_spin_obj = f'{param.name}MinSpin'
-                    private_vars.append(("QDoubleSpinBox*", min_spin_obj))
-                    print_line(f'{min_spin_obj} = new QDoubleSpinBox({left_container_obj});')
-                    print_line(f'{min_spin_obj}->setDecimals({decimal});')
-                    print_line(f'{min_spin_obj}->setMaximum(9999);')
-                    print_line(f'{min_spin_obj}->setMinimum(-9999);')
-                    print_line(f'{min_spin_obj}->setFocusPolicy(Qt::StrongFocus);')
-                    print_line(f'{min_spin_obj}->installEventFilter(this);')
+                    first_spin_obj = f'{param.name}{"Min" if type_str == "Range" else "X"}Spin'
+                    private_vars.append(("QDoubleSpinBox*", first_spin_obj))
+                    print_line(f'{first_spin_obj} = new QDoubleSpinBox({left_container_obj});')
+                    print_line(f'{first_spin_obj}->setDecimals({decimal});')
+                    print_line(f'{first_spin_obj}->setMaximum(9999);')
+                    print_line(f'{first_spin_obj}->setMinimum(-9999);')
+                    print_line(f'{first_spin_obj}->setFocusPolicy(Qt::StrongFocus);')
+                    print_line(f'{first_spin_obj}->installEventFilter(this);')
                     print_line(
-                        f'connect({min_spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
-                    print_line(f'{g_layout_obj}->addWidget({min_spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
-                    max_spin_obj = f'{param.name}MaxSpin'
-                    private_vars.append(("QDoubleSpinBox*", max_spin_obj))
-                    print_line(f'{max_spin_obj} = new QDoubleSpinBox({left_container_obj});')
-                    print_line(f'{max_spin_obj}->setDecimals({decimal});')
-                    print_line(f'{max_spin_obj}->setMaximum(9999);')
-                    print_line(f'{max_spin_obj}->setMinimum(-9999);')
-                    print_line(f'{max_spin_obj}->setFocusPolicy(Qt::StrongFocus);')
-                    print_line(f'{max_spin_obj}->installEventFilter(this);')
+                        f'connect({first_spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
+                    print_line(f'{g_layout_obj}->addWidget({first_spin_obj}, {row_count}, 1, 1, 1);')  # span column 1
+                    second_spin_obj = f'{param.name}{"Max" if type_str == "Range" else "Y"}Spin'
+                    private_vars.append(("QDoubleSpinBox*", second_spin_obj))
+                    print_line(f'{second_spin_obj} = new QDoubleSpinBox({left_container_obj});')
+                    print_line(f'{second_spin_obj}->setDecimals({decimal});')
+                    print_line(f'{second_spin_obj}->setMaximum(9999);')
+                    print_line(f'{second_spin_obj}->setMinimum(-9999);')
+                    print_line(f'{second_spin_obj}->setFocusPolicy(Qt::StrongFocus);')
+                    print_line(f'{second_spin_obj}->installEventFilter(this);')
                     print_line(
-                        f'connect({max_spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
-                    print_line(f'{g_layout_obj}->addWidget({max_spin_obj}, {row_count}, 2, 1, 1);')  # span column 2
+                        f'connect({second_spin_obj}, SIGNAL(valueChanged(double)), this, SIGNAL(parameterEdited()));')
+                    print_line(f'{g_layout_obj}->addWidget({second_spin_obj}, {row_count}, 2, 1, 1);')  # span column 2
                 else:
                     raise ValueError(f'Unknown param type "{type_str}"')
 
@@ -391,7 +391,7 @@ def generate_apply_params_code(groups: [Group]) -> None:
 
                 # Checkbox
                 label_obj = f'{param.name}Check'
-                print_line(f'{label_obj}->setChecked(p.{param.name}().enabled());')
+                print_line(f'{label_obj}->setChecked(p.{param.name}(){".enabled()" if type_str != "" else ""});')
 
             else:
                 # Label
@@ -418,12 +418,12 @@ def generate_apply_params_code(groups: [Group]) -> None:
                     spin_obj = f'{param.name}Spin'
                     print_line(
                         f'{spin_obj}->setValue(p.{param.name}(){".val()" if label_obj.endswith("Check") else ""});')
-                elif type_str == "Range":
+                elif type_str == "Range" or type_str == "Pair":
                     # Two spin boxes
-                    min_spin_obj = f'{param.name}MinSpin'
-                    print_line(f'{min_spin_obj}->setValue(p.{param.name}().min());')
-                    max_spin_obj = f'{param.name}MaxSpin'
-                    print_line(f'{max_spin_obj}->setValue(p.{param.name}().max());')
+                    min_spin_obj = f'{param.name}{"Min" if type_str == "Range" else "X"}Spin'
+                    print_line(f'{min_spin_obj}->setValue(p.{param.name}().{"min" if type_str == "Range" else "x"}());')
+                    max_spin_obj = f'{param.name}{"Max" if type_str == "Range" else "Y"}Spin'
+                    print_line(f'{max_spin_obj}->setValue(p.{param.name}().{"max" if type_str == "Range" else "y"}());')
                 else:
                     raise ValueError(f'Unknown param type "{type_str}"')
 
@@ -481,6 +481,11 @@ def generate_get_params_code(groups: [Group]) -> None:
                 max_spin_obj = f'{param.name}MaxSpin'
                 print_line(
                     f'p.set_allocated_{param.name}(allocToggledDoubleRange({check_obj}->isChecked(), {min_spin_obj}->value(), {max_spin_obj}->value()));')
+            elif type_str == "IntPair" or type_str == "DoublePair":
+                x_spin_obj = f'{param.name}XSpin'
+                y_spin_obj = f'{param.name}YSpin'
+                print_line(
+                    f'p.set_allocated_{param.name}(alloc{type_str}({x_spin_obj}->value(), {y_spin_obj}->value()));')
             else:
                 raise ValueError(f'Unknown param type "{type_str}" in for "{param.name}"')
 

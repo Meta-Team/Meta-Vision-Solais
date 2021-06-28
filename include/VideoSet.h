@@ -40,6 +40,7 @@ public:
 protected:
 
     std::vector<std::string> videos;
+    float playbackSpeed = 1.0f;
 
     // Double buffering
     uint8_t lastBuffer = 0;

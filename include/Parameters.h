@@ -15,6 +15,8 @@ using package::DoubleRange;
 using package::ToggledDoubleRange;
 using package::ToggledDouble;
 using package::ToggledInt;
+using package::IntPair;
+using package::DoublePair;
 using package::ResultPoint2f;
 using package::ResultPoint3f;
 
@@ -52,6 +54,20 @@ inline ToggledInt *allocToggledInt(bool enabled = false, int val = 0) {
     auto ret = new ToggledInt;
     ret->set_enabled(enabled);
     ret->set_val(val);
+    return ret;
+}
+
+inline IntPair *allocIntPair(int x, int y) {
+    auto ret = new IntPair;
+    ret->set_x(x);
+    ret->set_y(y);
+    return ret;
+}
+
+inline DoublePair *allocDoublePair(double x, double y) {
+    auto ret = new DoublePair;
+    ret->set_x(x);
+    ret->set_y(y);
     return ret;
 }
 

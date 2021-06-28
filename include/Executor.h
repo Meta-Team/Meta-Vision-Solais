@@ -67,17 +67,9 @@ public:
 
     std::string startRecordToVideo();
 
-    void stopRecordToVideo();
+    void stopRecordToVideo() { camera_->stopRecordToVideo(); }
 
     /** Execution **/
-
-    enum Action {
-        NONE,
-        STREAMING_DETECTION,
-        SINGLE_IMAGE_DETECTION
-    };
-
-    Action getCurrentAction() const { return curAction; }
 
     /**
      * Stop execution.
@@ -120,10 +112,19 @@ public:
 
     unsigned int fetchAndClearSerialFrameCounter() { return serial_ ? serial_->fetchAndClearFrameCounter() : 0; }
 
-    std::mutex &detectorOutputMutex() { return detector_->outputMutex; }
+    bool hasOutputs();
 
-    std::mutex armorsOutputMutex;
-    const std::vector<AimingSolver::ArmorInfo> &armorsOutput() const { return armorsOutput_; }
+    /**
+     * Fetch image outputs. Outputs are guaranteed to be completed and from the same detection pipeline. This function
+     * can be called from another thread than the detection thread.
+     * @param originalImage
+     * @param brightnessImage
+     * @param colorImage
+     * @param contourImage
+     * @param armors
+     */
+    void fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage, cv::Mat &contourImage,
+                      std::vector<AimingSolver::DetectedArmorInfo> &armors);
 
 private:
 
@@ -140,20 +141,32 @@ private:
 
     ParamSet params;
 
+    enum Action {
+        NONE,
+        STREAMING_DETECTION,
+        SINGLE_IMAGE_DETECTION
+    };
+
     Action curAction = NONE;
 
     std::thread *th = nullptr;
     bool threadShouldExit = false;
 
-    std::vector<AimingSolver::ArmorInfo> armorsOutput_;
-
     void applyParams(const ParamSet &p);
 
     void runStreamingDetection(InputSource *source);
 
-    cv::VideoWriter videoWriter;
-    std::mutex videoWriterMutex;
+    std::mutex outputMutex;
 
+    // Output Mats are assigned (no copying) after a completed detection so there is no intermediate result
+    cv::Mat originalOutput;
+    cv::Mat grayOutput;
+    cv::Mat brightnessOutput;
+    cv::Mat colorOutput;
+    cv::Mat lightsOutput;
+    cv::Mat contoursOutput;
+
+    std::vector<AimingSolver::DetectedArmorInfo> armorsOutput;
 };
 
 }

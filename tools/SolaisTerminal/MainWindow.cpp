@@ -372,15 +372,6 @@ void MainWindow::applyResultMessage() {
     if (resultMessage.has_aiming_info()) {
         phases->aimingInfoLabel->setText(QString::fromStdString(resultMessage.aiming_info()));
     }
-    if (resultMessage.has_aiming_image()) {
-        if (!resultMessage.aiming_image().data().empty()) {
-            phases->aimingImage = QImage::fromData((const uint8_t *) resultMessage.aiming_image().data().c_str(),
-                                                   resultMessage.aiming_image().data().size()).copy();
-            phases->aimingImageLabel->setPixmap(QPixmap::fromImage(phases->aimingImage));
-        } else {
-            phases->aimingImageLabel->setText("Empty");
-        }
-    }
 }
 
 void MainWindow::updateStats() {
