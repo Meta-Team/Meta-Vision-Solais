@@ -201,7 +201,7 @@ void Executor::runStreamingDetection(InputSource *source) {
             const auto &command = aimingSolver_->getControlCommand();
             serial_->sendControlCommand(
                     {(command.mode == AimingSolver::RELATIVE_ANGLE ? Serial::RELATIVE_ANGLE : Serial::ABSOLUTE_ANGLE),
-                     command.yaw, command.pitch});
+                     -command.yaw, command.pitch});  // notice the minus sign
         }
 
         // Assign (no copying) results all at once, if the result is not being processed
@@ -215,7 +215,7 @@ void Executor::runStreamingDetection(InputSource *source) {
 
             aimingSolver_->gimbalAngleMutex.lock();
             {
-                currentGimbalOutput.x = aimingSolver_->yawCurrentAngle;
+                currentGimbalOutput.x = aimingSolver_->yawCurrentAngle;  // notice the minus sign
                 currentGimbalOutput.y = aimingSolver_->pitchCurrentAngle;
             }
             aimingSolver_->gimbalAngleMutex.unlock();

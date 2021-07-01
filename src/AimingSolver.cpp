@@ -27,8 +27,8 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> &detectedArmors, 
     TimePoint gimbalUpdateTime;
     gimbalAngleMutex.lock();
     {
-        currentYaw = yawCurrentAngle;
-        currentPitch = pitchCurrentAngle;
+        currentYaw = yawCurrentAngle + yawCurrentVelocity * duration_cast<microseconds>(lastGimbalUpdateTime - imageCaptureTime).count() / 1E6f;
+        currentPitch = pitchCurrentAngle + pitchCurrentAngle * duration_cast<microseconds>(lastGimbalUpdateTime - imageCaptureTime).count() / 1E6f;
         gimbalUpdateTime = lastGimbalUpdateTime;
     }
     gimbalAngleMutex.unlock();
@@ -167,10 +167,10 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> &detectedArmors, 
         YPD aiming = xyzToYPD(xyz);
 
         // Compensate for distance
-        aiming.pitch = std::atan(
-                (pow2(bulletSpeed) / g - std::sqrt(pow2(pow2(bulletSpeed) / g - xyz.y) - pow2(aiming.dist))) /
-                std::sqrt(pow2(xyz.z) + pow2(xyz.x))
-        ) / PI * 180;
+//        aiming.pitch = std::atan(
+//                (pow2(bulletSpeed) / g - std::sqrt(pow2(pow2(bulletSpeed) / g - xyz.y) - pow2(aiming.dist))) /
+//                std::sqrt(pow2(xyz.z) + pow2(xyz.x))
+//        ) / PI * 180;
 
         // Manual offsets
         if (params.yaw_delta_offset().enabled()) {
@@ -182,7 +182,7 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> &detectedArmors, 
 
         // Set control command
         latestCommand.mode = historyMode;
-        latestCommand.yaw = -aiming.yaw;  // notice the minus sign
+        latestCommand.yaw = aiming.yaw;
         latestCommand.pitch = aiming.pitch;
         shouldSendCommand = true;
 

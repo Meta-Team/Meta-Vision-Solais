@@ -34,34 +34,32 @@ Serial::Serial(boost::asio::io_context &ioContext)
 
 bool Serial::sendControlCommand(const VisionControlCommand &command) {
 
-    auto buf = std::make_shared<std::vector<uint8_t>>();
+    auto pkg = std::make_shared<Package>();
 
-    buf->reserve(sizeof(Header) + sizeof(VisionControlCommand) + sizeof(uint16_t));
+    pkg->header.sof = SOF;
+    pkg->header.dataLength = sizeof(pkg->controlCommand);
+    pkg->header.seq = sendSeq++;
+    rm::appendCRC8CheckSum((uint8_t *) &pkg->header, sizeof(pkg->header));
 
-    // Header
-    buf->emplace_back(SOF);
-    buf->emplace_back(sizeof(VisionControlCommand) & 0xFF);  // little endian
-    buf->emplace_back((sizeof(VisionControlCommand) >> 8) & 0xFF);
-    buf->emplace_back(sendSeq++);
-    buf->emplace_back(rm::getCRC8CheckSum(buf->data(), sizeof(Header) - sizeof(uint8_t)));
+    pkg->cmdID = VISION_CONTROL_CMD_ID;
 
-    // Body
-    ::memcpy(buf->data() + sizeof(Header), &command, sizeof(VisionControlCommand));
+    // TODO
+    pkg->controlCommand = command;
+    rm::appendCRC16CheckSum((uint8_t *) pkg.get(),
+                            sizeof(pkg->header) + sizeof(pkg->cmdID) +
+                            sizeof(pkg->controlCommand) + sizeof(pkg->tail));
 
-    // Tail
-    uint16_t crc16 = rm::getCRC16CheckSum(buf->data(), sizeof(Header) + sizeof(VisionControlCommand));
-    buf->emplace_back(crc16 & 0xFF);  // little endian
-    buf->emplace_back((crc16 >> 8) & 0xFF);
-
-    boost::asio::async_write(serial,
-                             boost::asio::buffer(*buf),
-                             [this, buf](auto &error, auto numBytes) { handleSend(buf, error, numBytes); }
+    //::tcflush(serial.lowest_layer().native_handle(), TCIFLUSH);  // clear input buffer
+    boost::asio::async_write(serial, boost::asio::buffer(
+            pkg.get(),
+            sizeof(pkg->header) + sizeof(pkg->cmdID) + sizeof(pkg->controlCommand) + sizeof(pkg->tail)),
+                             [this, pkg](auto &error, auto numBytes) { handleSend(pkg, error, numBytes); }
     );
 
     return true;
 }
 
-void Serial::handleSend(std::shared_ptr<std::vector<uint8_t>> buf, const boost::system::error_code &error,
+void Serial::handleSend(std::shared_ptr<Package> buf, const boost::system::error_code &error,
                         size_t numBytes) {
     if (error) {
         std::cerr << "Serial: send error: " << error.message() << "\n";
@@ -101,7 +99,8 @@ void Serial::handleRecv(const boost::system::error_code &error, size_t numBytes)
                     case GIMBAL_INFO_CMD_ID:
                         if (gimbalInfoCallback) {
                             const auto &info = recvPackage.gimbalInfo;
-                            gimbalInfoCallback(info.yawAngle, info.pitchAngle, info.yawVelocity, info.pitchVelocity);
+                            // Notice the minus signs
+                            gimbalInfoCallback(-info.yawAngle, info.pitchAngle, -info.yawVelocity, info.pitchVelocity);
                         }
                         break;
                 }

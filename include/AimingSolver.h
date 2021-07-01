@@ -120,6 +120,8 @@ private:
 
     float yawCurrentAngle = 0;
     float pitchCurrentAngle = 0;
+    float yawCurrentVelocity = 0;
+    float pitchCurrentVelocity = 0;
     std::mutex gimbalAngleMutex;
 
     struct ArmorHistory {

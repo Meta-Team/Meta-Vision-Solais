@@ -95,7 +95,7 @@ private:
 
     Package recvPackage;
 
-    void handleSend(std::shared_ptr<std::vector<uint8_t>> buf, const boost::system::error_code &error, size_t numBytes);
+    void handleSend(std::shared_ptr<Package> buf, const boost::system::error_code &error, size_t numBytes);
 
     void handleRecv(const boost::system::error_code &error, size_t numBytes);
 

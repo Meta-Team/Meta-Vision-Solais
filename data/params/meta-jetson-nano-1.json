@@ -90,27 +90,27 @@
   "max": 4
  },
  "small_armor_size": {
-  "x": 120,
+  "x": 130,
   "y": 60
  },
  "large_armor_size": {
-  "x": 240,
+  "x": 250,
   "y": 60
  },
+ "enable_absolute_angle_mode": true,
+ "gimbal_delay": 5,
+ "armor_life_time": 700,
+ "tracking_max_velocity": 20000,
+ "predict_backward_count": 3,
+ "predict_backward_fraction": 0.4,
+ "default_bullet_speed": 12000,
+ "control_command_delay": 5,
  "yaw_delta_offset": {
   "enabled": true,
   "val": 0
  },
  "pitch_delta_offset": {
-  "enabled": false,
-  "val": -4
- },
- "gimbal_delay": 5,
- "armor_life_time": 200,
- "enable_absolute_angle_mode": true,
- "tracking_max_velocity": 2000,
- "predict_backward_count": 3,
- "predict_backward_fraction": 0.4,
- "default_bullet_speed": 12000,
- "control_command_delay": 5
+  "enabled": true,
+  "val": -5
+ }
 }
