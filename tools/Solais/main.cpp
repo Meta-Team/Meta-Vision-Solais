@@ -67,7 +67,9 @@ void sendResult() {
         // Fetch outputs
         cv::Mat originalImage, brightnessImage, colorImage, contourImage;
         std::vector<AimingSolver::DetectedArmorInfo> armors;
-        executor->fetchOutputs(originalImage, brightnessImage, colorImage, contourImage, armors);
+        cv::Point2f currentGimbal;
+
+        executor->fetchOutputs(originalImage, brightnessImage, colorImage, contourImage, armors, currentGimbal);
         // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
 
         // Detector images
@@ -96,14 +98,18 @@ void sendResult() {
                         allocResultPoint3f(armor.rotation.x, armor.rotation.y, armor.rotation.z));
                 armorInfo->set_large_armor(armor.largeArmor);
                 armorInfo->set_number(armor.number);
+                armorInfo->set_history_index(armor.history_index);
+                armorInfo->set_selected(armor.flags & AimingSolver::DetectedArmorInfo::SELECTED_TARGET);
+                armorInfo->set_allocated_ypd(allocResultPoint3f(armor.ypd.yaw, armor.ypd.pitch, armor.ypd.dist));
             }
         }
 
         // Aiming
         {
             auto command = executor->aimingSolver()->getControlCommand();
-            resultPackage.set_aiming_info("Yaw: " + std::to_string(command.yawDelta) + "\n" +
-                                          "Pitch: " + std::to_string(command.pitchDelta));
+            resultPackage.set_allocated_current_gimbal(allocResultPoint2f(currentGimbal.x, currentGimbal.y));
+            resultPackage.set_aiming_relative_mode(command.mode == AimingSolver::RELATIVE_ANGLE);
+            resultPackage.set_allocated_aiming_target(allocResultPoint2f(command.yaw, command.pitch));
         }
         socketServer.sendBytes("res", resultPackage);
 

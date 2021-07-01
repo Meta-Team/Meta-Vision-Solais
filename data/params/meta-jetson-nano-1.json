@@ -2,7 +2,7 @@
  "image_width": 1280,
  "image_height": 1024,
  "enemy_color": "BLUE",
- "video_playback_speed": 0.1,
+ "video_playback_speed": 0.03,
  "camera_backend": "MV_CAMERA",
  "camera_id": 0,
  "fps": 80,
@@ -47,7 +47,7 @@
   "val": 15
  },
  "contour_min_area": {
-  "enabled": false,
+  "enabled": true,
   "val": 10
  },
  "long_edge_min_length": {
@@ -102,13 +102,15 @@
   "val": 0
  },
  "pitch_delta_offset": {
-  "enabled": true,
+  "enabled": false,
   "val": -4
  },
- "gimbal_delay": 0,
- "armor_life_time": 1000,
+ "gimbal_delay": 5,
+ "armor_life_time": 200,
  "enable_absolute_angle_mode": true,
  "tracking_max_velocity": 2000,
  "predict_backward_count": 3,
- "predict_backward_fraction": 0.4
+ "predict_backward_fraction": 0.4,
+ "default_bullet_speed": 12000,
+ "control_command_delay": 5
 }

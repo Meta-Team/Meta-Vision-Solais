@@ -284,7 +284,7 @@ void MainWindow::applyResultMessage() {
     if (resultMessage.has_camera_image()) {
         if (!resultMessage.camera_image().data().empty()) {
             phases->cameraImage = QImage::fromData((const uint8_t *) resultMessage.camera_image().data().c_str(),
-                                                  resultMessage.camera_image().data().size()).copy();
+                                                   resultMessage.camera_image().data().size()).copy();
             phases->cameraImageLabel->setPixmap(QPixmap::fromImage(phases->cameraImage));
         } else {
             phases->cameraImageLabel->setText("Empty");
@@ -321,7 +321,7 @@ void MainWindow::applyResultMessage() {
     if (resultMessage.has_contour_image()) {
         if (!resultMessage.contour_image().data().empty()) {
             phases->contourImage = QImage::fromData((const uint8_t *) resultMessage.contour_image().data().c_str(),
-                                                     resultMessage.contour_image().data().size()).copy();
+                                                    resultMessage.contour_image().data().size()).copy();
             phases->contourImageLabel->setPixmap(QPixmap::fromImage(phases->contourImage));
         } else {
             phases->contourImageLabel->setText("Empty");
@@ -343,7 +343,7 @@ void MainWindow::applyResultMessage() {
                 showStatusMessage("Invalid armor points");
                 continue;
             }
-            painter.setPen(Qt::red);
+            painter.setPen(armorInfo.selected() ? Qt::red : Qt::yellow);
             const auto &points = armorInfo.image_points();
             for (int i = 0; i < 4; i++) {
                 painter.drawLine(points[i].x(), points[i].y(), points[(i + 1) % 4].x(), points[(i + 1) % 4].y());
@@ -353,12 +353,15 @@ void MainWindow::applyResultMessage() {
             painter.drawPoint(armorInfo.image_center().x(), armorInfo.image_center().y());
 
             // Large/small armor, number, and offset
+            ss << armorInfo.history_index();
             if (armorInfo.large_armor()) {
-                ss << "{" << armorInfo.number() << "} ";
+                ss << " {" << armorInfo.number() << "} ";
             } else {
-                ss << "[" << armorInfo.number() << "] ";
+                ss << " [" << armorInfo.number() << "] ";
             }
-            ss << armorInfo.offset().x() << ", " << armorInfo.offset().y() << ", " << armorInfo.offset().z() << "\n";
+            ss << QString::number(armorInfo.ypd().x(), 'f', 1) << ", "
+               << QString::number(armorInfo.ypd().y(), 'f', 1) << ", "
+               << QString::number(armorInfo.ypd().z(), 'f', 0) << "\n";
         }
 
         phases->armorInfoLabel->setText(s);
@@ -369,9 +372,24 @@ void MainWindow::applyResultMessage() {
     }
 
     // GROUP: Aiming
-    if (resultMessage.has_aiming_info()) {
-        phases->aimingInfoLabel->setText(QString::fromStdString(resultMessage.aiming_info()));
+    {
+        QString s;
+        QTextStream ss(&s);
+        if (resultMessage.has_current_gimbal()) {
+            ss << "Gimbal: "
+               << QString::number(resultMessage.current_gimbal().x(), 'f', 2) << ", "
+               << QString::number(resultMessage.current_gimbal().y(), 'f', 2) << "\n";
+        }
+        if (resultMessage.has_aiming_relative_mode()) {
+            ss << "Target: " << (resultMessage.aiming_relative_mode() ? "RELATIVE " : "ABSOLUTE ");
+            if (resultMessage.has_aiming_target()) {
+                ss << QString::number(resultMessage.aiming_target().x(), 'f', 2) << ", "
+                   << QString::number(resultMessage.aiming_target().y(), 'f', 2);
+            }
+        }
+        phases->aimingInfoLabel->setText(s);
     }
+
 }
 
 void MainWindow::updateStats() {

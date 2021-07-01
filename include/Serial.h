@@ -57,10 +57,10 @@ private:
     static constexpr uint16_t GIMBAL_INFO_CMD_ID = 0xEB01;
 
     struct __attribute__((packed, aligned(1))) GimbalInfo {
-        float pitchVelocity;
         float yawAngle;
         float pitchAngle;
         float yawVelocity;
+        float pitchVelocity;
     };
 
     // Maximal package structure

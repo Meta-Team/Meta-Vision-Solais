@@ -124,7 +124,7 @@ public:
      * @param armors
      */
     void fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage, cv::Mat &contourImage,
-                      std::vector<AimingSolver::DetectedArmorInfo> &armors);
+                      std::vector<AimingSolver::DetectedArmorInfo> &armors, cv::Point2f &currentGimbal);
 
 private:
 
@@ -167,6 +167,8 @@ private:
     cv::Mat contoursOutput;
 
     std::vector<AimingSolver::DetectedArmorInfo> armorsOutput;
+
+    cv::Point2f currentGimbalOutput;
 };
 
 }

@@ -4,15 +4,25 @@
 
 #include "AimingSolver.h"
 #include <algorithm>
+#include <math.h>
 
 using std::chrono::duration_cast;
+using std::chrono::milliseconds;
 using std::chrono::microseconds;
 
 namespace meta {
 
-void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> detectedArmors, TimePoint imageCaptureTime) {
+inline float pow2(float v) { return v * v; }
 
-    // Lock and fetch gimbal data to local variable
+AimingSolver::YPD AimingSolver::xyzToYPD(const AimingSolver::XYZ &xyz) {
+    return {(float) (std::atan(xyz.x / xyz.z) * 180.0f / PI),   // horizontal right
+            (float) (std::atan(xyz.y / xyz.z) * 180.0f / PI),  // vertical down
+            (float) cv::norm(xyz)};                                    // away
+}
+
+void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> &detectedArmors, TimePoint imageCaptureTime) {
+
+    // Lock and fetch gimbal data to local variables
     float currentYaw, currentPitch;
     TimePoint gimbalUpdateTime;
     gimbalAngleMutex.lock();
@@ -38,11 +48,11 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> detectedArmors, T
         historyMode = newMode;
     }
 
-    ArmorHistory *targetH = nullptr;  // a place holder
+    ArmorHistory *targetH = nullptr;  // a place holder, history is std::list so pointers are valid
 
     if (!detectedArmors.empty()) {
 
-        // First, choose the armor with smallest relative distance, and set targetArmor as processing
+        // First, choose the armor with smallest relative distance, and set targetH as processing
         {
             DetectedArmorInfo *targetD = nullptr;
             float minDist = 1000000;
@@ -50,29 +60,25 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> detectedArmors, T
                 float dist = cv::norm(d.offset);
                 if (dist < minDist) {
                     targetD = &d;
-                    dist = minDist;
+                    minDist = dist;
                 }
             }
-            targetD->flags &= DetectedArmorInfo::SELECTED_TARGET;
+            targetD->flags |= DetectedArmorInfo::SELECTED_TARGET;
         }
 
         // Calculate positions
         for (auto &d : detectedArmors) {
-            d.ypd = {(float) (-std::atanf(d.offset.x / d.offset.z) * 180.0f / M_PI),  // minus sign
-                     (float) (std::atanf(d.offset.y / d.offset.z) * 180.0f / M_PI),
-                     (float) cv::norm(d.offset)};
+            d.ypd = xyzToYPD(d.offset);
             if (historyMode == ABSOLUTE_ANGLE) {  // use absolute angles if is in ABSOLUTE_ANGLE mode
-                d.ypd.yaw = d.ypd.yaw + yawCurrentAngle;
-                d.ypd.pitch = d.ypd.pitch + pitchCurrentAngle;
+                d.ypd.yaw = d.ypd.yaw + currentYaw;
+                d.ypd.pitch = d.ypd.pitch + currentPitch;
 
-                d.xyz.x = std::sinf(d.ypd.yaw * M_PI / 180.0f) * d.ypd.dist;
-                d.xyz.y = std::sinf(d.ypd.pitch * M_PI / 180.0f) * d.ypd.dist;
-                d.xyz.z = std::sqrt(
-                        d.ypd.dist * d.ypd.dist - d.xyz.x * d.xyz.x - d.xyz.y * d.xyz.y);
+                d.xyz.x = std::sin(d.ypd.yaw * PI / 180.0f) * d.ypd.dist;
+                d.xyz.y = std::sin(d.ypd.pitch * PI / 180.0f) * d.ypd.dist;
+                d.xyz.z = std::sqrt(pow2(d.ypd.dist) - pow2(d.xyz.x) - pow2(d.xyz.y));
             } else {
                 d.xyz = d.offset;
             }
-
         }
 
         // Update history with detected armors
@@ -93,7 +99,8 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> detectedArmors, T
                     h.time.pop_back();
                 }
 
-                d->flags &= DetectedArmorInfo::PROCESSED;
+                d->history_index = h.index;
+                d->flags |= DetectedArmorInfo::PROCESSED;
 
                 if (d->flags & DetectedArmorInfo::SELECTED_TARGET) targetH = &h;
             }
@@ -103,9 +110,7 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> detectedArmors, T
 
     // Discard lost armors
     for (auto it = history.cbegin(); it != history.cend(); /* no increment */) {
-        if (!it->time.empty() &&
-            imageCaptureTime - it->time.front() > std::chrono::milliseconds(params.armor_life_time())) {
-
+        if (it->time.empty() || imageCaptureTime - it->time.front() > milliseconds(params.armor_life_time())) {
             it = history.erase(it);
         } else {
             ++it;
@@ -116,66 +121,69 @@ void AimingSolver::updateArmors(std::vector<DetectedArmorInfo> detectedArmors, T
     for (auto &d : detectedArmors) {
         if (!(d.flags & DetectedArmorInfo::PROCESSED)) {  // not matched with history
             auto &h = history.emplace_front(ArmorHistory{nextArmorIndex++, d.xyz, d.ypd, imageCaptureTime});
-            d.flags &= DetectedArmorInfo::PROCESSED;
+            d.history_index = h.index;
+            d.flags |= DetectedArmorInfo::PROCESSED;
             if (d.flags & DetectedArmorInfo::SELECTED_TARGET) targetH = &h;
         }
     }
 
     if (targetH) {
 
-        latestCommand.mode = historyMode;
+        // Position
+        XYZ xyz = targetH->xyz.front();
 
-        float dist = targetH->ypd.front().dist;
-
-        // Aiming at the target
-        {
-            latestCommand.yaw = targetH->ypd.front().yaw;
-            latestCommand.pitch = targetH->ypd.front().pitch;
-        }
-
-        // Compensate for moving speed
-        if (targetH->count() > 1){
+        // Compensate for moving speed and control command delay
+        if (targetH->count() > 1) {
             float remainingWeight = 1;
             float historyWeight = params.predict_backward_fraction();
 
-            YPD velocity;
+            XYZ velocity = {0, 0, 0};
 
             // Apply predict_backward_fraction starting from the second velocity record
             for (int i = 1; i < targetH->count() - 1; i++) {
-                YPD v = targetH->ypd[i] - targetH->ypd[i + 1];
+                XYZ v = targetH->xyz[i] - targetH->xyz[i + 1];
                 velocity += v * historyWeight;
                 remainingWeight -= historyWeight;
                 historyWeight *= params.predict_backward_fraction();
             }
 
-            if (remainingWeight <= 0) {
+            if (remainingWeight < 0) {
                 std::cerr << "AimingSolver: sum of weights of history velocities exceeded 1" << std::endl;
                 shouldSendCommand = false;
                 return;
             }
 
             // Use the remaining weight for the first velocity
-            velocity += (targetH->ypd[0] - targetH->ypd[1]) * remainingWeight;
+            velocity += (targetH->xyz[0] - targetH->xyz[1]) * remainingWeight;
 
             // Compensate
-            velocity *= ((float) duration_cast<microseconds>(imageCaptureTime - targetH->time.front()).count()) / 1E6;
-            latestCommand.yaw += velocity.yaw;
-            latestCommand.pitch += velocity.pitch;
-            dist += velocity.dist;
+            float time = ((float) duration_cast<microseconds>(imageCaptureTime - targetH->time.front()).count()) / 1E6 +
+                         params.control_command_delay() / 1E3;  // [s]
+            xyz += velocity * time;
 
         }  // otherwise, no velocity available as there is only one position record
 
+        // Aiming at the expected position
+        YPD aiming = xyzToYPD(xyz);
+
         // Compensate for distance
-        // TODO:
+        aiming.pitch = std::atan(
+                (pow2(bulletSpeed) / g - std::sqrt(pow2(pow2(bulletSpeed) / g - xyz.y) - pow2(aiming.dist))) /
+                std::sqrt(pow2(xyz.z) + pow2(xyz.x))
+        ) / PI * 180;
 
         // Manual offsets
         if (params.yaw_delta_offset().enabled()) {
-            latestCommand.yaw += params.yaw_delta_offset().val();
+            aiming.yaw += params.yaw_delta_offset().val();
         }
         if (params.pitch_delta_offset().enabled()) {
-            latestCommand.pitch += params.pitch_delta_offset().val();
+            aiming.pitch += params.pitch_delta_offset().val();
         }
 
+        // Set control command
+        latestCommand.mode = historyMode;
+        latestCommand.yaw = -aiming.yaw;  // notice the minus sign
+        latestCommand.pitch = aiming.pitch;
         shouldSendCommand = true;
 
     } else {
@@ -192,11 +200,8 @@ AimingSolver::DetectedArmorInfo *AimingSolver::matchArmor(std::vector<DetectedAr
     for (auto &candidate : candidates) {
         if (candidate.flags & DetectedArmorInfo::PROCESSED) continue;
         if (!target.xyz.empty()) {
-            float dist = cv::norm(candidate.xyz - target.xyz.front());  // mm
-            float velocity =
-                    dist /
-                    std::chrono::duration_cast<std::chrono::microseconds>(time - target.time.front()).count() *
-                    1E6;  // mm/s
+            float dist = cv::norm(candidate.xyz - target.xyz.front());  // [mm]
+            float velocity = dist * 1E6f / duration_cast<microseconds>(time - target.time.front()).count();  // [mm/s]
             if (velocity <= params.tracking_max_velocity()) {
                 if (dist < minDist) {
                     ret = &candidate;
@@ -206,6 +211,12 @@ AimingSolver::DetectedArmorInfo *AimingSolver::matchArmor(std::vector<DetectedAr
         }
     }
     return ret;
+}
+
+void AimingSolver::setParams(const ParamSet &p) {
+    params = p;
+    bulletSpeed = p.default_bullet_speed();
+    resetHistory();
 }
 
 void AimingSolver::resetHistory() {

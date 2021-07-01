@@ -207,11 +207,11 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
             Point2f leftPoints[4];
             leftRect.points(leftPoints);  // bottomLeft, topLeft, topRight, bottomRight of unrotated rect
             if (leftRect.angle <= 90) {
-                armorPoints[0] = leftPoints[3];
-                armorPoints[1] = leftPoints[2];
+                armorPoints[0] = (leftPoints[0] + leftPoints[3]) / 2;
+                armorPoints[1] = (leftPoints[1] + leftPoints[2]) / 2;
             } else {
-                armorPoints[0] = leftPoints[1];
-                armorPoints[1] = leftPoints[0];
+                armorPoints[0] = (leftPoints[1] + leftPoints[2]) / 2;
+                armorPoints[1] = (leftPoints[0] + leftPoints[3]) / 2;
             }
 
             auto &leftCenter = leftRect.center;
@@ -224,11 +224,11 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
                 Point2f rightPoints[4];
                 rightRect.points(rightPoints);  // bottomLeft, topLeft, topRight, bottomRight of unrotated rect
                 if (rightRect.angle <= 90) {
-                    armorPoints[3] = rightPoints[0];
-                    armorPoints[2] = rightPoints[1];
-                } else {  // case 1, 4, 5
-                    armorPoints[3] = rightPoints[2];
-                    armorPoints[2] = rightPoints[3];
+                    armorPoints[3] = (rightPoints[0] + rightPoints[3]) / 2;
+                    armorPoints[2] = (rightPoints[1] + rightPoints[2]) / 2;
+                } else {
+                    armorPoints[3] = (rightPoints[1] + rightPoints[2]) / 2;
+                    armorPoints[2] = (rightPoints[0] + rightPoints[3]) / 2;
                 }
 
 

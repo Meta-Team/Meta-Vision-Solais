@@ -72,12 +72,14 @@ void ParamSetManager::reloadParamSetList() {
 
         params.set_allocated_yaw_delta_offset(allocToggledDouble(false));
         params.set_allocated_pitch_delta_offset(allocToggledDouble(false));
-        params.set_gimbal_delay(0);
+        params.set_gimbal_delay(5);
         params.set_armor_life_time(1000);
         params.set_enable_absolute_angle_mode(true);
         params.set_tracking_max_velocity(2000);
         params.set_predict_backward_count(3);
         params.set_predict_backward_fraction(0.4);
+        params.set_default_bullet_speed(10000);
+        params.set_control_command_delay(5);
 
         std::cout << "ParamSetManager: create default ParamSet " << defaultParamSetName << ".json" << std::endl;
         saveParamSetToJson(params, paramSetRoot / (defaultParamSetName + ".json"));

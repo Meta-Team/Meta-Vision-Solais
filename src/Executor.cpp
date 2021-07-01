@@ -212,6 +212,14 @@ void Executor::runStreamingDetection(InputSource *source) {
             contoursOutput = detector_->imgContours;
 
             armorsOutput = armors;
+
+            aimingSolver_->gimbalAngleMutex.lock();
+            {
+                currentGimbalOutput.x = aimingSolver_->yawCurrentAngle;
+                currentGimbalOutput.y = aimingSolver_->pitchCurrentAngle;
+            }
+            aimingSolver_->gimbalAngleMutex.unlock();
+
             outputMutex.unlock();
         }
         // Otherwise, simple discard the results of current run
@@ -298,7 +306,8 @@ bool Executor::hasOutputs() {
 }
 
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
-                            cv::Mat &contourImage, std::vector<AimingSolver::DetectedArmorInfo> &armors) {
+                            cv::Mat &contourImage, std::vector<AimingSolver::DetectedArmorInfo> &armors,
+                            cv::Point2f &currentGimbal) {
     if (curAction != NONE) {
         outputMutex.lock();
         {
@@ -307,8 +316,10 @@ void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv
             colorImage = colorOutput;
             contourImage = contoursOutput;
             armors = armorsOutput;
+            currentGimbal = currentGimbalOutput;
         }
         outputMutex.unlock();
+
     } else {
         if (camera_->isRecordingVideo()) {
             originalImage = camera_->getFrame();

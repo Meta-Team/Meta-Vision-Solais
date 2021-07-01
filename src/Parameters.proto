@@ -126,22 +126,22 @@ message ParamSet {
   required ToggledDoubleRange light_x_dist_over_l = 19;   // abs(X1 - X2) / avgL
   required ToggledDoubleRange light_y_dist_over_l = 20;   // abs(Y1 - Y2) / avgL
   required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <
-  required DoubleRange small_armor_aspect_ratio = 22;     // Small Armor width/height
-  required DoubleRange large_armor_aspect_ratio = 31;     // Large Armor width/height
-
-  // GROUP: Position
-  required IntPair small_armor_size = 34;                 // Small armor detected region size [mm]
-  required IntPair large_armor_size = 35;                 // Large armor detected region size [mm]
+  required DoubleRange small_armor_aspect_ratio = 22;     // Small armor width/height
+  required DoubleRange large_armor_aspect_ratio = 31;     // Large armor width/height
+  required IntPair small_armor_size = 34;                 // Small armor region size [mm]
+  required IntPair large_armor_size = 35;                 // Large armor region size [mm]
 
   // GROUP: Aiming
-  required ToggledDouble yaw_delta_offset = 25;           // Yaw delta offset
-  required ToggledDouble pitch_delta_offset = 26;         // Pitch delta offset
+  required bool enable_absolute_angle_mode = 37;          // Enable absolute angle mode
   required int32 gimbal_delay = 32;                       // Gimbal feedback delay [ms]
   required int32 armor_life_time = 33;                    // Forget armor after [ms]
-  required bool enable_absolute_angle_mode = 37;          // Enable absolute angle mode
   required double tracking_max_velocity = 38;             // Track armor with max velocity [mm/s]
-  required int32 predict_backward_count = 39;             // Predict using K velocity records (K >= 1)
-  required double predict_backward_fraction = 40;         // kth recorded velocity weights w^k for k = 2..K
+  required int32 predict_backward_count = 39;             // Predict using K records (K >= 1)
+  required double predict_backward_fraction = 40;         // kth record weights w^k for k = 2..K
+  required double default_bullet_speed = 41;              // Default bullet speed [mm/s]
+  required int32 control_command_delay = 42;              // Control command delay [ms]
+  required ToggledDouble yaw_delta_offset = 25;           // Yaw manual offset
+  required ToggledDouble pitch_delta_offset = 26;         // Pitch manual offset
 }
 
 // ============================================== Result Structures ==============================================
@@ -163,6 +163,9 @@ message ArmorInfo {
   required ResultPoint3f rotation = 4;
   required bool large_armor = 5;
   required int32 number = 6;
+  required int32 history_index = 9;
+  required bool selected = 7;
+  required ResultPoint3f ypd = 8;
 }
 
 /* ============================================== Result Package ==============================================
@@ -204,10 +207,10 @@ message Result {
   // IMAGE: armorImage
   repeated ArmorInfo armors = 7;
 
-  // GROUP: Position
-
   // GROUP: Aiming
   // INFO: aimingInfo
   // IMAGE: aimingImage
-  optional string aiming_info = 9;  // Aiming info
+  optional ResultPoint2f current_gimbal = 10;
+  optional bool aiming_relative_mode = 8;
+  optional ResultPoint2f aiming_target = 9;
 }

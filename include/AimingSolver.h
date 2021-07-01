@@ -20,7 +20,7 @@ namespace meta {
 using TimePoint = std::chrono::steady_clock::time_point;
 
 class AimingSolver {
-private:
+public:
 
     using XYZ = cv::Point3f;
 
@@ -29,28 +29,16 @@ private:
         float pitch = 0;  // [degree]
         float dist = 0;   // [mm]
 
-        YPD operator- (const YPD &other) const {
-            return {yaw - other.yaw, pitch - other.pitch, dist - other.dist};
-        }
+        YPD operator-(const YPD &other) const { return {yaw - other.yaw, pitch - other.pitch, dist - other.dist}; }
 
-        YPD operator+ (const YPD &other) const {
-            return {yaw + other.yaw, pitch + other.pitch, dist + other.dist};
-        }
+        YPD operator+(const YPD &other) const { return {yaw + other.yaw, pitch + other.pitch, dist + other.dist}; }
 
-        YPD operator+= (const YPD &other)  {
-            return {yaw += other.yaw, pitch += other.pitch, dist += other.dist};
-        }
+        YPD operator+=(const YPD &other) { return {yaw += other.yaw, pitch += other.pitch, dist += other.dist}; }
 
-        YPD operator* (float f) const {
-            return {yaw * f, pitch * f, dist * f};
-        }
+        YPD operator*(float f) const { return {yaw * f, pitch * f, dist * f}; }
 
-        YPD operator*= (float f)  {
-            return {yaw *= f, pitch *= f, dist *= f};
-        }
+        YPD operator*=(float f) { return {yaw *= f, pitch *= f, dist *= f}; }
     };
-
-public:
 
     struct DetectedArmorInfo {
     public:
@@ -66,8 +54,6 @@ public:
         bool largeArmor;
         int number = 0;                        // 0 for empty (no number sticker)
 
-    private:
-
         enum Flag : unsigned {
             NONE = 0,
             PROCESSED = 1,
@@ -78,17 +64,14 @@ public:
         XYZ xyz;  // XYZ coordinate in relative (the same as offset) or actual world
         YPD ypd;  // YPD position in relative or actual world
 
-        friend class AimingSolver;
+        unsigned history_index = 0;
     };
 
-    void setParams(const package::ParamSet &p) {
-        params = p;
-        resetHistory();
-    }
+    void setParams(const package::ParamSet &p);
 
     void resetHistory();
 
-    void updateArmors(std::vector<DetectedArmorInfo> detectedArmors, TimePoint imageCaptureTime);
+    void updateArmors(std::vector<DetectedArmorInfo> &detectedArmors, TimePoint imageCaptureTime);
 
     /**
      * Update gimbal's current angle based on reported angles and velocities from Control.
@@ -119,6 +102,7 @@ public:
 private:
 
     package::ParamSet params;
+    float bulletSpeed;
     ControlCommand latestCommand;
     bool shouldSendCommand = false;
 
@@ -141,7 +125,7 @@ private:
     struct ArmorHistory {
 
         ArmorHistory(unsigned index, const XYZ &initXYZ, const YPD &initYPD, const TimePoint &initTime)
-        : index(index), xyz({initXYZ}), ypd({initYPD}), time({initTime}) {};
+                : index(index), xyz({initXYZ}), ypd({initYPD}), time({initTime}) {};
 
         unsigned index;
 
@@ -160,10 +144,17 @@ private:
     unsigned nextArmorIndex = 0;
 
     ControlMode historyMode;
-    std::deque<ArmorHistory> history;
+    std::list<ArmorHistory> history;
 
     DetectedArmorInfo *matchArmor(std::vector<DetectedArmorInfo> &candidates, const ArmorHistory &target,
-                                         const TimePoint &time) const;
+                                  const TimePoint &time) const;
+
+    static YPD xyzToYPD(const XYZ &xyz);
+
+    static constexpr float PI = 3.14159265358979323846264338327950288f;
+    static constexpr float g = 9.81f;
+
+    friend class Executor;
 };
 
 }
