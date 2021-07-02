@@ -97,13 +97,18 @@
   "x": 250,
   "y": 60
  },
- "enable_absolute_angle_mode": true,
- "gimbal_delay": 5,
- "armor_life_time": 700,
- "tracking_max_velocity": 20000,
- "predict_backward_count": 3,
+ "enable_absolute_angle_mode": false,
+ "gimbal_delay": 0,
+ "armor_life_time": 500,
+ "armor_tracking_mode": "IMAGE",
+ "image_max_offset_fraction": 2,
+ "physical_max_velocity": 50000,
+ "predict_backward_count": 0,
  "predict_backward_fraction": 0.4,
- "default_bullet_speed": 12000,
+ "compensate_bullet_speed": {
+  "enabled": true,
+  "val": 12000
+ },
  "control_command_delay": 5,
  "yaw_delta_offset": {
   "enabled": true,

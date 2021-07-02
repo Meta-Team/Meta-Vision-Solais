@@ -83,15 +83,15 @@ bool CameraCoreMVCamera::read(cv::Mat &image) {
         return false;
     }
 
-    res = CameraImageProcess(hCamera, rawBuffer, matBuffer, &frameInfo);
+    if (image.cols != frameInfo.iWidth || image.rows != frameInfo.iHeight) {
+        image = cv::Mat(cv::Size(frameInfo.iWidth, frameInfo.iHeight), CV_8UC3);
+    }
+
+    res = CameraImageProcess(hCamera, rawBuffer, image.data, &frameInfo);  // load directly into buffer
     if (res != CAMERA_STATUS_SUCCESS) {
         std::cerr << "CameraCoreMVCamera: CameraImageProcess returned " << res << std::endl;
         return false;
     }
-
-    cv::Mat img(cv::Size(frameInfo.iWidth, frameInfo.iHeight), CV_8UC3, matBuffer);
-
-    image = img.clone();
 
     res = CameraReleaseImageBuffer(hCamera, rawBuffer);
     if (res != CAMERA_STATUS_SUCCESS) {
@@ -195,7 +195,8 @@ bool Camera::open(const package::ParamSet &params) {
     threadShouldExit = false;
     th = new std::thread(&Camera::readFrameFromCamera, this, params);
 
-    buffer[0] = buffer[1] = cv::Mat();
+    buffer[0] = cv::Mat(cv::Size(params.image_width(), params.image_height()), CV_8UC3);
+    buffer[1] = cv::Mat(cv::Size(params.image_width(), params.image_height()), CV_8UC3);
     while (getFrame().empty()) std::this_thread::yield();
 
     return true;

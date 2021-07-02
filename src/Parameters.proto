@@ -132,14 +132,28 @@ message ParamSet {
   required IntPair large_armor_size = 35;                 // Large armor region size [mm]
 
   // GROUP: Aiming
-  required bool enable_absolute_angle_mode = 37;          // Enable absolute angle mode
-  required int32 gimbal_delay = 32;                       // Gimbal feedback delay [ms]
+  required bool enable_absolute_angle_mode = 37;          // Enable ABSOLUTE mode
+  required int32 gimbal_delay = 32;                       // Gimbal feedback delay (for ABSOLUTE) [ms]
+
   required int32 armor_life_time = 33;                    // Forget armor after [ms]
-  required double tracking_max_velocity = 38;             // Track armor with max velocity [mm/s]
+
+  enum ArmorTrackingMode {
+    IMAGE = 1;
+    PHYSICAL = 2;
+  }
+
+  required ArmorTrackingMode armor_tracking_mode = 43;    // Armor tracking mode
+
+  required double image_max_offset_fraction = 44;         // Max X/Y offset to size between frames (for IMAGE)
+  required double physical_max_velocity = 38;             // Max armor velocity (for PHYSICAL) [mm/s]
+
   required int32 predict_backward_count = 39;             // Predict using K records (K >= 1)
   required double predict_backward_fraction = 40;         // kth record weights w^k for k = 2..K
-  required double default_bullet_speed = 41;              // Default bullet speed [mm/s]
+
+  required ToggledInt compensate_bullet_speed = 41;       // Compensate trajectory with bullet speed [mm/s]
+
   required int32 control_command_delay = 42;              // Control command delay [ms]
+
   required ToggledDouble yaw_delta_offset = 25;           // Yaw manual offset
   required ToggledDouble pitch_delta_offset = 26;         // Pitch manual offset
 }

@@ -97,20 +97,25 @@
   "x": 240,
   "y": 60
  },
+ "enable_absolute_angle_mode": false,
+ "gimbal_delay": 0,
+ "armor_life_time": 500,
+ "armor_tracking_mode": "IMAGE",
+ "image_max_offset_fraction": 1,
+ "physical_max_velocity": 50000,
+ "predict_backward_count": 2,
+ "predict_backward_fraction": 0.4,
+ "compensate_bullet_speed": {
+  "enabled": true,
+  "val": 12000
+ },
+ "control_command_delay": 0,
  "yaw_delta_offset": {
   "enabled": true,
   "val": 0
  },
  "pitch_delta_offset": {
   "enabled": true,
-  "val": -4
- },
- "gimbal_delay": 5,
- "armor_life_time": 1000,
- "enable_absolute_angle_mode": true,
- "tracking_max_velocity": 2000,
- "predict_backward_count": 3,
- "predict_backward_fraction": 0.4,
- "control_command_delay": 5,
- "default_bullet_speed": 10000
+  "val": -7
+ }
 }

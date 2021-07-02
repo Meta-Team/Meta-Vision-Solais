@@ -126,11 +126,15 @@ private:
 
     struct ArmorHistory {
 
-        ArmorHistory(unsigned index, const XYZ &initXYZ, const YPD &initYPD, const TimePoint &initTime)
-                : index(index), xyz({initXYZ}), ypd({initYPD}), time({initTime}) {};
+        ArmorHistory(unsigned index, const cv::Point2f &initImgCenter, const cv::Size2f &initImgSize,
+                     const XYZ &initXYZ, const YPD &initYPD, const TimePoint &initTime)
+                : index(index), imgCenter({initImgCenter}), imgSize({initImgSize}),
+                  xyz({initXYZ}), ypd({initYPD}), time({initTime}) {};
 
         unsigned index;
 
+        std::deque<cv::Point2f> imgCenter;
+        std::deque<cv::Size2f> imgSize;
         std::deque<XYZ> xyz;
         std::deque<YPD> ypd;
         std::list<TimePoint> time;
@@ -152,6 +156,7 @@ private:
                                   const TimePoint &time) const;
 
     static YPD xyzToYPD(const XYZ &xyz);
+    static cv::Size2f imgPointsToSize(const std::array<cv::Point2f, 4> &imgPoints);
 
     static constexpr float PI = 3.14159265358979323846264338327950288f;
     static constexpr float g = 9.81f;
