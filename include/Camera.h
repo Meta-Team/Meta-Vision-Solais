@@ -8,127 +8,105 @@
 #include <thread>
 #include "Parameters.pb.h"
 #include "InputSource.h"
+#include "CameraApi.h"
+#include "Utilities.h"
 
 namespace meta {
-
-/**
- * @name CameraCore
- * @brief Abstract interface for camera backend, defined like OpenCV VideoCapture API.
- */
-class CameraCore {
-public:
-
-    virtual ~CameraCore() {}
-
-    virtual bool open(int index, int apiPreference = cv::CAP_ANY) = 0;
-
-    virtual bool isOpened() const = 0;
-
-    virtual bool set(int propId, double value) = 0;
-
-    virtual double get(int propId) const = 0;
-
-    virtual bool read(cv::Mat &image) = 0;
-
-    virtual void release() = 0;
-
-};
-
-/**
- * @name CameraCoreOpenCV
- * @brief Camera backend of OpenCV VideoCapture.
- */
-class CameraCoreOpenCV : public CameraCore {
-public:
-
-    bool open(int index, int apiPreference = cv::CAP_ANY) override { return cap.open(index, apiPreference); }
-
-    bool isOpened() const override { return cap.isOpened(); }
-
-    bool set(int propId, double value) override { return cap.set(propId, value); }
-
-    double get(int propId) const override { return cap.get(propId); }
-
-    bool read(cv::Mat &image) override { return cap.read(image); }
-
-    void release() override { cap.release(); }
-
-protected:
-    cv::VideoCapture cap;
-};
-
-/**
- * @name CameraCoreMVCamera
- * @brief Camera backend of MindVision camera.
- */
-class CameraCoreMVCamera : public CameraCore {
-public:
-    ~CameraCoreMVCamera();
-
-    bool open(int index, int apiPreference = cv::CAP_ANY) override;
-
-    bool isOpened() const override;
-
-    bool set(int propId, double value) override;
-
-    double get(int propId) const override;
-
-    bool read(cv::Mat &image) override;
-
-    void release() override;
-
-protected:
-
-    int hCamera = 0;
-    unsigned char *matBuffer = nullptr;  // buffer for cv::Mat
-    int fps = 211;  // internal variable for setting FPS
-
-};
 
 class Camera : public InputSource {
 public:
 
-    ~Camera() override;
+    virtual bool open(const package::ParamSet &params) = 0;  // block until a valid frame is retrieved
 
-    // Block until a valid frame is retrieved
-    bool open(const package::ParamSet &params);
+    virtual std::string getCameraInfo() const = 0;
 
-    bool isOpened() const override { return cap != nullptr && cap->isOpened(); }
+    virtual int getFPS() const = 0;
 
-    std::string getCapInfo() const { return capInfoSS.str(); };
+    virtual bool startRecordToVideo(std::string &path, const package::ParamSet &params);  // path will be changed to filename
 
-    int getFPS() const { return cap ? ((int) cap->get(cv::CAP_PROP_FPS)) : 0; }
+    virtual void stopRecordToVideo();
+
+    virtual bool isRecordingVideo() const { return recordingVideo; }
+
+protected:
+
+    cv::VideoWriter videoWriter;
+    std::mutex videoWriterMutex;
+    bool recordingVideo = false;  // for lock-free query isRecordingVideo()
+
+};
+
+class OpenCVCamera : public Camera {
+public:
+
+    ~OpenCVCamera() override;
+
+    bool open(const package::ParamSet &params) override;
+
+    bool isOpened() const override { return cap.isOpened(); }
 
     void close() override;
+
+    std::string getCameraInfo() const override { return capInfoSS.str(); };
+
+    int getFPS() const override { return (int) cap.get(cv::CAP_PROP_FPS); }
 
     TimePoint getFrameCaptureTime() const override { return bufferCaptureTime[lastBuffer]; }
 
     const cv::Mat &getFrame() const override { return buffer[lastBuffer]; }
 
-    bool startRecordToVideo(const std::string &filename, const cv::Size &size);
-
-    void stopRecordToVideo();
-
-    bool isRecordingVideo();
-
 private:
 
-    CameraCore *cap = nullptr;
+    cv::VideoCapture cap;
 
     std::stringstream capInfoSS;
 
     // Double buffering
     uint8_t lastBuffer = 0;
     cv::Mat buffer[2];
-    TimePoint bufferCaptureTime[2] = {TimePoint(), TimePoint()};
+    TimePoint bufferCaptureTime[2] = {0, 0};
 
     std::thread *th = nullptr;
     bool threadShouldExit;
 
     void readFrameFromCamera(const package::ParamSet &params);
+};
 
-    cv::VideoWriter videoWriter;
-    std::mutex videoWriterMutex;
+class MVCamera : public Camera {
+public:
+
+    ~MVCamera() override;
+
+    bool open(const package::ParamSet &params) override;
+
+    bool isOpened() const override { return (hCamera != 0); }
+
+    void close() override;
+
+    std::string getCameraInfo() const override { return capInfoSS.str(); };
+
+    int getFPS() const override { return params.fps(); }
+
+    TimePoint getFrameCaptureTime() const override { return bufferCaptureTime[lastBuffer]; }
+
+    const cv::Mat &getFrame() const override { return buffer[lastBuffer]; }
+
+    void fetchNextFrame() override;
+
+private:
+
+    int hCamera = 0;
+    package::ParamSet params;
+
+    std::stringstream capInfoSS;
+
+    // Double buffering for processing
+    bool shouldFetchNextFrame = true;
+    uint8_t lastBuffer = 0;
+    cv::Mat buffer[2];
+    TimePoint bufferCaptureTime[2] = {0, 0};
+
+    static void newFrameCallback(CameraHandle hCamera, BYTE *pFrameBuffer, tSdkFrameHead *pFrameHead, PVOID pContext);
 
 };
 

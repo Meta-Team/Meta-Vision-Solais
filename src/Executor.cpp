@@ -8,11 +8,14 @@
 
 namespace meta {
 
-Executor::Executor(Camera *camera, ImageSet *imageSet, VideoSet *videoSet, ParamSetManager *paramSetManager,
+Executor::Executor(OpenCVCamera *openCvCamera, MVCamera *mvCamera, ImageSet *imageSet, VideoSet *videoSet,
+                   ParamSetManager *paramSetManager,
                    ArmorDetector *detector, PositionCalculator *positionCalculator, AimingSolver *aimingSolver,
                    Serial *serial)
-        : camera_(camera), imageSet_(imageSet), videoSet_(videoSet), paramSetManager_(paramSetManager),
-          detector_(detector), positionCalculator_(positionCalculator), aimingSolver_(aimingSolver), serial_(serial) {
+        : openCvCamera_(openCvCamera), mvCamera_(mvCamera), imageSet_(imageSet), videoSet_(videoSet),
+          paramSetManager_(paramSetManager),
+          detector_(detector), positionCalculator_(positionCalculator), aimingSolver_(aimingSolver),
+          serial_(serial) {
 
     reloadLists();
 }
@@ -31,25 +34,32 @@ void Executor::applyParams(const ParamSet &p) {
     // For better user experience for parameter tuning, here we don't stop the detection thread
     // But if there is some changes in the streaming source, detection may terminate anyway
 
-    // Local copy
-    params = p;
-
-    // Input
+    // Input of Camera
     // Skip re-opening the video source if the parameter doesn't change to save some time
-    if (!(p.camera_id() == params.camera_id() &&
+    if (!(p.camera_backend() == params.camera_backend() && p.camera_id() == params.camera_id() &&
+          p.image_width() == params.image_width() && p.image_height() == params.image_height() &&
           p.fps() == params.fps() &&
-          p.image_width() == params.image_width() &&
-          p.image_height() == params.image_height() &&
-          p.gamma().enabled() == params.gamma().enabled() &&
-          p.gamma().val() == params.gamma().val() &&
+          p.gamma().enabled() == params.gamma().enabled() && p.gamma().val() == params.gamma().val() &&
+          p.roi_width() == params.roi_width() && p.roi_height() == params.roi_height() &&
           p.manual_exposure().enabled() == params.manual_exposure().enabled() &&
           p.manual_exposure().val() == params.manual_exposure().val())) {
 
-        if (camera_->isOpened()) {
-            camera_->close();
-            camera_->open(params);
+        bool cameraOpened = camera_ && camera_->isOpened();
+        if (cameraOpened) camera_->close();
+        if (p.camera_backend() == ParamSet::MV_CAMERA) {
+            camera_ = mvCamera_;
+            std::cout << "Executor: use MVCamera" << std::endl;
+        } else {
+            camera_ = openCvCamera_;
+            std::cout << "Executor: use OpenCVCamera" << std::endl;
         }
+        if (cameraOpened) camera_->open(p);
     }
+
+    // Local copy
+    params = p;
+
+    // Input of ImageSet
     if (imageSet_->isOpened()) {
         stop();
         imageSet_->close();
@@ -75,6 +85,8 @@ void Executor::applyParams(const ParamSet &p) {
         }
 
         fs["cameraMatrix"] >> cameraMatrix;
+        cameraMatrix.at<double>(0, 2) *= (float) params.roi_width() / (float) params.image_width();
+        cameraMatrix.at<double>(1, 2) *= (float) params.roi_height() / (float) params.image_height();
         fs["distCoeffs"] >> distCoeffs;
         fs["zScale"] >> zScale;
 
@@ -101,6 +113,7 @@ void Executor::stop() {
 bool Executor::startRealTimeDetection() {
     if (th) stop();
 
+    if (!camera_) return false;
     if (!camera_->isOpened()) {
         if (!camera_->open(params)) {
             return false;
@@ -158,14 +171,16 @@ void Executor::runStreamingDetection(InputSource *source) {
     currentInput_->fetchAndClearFrameCounter();
     aimingSolver_->resetHistory();
 
-    TimePoint lastFrameTime = TimePoint();  // use last frame capture time to wait for new frame
-    TimePoint frameTime = TimePoint();
+    TimePoint lastFrameTime = 0;  // use last frame capture time to wait for new frame
+    TimePoint frameTime = 0;
     while (true) {
 
         // Wait for new frame, fetch and store time first and then compare
-        while (!threadShouldExit && lastFrameTime == (frameTime = source->getFrameCaptureTime()));
+        while (!threadShouldExit && lastFrameTime == (frameTime = source->getFrameCaptureTime())) {
+            std::this_thread::yield();
+        }
 
-        if (threadShouldExit || frameTime == TimePoint()) {
+        if (threadShouldExit || frameTime == 0) {
             break;
         }
         lastFrameTime = frameTime;
@@ -178,15 +193,14 @@ void Executor::runStreamingDetection(InputSource *source) {
         std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
 
         // Solve armor positions
-        std::vector<AimingSolver::DetectedArmorInfo> armors;
+        std::vector<AimingSolver::ArmorInfo> armors;
         for (const auto &detectedArmor : detectedArmors) {
-            cv::Point3f offset, rotation;
-            if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset, rotation)) {
-                armors.emplace_back(AimingSolver::DetectedArmorInfo{
+            cv::Point3f offset;
+            if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset)) {
+                armors.emplace_back(AimingSolver::ArmorInfo{
                         detectedArmor.points,
                         detectedArmor.center,
                         offset,
-                        rotation,
                         detectedArmor.largeArmor,
                         detectedArmor.number
                 });
@@ -196,12 +210,13 @@ void Executor::runStreamingDetection(InputSource *source) {
         // Update
         aimingSolver_->updateArmors(armors, frameTime);
 
-        if (serial_ && aimingSolver_->shouldSendControlCommand()) {
+        AimingSolver::ControlCommand command;
+        if (serial_ && aimingSolver_->getControlCommand(command)) {
             // Send control command
-            const auto &command = aimingSolver_->getControlCommand();
             serial_->sendControlCommand(
-                    {(command.mode == AimingSolver::RELATIVE_ANGLE ? Serial::RELATIVE_ANGLE : Serial::ABSOLUTE_ANGLE),
-                     -command.yaw, command.pitch});  // notice the minus sign
+                    {Serial::RELATIVE_ANGLE,
+                     -command.yawDelta,
+                     command.pitchDelta});  // notice the minus sign
         }
 
         // Assign (no copying) results all at once, if the result is not being processed
@@ -212,13 +227,6 @@ void Executor::runStreamingDetection(InputSource *source) {
             contoursOutput = detector_->imgContours;
 
             armorsOutput = armors;
-
-            aimingSolver_->gimbalAngleMutex.lock();
-            {
-                currentGimbalOutput.x = aimingSolver_->yawCurrentAngle;  // notice the minus sign
-                currentGimbalOutput.y = aimingSolver_->pitchCurrentAngle;
-            }
-            aimingSolver_->gimbalAngleMutex.unlock();
 
             outputMutex.unlock();
         }
@@ -253,7 +261,7 @@ unsigned int Executor::fetchAndClearInputFrameCounter() {
     if (input) {
         return input->fetchAndClearFrameCounter();
     } else {
-        if (camera_->isRecordingVideo()) {
+        if (camera_ && camera_->isRecordingVideo()) {
             return camera_->fetchAndClearFrameCounter();
         } else {
             return 0;
@@ -262,6 +270,7 @@ unsigned int Executor::fetchAndClearInputFrameCounter() {
 }
 
 std::string Executor::captureImageFromCamera() {
+    if (!camera_) return "[Error: camera backend not set]";
     if (!camera_->isOpened()) {
         if (!camera_->open(params)) {
             return "[Error: failed to open camera]";
@@ -272,6 +281,7 @@ std::string Executor::captureImageFromCamera() {
 }
 
 std::string Executor::startRecordToVideo() {
+    if (!camera_) return "[Error: camera backend not set]";
     if (!camera_->isOpened()) {
         if (!camera_->open(params)) {
             return "[Error: failed to open camera]";
@@ -281,18 +291,12 @@ std::string Executor::startRecordToVideo() {
         return "[Error: camera reported 0 FPS]";
     }
 
-    // Filename: <width>_<height>_<fps>_<target color>_<time stamp>.avi
-    fs::path filename = videoSet_->videoSetRoot / fs::path(
-            std::to_string(params.image_width()) + "_" + std::to_string(params.image_height()) + "_" +
-            std::to_string(camera_->getFPS()) + "_" +
-            (params.enemy_color() == package::ParamSet_EnemyColor_BLUE ? "blue" : "red") + "_" + currentTimeString() +
-            ".avi");
-
-    if (!camera_->startRecordToVideo(filename.string(), cv::Size(params.image_width(), params.image_height()))) {
+    std::string filename = videoSet_->videoSetRoot.string();
+    if (!camera_->startRecordToVideo(filename, params)) {
         return "[Error: failed to open videoWriter]";
     }
 
-    return filename.string();
+    return filename;
 }
 
 bool Executor::hasOutputs() {
@@ -301,13 +305,12 @@ bool Executor::hasOutputs() {
         return true;
     }
     if (curAction != NONE) return true;
-    if (camera_->isRecordingVideo()) return true;
+    if (camera_ && camera_->isRecordingVideo()) return true;
     return false;
 }
 
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
-                            cv::Mat &contourImage, std::vector<AimingSolver::DetectedArmorInfo> &armors,
-                            cv::Point2f &currentGimbal) {
+                            cv::Mat &contourImage, std::vector<AimingSolver::ArmorInfo> &armors) {
     if (curAction != NONE) {
         outputMutex.lock();
         {
@@ -316,12 +319,11 @@ void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv
             colorImage = colorOutput;
             contourImage = contoursOutput;
             armors = armorsOutput;
-            currentGimbal = currentGimbalOutput;
         }
         outputMutex.unlock();
 
     } else {
-        if (camera_->isRecordingVideo()) {
+        if (camera_ && camera_->isRecordingVideo()) {
             originalImage = camera_->getFrame();
         }
     }

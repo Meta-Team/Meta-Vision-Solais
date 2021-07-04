@@ -23,7 +23,9 @@ public:
         std::array<cv::Point2f, 4> points;
         cv::Point2f center;
         bool largeArmor = false;
-        int number = 0;
+        int number = 0;                 // unused yet
+        std::array<int, 2> lightIndex;  // left, right
+        float lightAngleDiff;
     };
 
     std::vector<DetectedArmor> detect(const cv::Mat &img);

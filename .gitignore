@@ -2,6 +2,7 @@ cmake-build-*
 .idea/
 data/params/backup
 data/params_backup
+*.icloud
 
 # Created by .ignore support plugin (hsz.mobi)
 ### C++ template

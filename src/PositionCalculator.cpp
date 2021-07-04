@@ -36,8 +36,7 @@ void PositionCalculator::setParameters(cv::Point2f smallArmorSize_, cv::Point2f 
 
 }
 
-bool PositionCalculator::solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor,
-                               cv::Point3f &offset, cv::Point3f &rotation) const {
+bool PositionCalculator::solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor, cv::Point3f &offset) const {
     cv::Mat rVec = cv::Mat::zeros(3, 1, CV_64FC1);
     cv::Mat tVec = cv::Mat::zeros(3, 1, CV_64FC1);
     cv::solvePnP((largeArmor ? largeArmorObjectPoints : smallArmorObjectPoints), imagePoints,
@@ -46,7 +45,6 @@ bool PositionCalculator::solve(const std::array<cv::Point2f, 4> &imagePoints, bo
     offset = {static_cast<float>(tVec.at<double>(0, 0)),
               static_cast<float>(tVec.at<double>(1, 0)),
               static_cast<float>(tVec.at<double>(2, 0)) * zScale};
-    // TODO: transform rotation matrix to yaw, pitch and roll
     return true;
 }
 

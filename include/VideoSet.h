@@ -9,6 +9,7 @@
 #include <boost/filesystem.hpp>
 #include "Parameters.h"
 #include "InputSource.h"
+#include "Utilities.h"
 
 namespace meta {
 
@@ -40,12 +41,11 @@ public:
 protected:
 
     std::vector<std::string> videos;
-    float playbackSpeed = 1.0f;
 
     // Double buffering
     uint8_t lastBuffer = 0;
     cv::Mat buffer[2];
-    TimePoint bufferCaptureTime[2] = {TimePoint(), TimePoint()};
+    TimePoint bufferCaptureTime[2] = {0, 0};
 
     std::thread *th = nullptr;
     bool threadShouldExit = false;

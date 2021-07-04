@@ -3,20 +3,20 @@ package package;
 
 // ============================================== Data Structures ================================================
 
-message DoubleRange {
-  required double min = 1;
-  required double max = 2;
+message FloatRange {
+  required float min = 1;
+  required float max = 2;
 }
 
-message ToggledDoubleRange {
+message ToggledFloatRange {
   required bool enabled = 1;
-  required double min = 2;
-  required double max = 3;
+  required float min = 2;
+  required float max = 3;
 }
 
-message ToggledDouble {
+message ToggledFloat {
   required bool enabled = 1;
-  required double val = 2;
+  required float val = 2;
 }
 
 message ToggledInt {
@@ -29,9 +29,9 @@ message IntPair {
   required int32 y = 2;
 }
 
-message DoublePair {
-  required double x = 1;
-  required double y = 2;
+message FloatPair {
+  required float x = 1;
+  required float y = 2;
 }
 
 message Image {
@@ -55,107 +55,93 @@ message Image {
    int32/int64          ->  QDoubleSpinBox with 0 decimal
    float/double         ->  QDoubleSpinBox with 2 decimal
    ToggledInt           ->  QCheckBox + QDoubleSpinBox with 0 decimal
-   ToggledDouble        ->  QCheckBox + QDoubleSpinBox with 2 decimal
-   DoubleRange          ->  2 QDoubleSpinBox with 2 decimal
-   ToggledDoubleRange   ->  QCheckBox + 2 QDoubleSpinBox with 2 decimal
+   ToggledFloat         ->  QCheckBox + QDoubleSpinBox with 2 decimal
+   FloatRange           ->  2 QDoubleSpinBox with 2 decimal
+   ToggledFloatRange    ->  QCheckBox + 2 QDoubleSpinBox with 2 decimal
+   IntPair              ->  2 QDoubleSpinBox with 0 decimal
+   FloatPair            ->  2 QDoubleSpinBox with 2 decimal
    enumeration          ->  QComboBox
  Every field must be followed by a comment, which is used as its label in UI.
+ Enum must start with index 0 and increment by 1.
  All fields must be required.
 
  */
 message ParamSet {
 
   // GROUP: General
-  required int32 image_width = 1;             // Image/ROI width
-  required int32 image_height = 2;            // Image/ROI height
+  required int32 image_width = 1;                          // Input width
+  required int32 image_height = 2;                         // Image height
+  required int32 roi_width = 38;                           // ROI width ratio
+  required int32 roi_height = 39;                          // ROI height ratio
 
   enum EnemyColor {
       RED = 0;
       BLUE = 1;
   };
-  required EnemyColor enemy_color = 3;         // Enemy color
+  required EnemyColor enemy_color = 3;                     // Enemy color
 
-  required double video_playback_speed = 36;   // Video playback speed
+  required float video_speed = 4;                          // Video real speed
+  required float video_playback_speed = 5;                 // Video run speed
 
   // GROUP: Input
   enum CameraBackend {
     OPENCV = 0;
     MV_CAMERA = 1;
   }
-  required CameraBackend camera_backend = 27;  // Camera backend
+  required CameraBackend camera_backend = 6;               // Camera backend
 
-  required int32 camera_id = 4;                // Camera ID
-  required int32 fps = 5;                      // FPS
-  required ToggledDouble gamma = 6;            // Gamma
-  required ToggledInt manual_exposure = 24;    // Manual exposure
+  required int32 camera_id = 7;                            // Camera ID
+  required int32 fps = 8;                                  // FPS
+  required ToggledFloat gamma = 9;                         // Gamma
+  required ToggledInt manual_exposure = 10;                // Manual exposure
 
   // GROUP: Brightness
-  required double brightness_threshold = 7;    // Brightness threshold
+  required float brightness_threshold = 11;                // Brightness threshold
 
   // GROUP: Color
   enum ColorThresholdMode {
       HSV = 0;
       RB_CHANNELS = 1;
   };
-  required ColorThresholdMode color_threshold_mode = 8;   // Mode
+  required ColorThresholdMode color_threshold_mode = 12;   // Mode
 
-  required DoubleRange hsv_red_hue = 9;                   // Red hue range (for HSV)
-  required DoubleRange hsv_blue_hue = 10;                 // Blue hue range (for HSV)
-  required double rb_channel_threshold = 11;              // RB diff threshold (for RB_CHANNELS)
+  required FloatRange hsv_red_hue = 13;                    // Red hue range (for HSV)
+  required FloatRange hsv_blue_hue = 14;                   // Blue hue range (for HSV)
+  required float rb_channel_threshold = 15;                // RB diff threshold (for RB_CHANNELS)
 
   // GROUP: Contours
-  required ToggledInt contour_erode = 28;                 // Erode
-  required ToggledInt contour_dilate = 12;                // Dilate
-  required ToggledInt contour_open = 29;                  // Open (to reduce noise)
-  required ToggledInt contour_close = 30;                 // Close (to fill holes)
+  required ToggledInt contour_erode = 16;                  // Erode (SLOW)
+  required ToggledInt contour_dilate = 17;                 // Dilate (SLOW)
+  required ToggledInt contour_open = 18;                   // Open (to reduce noise) (SLOW)
+  required ToggledInt contour_close = 19;                  // Close (to fill holes) (SLOW)
 
   enum ContourFitFunction {
       MIN_AREA_RECT = 0;
       ELLIPSE = 1;
   };
-  required ContourFitFunction contour_fit_function = 13;  // Fit function
+  required ContourFitFunction contour_fit_function = 20;   // Fit function
 
-  required ToggledDouble contour_pixel_count = 14;        // Min contour pixel count
-  required ToggledDouble contour_min_area = 15;           // Min contour area
-  required ToggledInt long_edge_min_length = 16;          // Min length of the long edge
-  required ToggledDoubleRange light_aspect_ratio = 17;    // Aspect ratio range
-  required ToggledDouble light_max_rotation = 23;         // min(angle, 180 - angle) <
+  required ToggledFloat contour_pixel_count = 21;          // Min contour pixel count
+  required ToggledFloat contour_min_area = 22;             // Min contour area
+  required ToggledInt long_edge_min_length = 23;           // Min length of the long edge
+  required ToggledFloatRange light_aspect_ratio = 24;      // Aspect ratio range
+  required ToggledFloat light_max_rotation = 25;           // min(angle, 180 - angle) <
 
   // GROUP: Armors
-  required ToggledDouble light_length_max_ratio = 18;     // Long light / short light <
-  required ToggledDoubleRange light_x_dist_over_l = 19;   // abs(X1 - X2) / avgL
-  required ToggledDoubleRange light_y_dist_over_l = 20;   // abs(Y1 - Y2) / avgL
-  required ToggledDouble light_angle_max_diff = 21;       // abs(Angle1 - Angle2) [deg] <
-  required DoubleRange small_armor_aspect_ratio = 22;     // Small armor width/height
-  required DoubleRange large_armor_aspect_ratio = 31;     // Large armor width/height
-  required IntPair small_armor_size = 34;                 // Small armor region size [mm]
-  required IntPair large_armor_size = 35;                 // Large armor region size [mm]
+  required ToggledFloat light_length_max_ratio = 26;       // Long light / short light <
+  required ToggledFloatRange light_x_dist_over_l = 27;     // abs(X1 - X2) / avgL
+  required ToggledFloatRange light_y_dist_over_l = 28;     // abs(Y1 - Y2) / avgL
+  required ToggledFloat light_angle_max_diff = 29;         // abs(Angle1 - Angle2) [deg] <
+  required FloatRange small_armor_aspect_ratio = 30;       // Small armor width/height range
+  required FloatRange large_armor_aspect_ratio = 31;       // Large armor width/height range
+  required IntPair small_armor_size = 32;                  // Small armor region size [mm]
+  required IntPair large_armor_size = 33;                  // Large armor region size [mm]
 
   // GROUP: Aiming
-  required bool enable_absolute_angle_mode = 37;          // Enable ABSOLUTE mode
-  required int32 gimbal_delay = 32;                       // Gimbal feedback delay (for ABSOLUTE) [ms]
-
-  required int32 armor_life_time = 33;                    // Forget armor after [ms]
-
-  enum ArmorTrackingMode {
-    IMAGE = 1;
-    PHYSICAL = 2;
-  }
-
-  required ArmorTrackingMode armor_tracking_mode = 43;    // Armor tracking mode
-
-  required double image_max_offset_fraction = 44;         // Max X/Y offset to size between frames (for IMAGE)
-  required double physical_max_velocity = 38;             // Max armor velocity (for PHYSICAL) [mm/s]
-
-  required int32 predict_backward_count = 39;             // Predict using K records (K >= 1)
-  required double predict_backward_fraction = 40;         // kth record weights w^k for k = 2..K
-
-  required ToggledInt compensate_bullet_speed = 41;       // Compensate trajectory with bullet speed [mm/s]
-
-  required int32 control_command_delay = 42;              // Control command delay [ms]
-
-  required ToggledDouble yaw_delta_offset = 25;           // Yaw manual offset
-  required ToggledDouble pitch_delta_offset = 26;         // Pitch manual offset
+  required int32 tracking_life_time = 34;                  // Consider lost after frames
+  required float top_max_pitch_offset = 35;                // TopKiller max armor pitch offset [deg]
+  required float top_yaw_threshold = 36;                   // TopKiller recognition yaw threshold [deg]
+  required FloatPair manual_delta_offset = 37;             // Target manual offset
 }
 
 // ============================================== Result Structures ==============================================
@@ -174,10 +160,8 @@ message ArmorInfo {
   repeated ResultPoint2f image_points = 1;
   required ResultPoint2f image_center = 2;
   required ResultPoint3f offset = 3;
-  required ResultPoint3f rotation = 4;
   required bool large_armor = 5;
   required int32 number = 6;
-  required int32 history_index = 9;
   required bool selected = 7;
   required ResultPoint3f ypd = 8;
 }
@@ -224,7 +208,5 @@ message Result {
   // GROUP: Aiming
   // INFO: aimingInfo
   // IMAGE: aimingImage
-  optional ResultPoint2f current_gimbal = 10;
-  optional bool aiming_relative_mode = 8;
   optional ResultPoint2f aiming_target = 9;
 }

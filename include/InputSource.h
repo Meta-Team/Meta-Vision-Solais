@@ -10,11 +10,9 @@
 #include <chrono>
 #include "Parameters.pb.h"
 #include "FrameCounterBase.h"
+#include "Utilities.h"
 
 namespace meta {
-
-using TimePoint = std::chrono::steady_clock::time_point;
-using Duration = std::chrono::steady_clock::duration;
 
 class InputSource : public FrameCounterBase {
 public:
@@ -35,7 +33,7 @@ public:
     virtual void close() = 0;
 
     /**
-     * Get current frame capture time. TimePoint() indicates the end of the stream.
+     * Get current frame capture time. 0 indicates the end of the stream.
      * @return
      */
     virtual TimePoint getFrameCaptureTime() const = 0;

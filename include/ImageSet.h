@@ -56,7 +56,7 @@ protected:
     bool shouldFetchNextFrame;
     uint8_t lastBuffer = 0;
     cv::Mat buffer[2];
-    TimePoint bufferCaptureTime[2] = {TimePoint(), TimePoint()};
+    TimePoint bufferCaptureTime[2] = {0, 0};
 
     std::thread *th = nullptr;
     bool threadShouldExit = false;

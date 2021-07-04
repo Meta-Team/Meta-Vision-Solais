@@ -23,7 +23,8 @@ namespace meta {
 class Executor : protected FrameCounterBase /* we would like to rename the function */ {
 public:
 
-    explicit Executor(Camera *camera, ImageSet *imageSet, VideoSet *videoSet, ParamSetManager *paramSetManager,
+    explicit Executor(OpenCVCamera *openCvCamera, MVCamera *mvCamera, ImageSet *imageSet, VideoSet *videoSet,
+                      ParamSetManager *paramSetManager,
                       ArmorDetector *detector, PositionCalculator *positionCalculator, AimingSolver *aimingSolver,
                       Serial *serial);
 
@@ -124,11 +125,13 @@ public:
      * @param armors
      */
     void fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage, cv::Mat &contourImage,
-                      std::vector<AimingSolver::DetectedArmorInfo> &armors, cv::Point2f &currentGimbal);
+                      std::vector<AimingSolver::ArmorInfo> &armors);
 
 private:
 
-    Camera *camera_;
+    OpenCVCamera *openCvCamera_;
+    MVCamera *mvCamera_;
+    Camera *camera_ = nullptr;
     ImageSet *imageSet_;
     VideoSet *videoSet_;
     ArmorDetector *detector_;
@@ -166,9 +169,7 @@ private:
     cv::Mat lightsOutput;
     cv::Mat contoursOutput;
 
-    std::vector<AimingSolver::DetectedArmorInfo> armorsOutput;
-
-    cv::Point2f currentGimbalOutput;
+    std::vector<AimingSolver::ArmorInfo> armorsOutput;
 };
 
 }

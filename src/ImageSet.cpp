@@ -68,13 +68,13 @@ bool ImageSet::openSingleImage(const std::string &imageName, const ParamSet &par
 
     fs::path imageFile = fs::path(currentImageSetPath) / imageName;
     auto img = cv::imread(imageFile.string());
-    if (img.rows != params.image_height() || img.cols != params.image_width()) {
-        cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
+    if (img.rows != params.roi_height() || img.cols != params.roi_width()) {
+        cv::resize(img, img, cv::Size(params.roi_width(), params.roi_height()));
     }
 
     // Load the image to the latest buffer
     buffer[lastBuffer] = img;
-    bufferCaptureTime[lastBuffer] = std::chrono::steady_clock::now();
+    bufferCaptureTime[lastBuffer] = 1;
 
     if (th) close();
     th = nullptr;  // do not start thread and clear the pointer for fetchNextFrame
@@ -95,8 +95,8 @@ bool ImageSet::openCurrentImageSet(const ParamSet &params) {
     for (const auto &image : images) {
         fs::path imageFile = fs::path(currentImageSetPath) / image;
         auto img = cv::imread(imageFile.string());
-        if (img.rows != params.image_height() || img.cols != params.image_width()) {
-            cv::resize(img, img, cv::Size(params.image_width(), params.image_height()));
+        if (img.rows != params.roi_height() || img.cols != params.roi_width()) {
+            cv::resize(img, img, cv::Size(params.roi_width(), params.roi_height()));
         }
         imageMats.emplace_back(img);
     }
@@ -117,7 +117,7 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
         uint8_t workingBuffer = 1 - lastBuffer;
 
         if (threadShouldExit || it == imageMats.end()) {  // no more image
-            bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
+            bufferCaptureTime[workingBuffer] = 0;  // indicate invalid frame
             lastBuffer = workingBuffer;  // switch
             break;
         }
@@ -127,7 +127,7 @@ void ImageSet::loadFrameFromImageSet(const ParamSet &params) {
         ++it;
 
         // Increment frame time
-        bufferCaptureTime[workingBuffer] = std::chrono::steady_clock::now();
+        bufferCaptureTime[workingBuffer] = bufferCaptureTime[lastBuffer] + 1;
 
         // Switch
         lastBuffer = workingBuffer;
@@ -155,7 +155,7 @@ void ImageSet::fetchNextFrame() {
     } else {  // for single image, the thread is not created
 
         uint8_t workingBuffer = 1 - lastBuffer;
-        bufferCaptureTime[workingBuffer] = TimePoint();  // indicate invalid frame
+        bufferCaptureTime[workingBuffer] = 0;  // indicate invalid frame
         lastBuffer = workingBuffer;  // switch
     }
 }
@@ -172,7 +172,7 @@ void ImageSet::close() {
 std::string ImageSet::saveCapturedImage(const cv::Mat &image, const package::ParamSet &params) {
     // Directory: <width>_<height>_blue/red
     fs::path dir = imageSetRoot /
-                   fs::path(std::to_string(params.image_width()) + "_" + std::to_string(params.image_height()) + "_" +
+                   fs::path(std::to_string(params.roi_width()) + "_" + std::to_string(params.roi_height()) + "_" +
                             (params.enemy_color() == package::ParamSet_EnemyColor_BLUE ? "blue" : "red"));
 
     if (!fs::exists(dir)) {

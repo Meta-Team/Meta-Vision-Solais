@@ -66,10 +66,9 @@ void sendResult() {
 
         // Fetch outputs
         cv::Mat originalImage, brightnessImage, colorImage, contourImage;
-        std::vector<AimingSolver::DetectedArmorInfo> armors;
-        cv::Point2f currentGimbal;
+        std::vector<AimingSolver::ArmorInfo> armors;
 
-        executor->fetchOutputs(originalImage, brightnessImage, colorImage, contourImage, armors, currentGimbal);
+        executor->fetchOutputs(originalImage, brightnessImage, colorImage, contourImage, armors);
         // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
 
         // Detector images
@@ -83,7 +82,7 @@ void sendResult() {
 
         // Armors
         {
-            float imageScale = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().image_height();
+            float imageScale = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().roi_height();
             for (const auto &armor : armors) {
                 auto armorInfo = resultPackage.add_armors();
                 for (int i = 0; i < 4; i++) {
@@ -94,22 +93,19 @@ void sendResult() {
                 armorInfo->set_allocated_image_center(allocResultPoint2f(
                         armor.imgCenter.x * imageScale, armor.imgCenter.y * imageScale));
                 armorInfo->set_allocated_offset(allocResultPoint3f(armor.offset.x, armor.offset.y, armor.offset.z));
-                armorInfo->set_allocated_rotation(
-                        allocResultPoint3f(armor.rotation.x, armor.rotation.y, armor.rotation.z));
                 armorInfo->set_large_armor(armor.largeArmor);
                 armorInfo->set_number(armor.number);
-                armorInfo->set_history_index(armor.history_index);
-                armorInfo->set_selected(armor.flags & AimingSolver::DetectedArmorInfo::SELECTED_TARGET);
-                armorInfo->set_allocated_ypd(allocResultPoint3f(armor.ypd.yaw, armor.ypd.pitch, armor.ypd.dist));
+                armorInfo->set_selected(armor.flags & AimingSolver::ArmorInfo::SELECTED_TARGET);
+                armorInfo->set_allocated_ypd(allocResultPoint3f(armor.ypd.x, armor.ypd.y, armor.ypd.z));
             }
         }
 
         // Aiming
         {
-            auto command = executor->aimingSolver()->getControlCommand();
-            resultPackage.set_allocated_current_gimbal(allocResultPoint2f(currentGimbal.x, currentGimbal.y));
-            resultPackage.set_aiming_relative_mode(command.mode == AimingSolver::RELATIVE_ANGLE);
-            resultPackage.set_allocated_aiming_target(allocResultPoint2f(command.yaw, command.pitch));
+            AimingSolver::ControlCommand command;
+            if (executor->aimingSolver()->getControlCommand(command)) {
+                resultPackage.set_allocated_aiming_target(allocResultPoint2f(command.yawDelta, command.pitchDelta));
+            }
         }
         socketServer.sendBytes("res", resultPackage);
 
@@ -191,7 +187,7 @@ void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
 
             // Send camera info
             resultPackage.Clear();
-            resultPackage.set_camera_info(executor->camera()->getCapInfo());
+            resultPackage.set_camera_info(executor->camera()->getCameraInfo());
             socketServer.sendBytes("res", resultPackage);
         }
 
@@ -235,7 +231,8 @@ boost::asio::io_context serialIOContext;
 /** Components **/
 
 // TCP handling should not operates on these components directly, so they are put at last
-std::unique_ptr<Camera> camera;
+std::unique_ptr<OpenCVCamera> openCVCamera;
+std::unique_ptr<MVCamera> mvCamera;
 std::unique_ptr<ImageSet> imageSet;
 std::unique_ptr<VideoSet> videoSet;
 std::unique_ptr<ArmorDetector> detector;
@@ -249,7 +246,10 @@ int main(int argc, char *argv[]) {
     std::cout << "CUDA device count: " << cv::cuda::getCudaEnabledDeviceCount() << std::endl;
     std::cout << cv::getBuildInformation() << std::endl;
 
-    camera = std::make_unique<Camera>();
+    CameraSdkInit(0);   // for MVCamera
+
+    openCVCamera = std::make_unique<OpenCVCamera>();
+    mvCamera = std::make_unique<MVCamera>();
     imageSet = std::make_unique<ImageSet>();
     videoSet = std::make_unique<VideoSet>();
     detector = std::make_unique<ArmorDetector>();
@@ -258,14 +258,13 @@ int main(int argc, char *argv[]) {
     aimingSolver = std::make_unique<AimingSolver>();
     if (strlen(SERIAL_DEVICE) != 0) {
         serial = std::make_unique<Serial>(serialIOContext);
-        serial->setGimbalInfoCallback([](float yawAngle, float pitchAngle, float yawVelocity, float pitchVelocity) {
-            aimingSolver->updateGimbal(yawAngle, pitchAngle, yawVelocity, pitchVelocity);
-        });
     } else {
         std::cerr << "Serial disabled for debug purpose" << std::endl;
     }
-    executor = std::make_unique<Executor>(camera.get(), imageSet.get(), videoSet.get(), paramSetManager.get(),
-                                          detector.get(), positionCalculator.get(), aimingSolver.get(), serial.get());
+    executor = std::make_unique<Executor>(openCVCamera.get(), mvCamera.get(), imageSet.get(), videoSet.get(),
+                                          paramSetManager.get(),
+                                          detector.get(), positionCalculator.get(), aimingSolver.get(),
+                                          serial.get());
 
     tcpIOThread = new std::thread([] {
         boost::asio::executor_work_guard<boost::asio::io_context::executor_type> workGuard(tcpIOContext.get_executor());

@@ -31,11 +31,9 @@ public:
      * @param imagePoints
      * @param largeArmor
      * @param offset       Displacement: x, y, z(distance) in mm
-     * @param offset       Displacement: yaw, pitch, roll in degree
      * @return
      */
-    bool solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor,
-               cv::Point3f &offset, cv::Point3f &rotation) const;
+    bool solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor, cv::Point3f &offset) const;
 
 private:
 

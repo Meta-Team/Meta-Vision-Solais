@@ -19,8 +19,8 @@ ParamSetManager::ParamSetManager()
 
     std::cout << "ParamSetManager: using default ParamSet " << defaultParamSetName << ".json" << std::endl;
 
-    if (!fs::exists(paramSetRoot / "backup")) {
-        fs::create_directories(paramSetRoot / "backup");
+    if (!fs::exists(paramSetRoot / ".." / "params_backup")) {
+        fs::create_directories(paramSetRoot / ".." / "params_backup");
     }
 }
 
@@ -32,21 +32,26 @@ void ParamSetManager::reloadParamSetList() {
 
         // Create default parameter file
         ParamSet params;
+
         params.set_image_width(1280);
         params.set_image_height(720);
+        params.set_roi_width(1280);
+        params.set_roi_height(720);
         params.set_enemy_color(ParamSet::BLUE);
+        params.set_video_speed(1);
         params.set_video_playback_speed(1);
 
         params.set_camera_backend(ParamSet::OPENCV);
         params.set_camera_id(0);
         params.set_fps(120);
-        params.set_allocated_gamma(allocToggledDouble(false));
+        params.set_allocated_gamma(allocToggledFloat(false));
         params.set_allocated_manual_exposure(allocToggledInt(false));
 
         params.set_brightness_threshold(155);
+
         params.set_color_threshold_mode(ParamSet::RB_CHANNELS);
-        params.set_allocated_hsv_red_hue(allocDoubleRange(150, 30));  // across the 0 (180) point
-        params.set_allocated_hsv_blue_hue(allocDoubleRange(90, 150));
+        params.set_allocated_hsv_red_hue(allocFloatRange(150, 30));  // across the 0 (180) point
+        params.set_allocated_hsv_blue_hue(allocFloatRange(90, 150));
         params.set_rb_channel_threshold(55);
         params.set_allocated_contour_erode(allocToggledInt(false, 3));
         params.set_allocated_contour_dilate(allocToggledInt(false, 3));
@@ -54,34 +59,26 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_contour_open(allocToggledInt(true, 3));
         params.set_allocated_contour_close(allocToggledInt(true, 3));
         params.set_contour_fit_function(ParamSet::ELLIPSE);
-        params.set_allocated_contour_pixel_count(allocToggledDouble(true, 15));
-        params.set_allocated_contour_min_area(allocToggledDouble(false, 3));
+        params.set_allocated_contour_pixel_count(allocToggledFloat(true, 15));
+        params.set_allocated_contour_min_area(allocToggledFloat(false, 3));
         params.set_allocated_long_edge_min_length(allocToggledInt(true, 30));
-        params.set_allocated_light_aspect_ratio(allocToggledDoubleRange(true, 2, 30));
-        params.set_allocated_light_max_rotation(allocToggledDouble(true, 15));
+        params.set_allocated_light_aspect_ratio(allocToggledFloatRange(true, 2, 30));
+        params.set_allocated_light_max_rotation(allocToggledFloat(true, 15));
 
-        params.set_allocated_light_length_max_ratio(allocToggledDouble(true, 1.5));
-        params.set_allocated_light_x_dist_over_l(allocToggledDoubleRange(false, 1, 3));
-        params.set_allocated_light_y_dist_over_l(allocToggledDoubleRange(false, 0, 1));
-        params.set_allocated_light_angle_max_diff(allocToggledDouble(true, 10));
-        params.set_allocated_small_armor_aspect_ratio(allocDoubleRange(1.25, 2));
-        params.set_allocated_large_armor_aspect_ratio(allocDoubleRange(2, 5));
+        params.set_allocated_light_length_max_ratio(allocToggledFloat(true, 1.5));
+        params.set_allocated_light_x_dist_over_l(allocToggledFloatRange(false, 1, 3));
+        params.set_allocated_light_y_dist_over_l(allocToggledFloatRange(false, 0, 1));
+        params.set_allocated_light_angle_max_diff(allocToggledFloat(true, 10));
+        params.set_allocated_small_armor_aspect_ratio(allocFloatRange(1.25, 2));
+        params.set_allocated_large_armor_aspect_ratio(allocFloatRange(2, 5));
 
         params.set_allocated_small_armor_size(allocIntPair(120, 60));
         params.set_allocated_large_armor_size(allocIntPair(240, 60));
 
-        params.set_enable_absolute_angle_mode(false);
-        params.set_gimbal_delay(5);
-        params.set_armor_life_time(1000);
-        params.set_armor_tracking_mode(package::ParamSet_ArmorTrackingMode_IMAGE);
-        params.set_image_max_offset_fraction(1);
-        params.set_physical_max_velocity(2000);
-        params.set_predict_backward_count(3);
-        params.set_predict_backward_fraction(0.4);
-        params.set_allocated_compensate_bullet_speed(allocToggledInt(false, 12000));
-        params.set_control_command_delay(0);
-        params.set_allocated_yaw_delta_offset(allocToggledDouble(false));
-        params.set_allocated_pitch_delta_offset(allocToggledDouble(false));
+        params.set_tracking_life_time(5);
+        params.set_top_max_pitch_offset(10);
+        params.set_top_yaw_threshold(15);
+        params.set_allocated_manual_delta_offset(allocFloatPair(0, 0));
 
         std::cout << "ParamSetManager: create default ParamSet " << defaultParamSetName << ".json" << std::endl;
         saveParamSetToJson(params, paramSetRoot / (defaultParamSetName + ".json"));

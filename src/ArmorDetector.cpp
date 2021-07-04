@@ -18,7 +18,6 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
 
     // ================================ Setup ================================
     {
-        assert(img.cols == params.image_width() && img.rows == params.image_height() && "Input image size unmatched");
         imgOriginal = img;
         imgGray = imgBrightness = imgColor = imgLights = imgContours = Mat();
     }
@@ -147,7 +146,8 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
             }
 
             // Filter angle
-            if (params.light_max_rotation().enabled() && std::min(rect.angle, 180 - rect.angle) >= params.light_max_rotation().val()) {
+            if (params.light_max_rotation().enabled() &&
+                std::min(rect.angle, 180 - rect.angle) >= params.light_max_rotation().val()) {
                 continue;
             }
 
@@ -245,7 +245,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
                     continue;  // topVector should be rightward, or lights intersect
                 }
                 auto bottomVector = armorPoints[3] - armorPoints[0];  // right
-                if(bottomVector.x < 0) {
+                if (bottomVector.x < 0) {
                     continue;  // bottomVector should be rightward, or lights intersect
                 }
 
@@ -280,8 +280,8 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
                 }
 
                 // Filter angle difference
+                float angleDiff = std::abs(leftRect.angle - rightRect.angle);
                 if (params.light_angle_max_diff().enabled()) {
-                    double angleDiff = std::abs(leftRect.angle - rightRect.angle);
                     if (angleDiff > 90) {
                         angleDiff = 180 - angleDiff;
                     }
@@ -316,10 +316,12 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
                 center.y /= 4;
 
                 acceptedArmors.emplace_back(DetectedArmor{
-                    armorPoints,
-                    center,
-                    largeArmor,
-                    // TODO: template matching
+                        armorPoints,
+                        center,
+                        largeArmor,
+                        0,
+                        {leftLightIndex, rightLightIndex},
+                        angleDiff
                 });
             }
         }

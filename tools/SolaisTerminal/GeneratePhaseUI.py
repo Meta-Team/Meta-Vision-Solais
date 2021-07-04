@@ -57,7 +57,7 @@ signals:
 
 @dataclass
 class Param:
-    kind: str  # (Toggle)?(Int|Double)(Range)? or Enum<enum name>
+    kind: str  # (Toggle)?(Int|Float)(Range)? or Enum<enum name>
     name: str
     label: str
     options: List[str] = ""
@@ -136,7 +136,7 @@ def parse_groups(filename: str) -> [Group]:
                                     if kind == "int32" or kind == "int64":
                                         kind = "Int"
                                     elif kind == "double" or kind == "float":
-                                        kind = "Double"
+                                        kind = "Float"
                                     elif kind == "bool":
                                         kind = "Toggled"
 
@@ -252,9 +252,9 @@ def generate_ui_creation_code(groups: [Group]) -> ([(str, str)], [(str, str)]):
                 if type_str.startswith("Int"):
                     decimal = "0"
                     type_str = type_str[len("Int"):]  # consume the prefix
-                elif type_str.startswith("Double"):
+                elif type_str.startswith("Float"):
                     decimal = "2"
-                    type_str = type_str[len("Double"):]  # consume the prefix
+                    type_str = type_str[len("Float"):]  # consume the prefix
                 else:
                     raise ValueError(f'Unknown data type prefix in "{type_str}"')
 
@@ -407,8 +407,8 @@ def generate_apply_params_code(groups: [Group]) -> None:
             else:  # not Enum, numerical types
                 if type_str.startswith("Int"):
                     type_str = type_str[len("Int"):]  # consume the prefix
-                elif type_str.startswith("Double"):
-                    type_str = type_str[len("Double"):]  # consume the prefix
+                elif type_str.startswith("Float"):
+                    type_str = type_str[len("Float"):]  # consume the prefix
                 else:
                     raise ValueError(f'Unknown data type prefix in "{type_str}"')
 
@@ -456,7 +456,7 @@ def generate_get_params_code(groups: [Group]) -> None:
 
             type_str = param.kind
 
-            if type_str in ["Int", "Double"]:
+            if type_str in ["Int", "Float"]:
                 spin_obj = f'{param.name}Spin'
                 print_line(f'p.set_{param.name}({spin_obj}->value());')
             elif type_str == "Toggled":
@@ -465,23 +465,23 @@ def generate_get_params_code(groups: [Group]) -> None:
             elif type_str.startswith("Enum"):
                 combo_obj = f'{param.name}Combo'
                 print_line(f'p.set_{param.name}((package::ParamSet::{type_str[4:]}){combo_obj}->currentIndex());')
-            elif type_str in ["ToggledInt", "ToggledDouble"]:
+            elif type_str in ["ToggledInt", "ToggledFloat"]:
                 check_obj = f'{param.name}Check'
                 spin_obj = f'{param.name}Spin'
                 print_line(
                     f'p.set_allocated_{param.name}(alloc{type_str}({check_obj}->isChecked(), {spin_obj}->value()));')
-            elif type_str == "DoubleRange":
+            elif type_str == "FloatRange":
                 min_spin_obj = f'{param.name}MinSpin'
                 max_spin_obj = f'{param.name}MaxSpin'
                 print_line(
-                    f'p.set_allocated_{param.name}(allocDoubleRange({min_spin_obj}->value(), {max_spin_obj}->value()));')
-            elif type_str == "ToggledDoubleRange":
+                    f'p.set_allocated_{param.name}(allocFloatRange({min_spin_obj}->value(), {max_spin_obj}->value()));')
+            elif type_str == "ToggledFloatRange":
                 check_obj = f'{param.name}Check'
                 min_spin_obj = f'{param.name}MinSpin'
                 max_spin_obj = f'{param.name}MaxSpin'
                 print_line(
-                    f'p.set_allocated_{param.name}(allocToggledDoubleRange({check_obj}->isChecked(), {min_spin_obj}->value(), {max_spin_obj}->value()));')
-            elif type_str == "IntPair" or type_str == "DoublePair":
+                    f'p.set_allocated_{param.name}(allocToggledFloatRange({check_obj}->isChecked(), {min_spin_obj}->value(), {max_spin_obj}->value()));')
+            elif type_str == "IntPair" or type_str == "FloatPair":
                 x_spin_obj = f'{param.name}XSpin'
                 y_spin_obj = f'{param.name}YSpin'
                 print_line(

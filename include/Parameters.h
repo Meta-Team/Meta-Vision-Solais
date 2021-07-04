@@ -11,40 +11,40 @@ namespace meta {
 
 using package::ParamSet;
 using package::Result;
-using package::DoubleRange;
-using package::ToggledDoubleRange;
-using package::ToggledDouble;
+using package::FloatRange;
+using package::ToggledFloatRange;
+using package::ToggledFloat;
 using package::ToggledInt;
 using package::IntPair;
-using package::DoublePair;
+using package::FloatPair;
 using package::ResultPoint2f;
 using package::ResultPoint3f;
 
-inline bool inRange(double value, const DoubleRange &range) {
+inline bool inRange(float value, const FloatRange &range) {
     return range.min() <= value && value <= range.max();
 }
 
-inline bool inRange(double value, const ToggledDoubleRange &range) {
+inline bool inRange(float value, const ToggledFloatRange &range) {
     return range.min() <= value && value <= range.max();
 }
 
-inline DoubleRange *allocDoubleRange(double min = 0, double max = 0) {
-    auto ret = new DoubleRange;
+inline FloatRange *allocFloatRange(float min = 0, float max = 0) {
+    auto ret = new FloatRange;
     ret->set_min(min);
     ret->set_max(max);
     return ret;
 }
 
-inline ToggledDoubleRange *allocToggledDoubleRange(bool enabled = false, double min = 0, double max = 0) {
-    auto ret = new ToggledDoubleRange;
+inline ToggledFloatRange *allocToggledFloatRange(bool enabled = false, float min = 0, float max = 0) {
+    auto ret = new ToggledFloatRange;
     ret->set_enabled(enabled);
     ret->set_min(min);
     ret->set_max(max);
     return ret;
 }
 
-inline ToggledDouble *allocToggledDouble(bool enabled = false, double val = 0) {
-    auto ret = new ToggledDouble;
+inline ToggledFloat *allocToggledFloat(bool enabled = false, float val = 0) {
+    auto ret = new ToggledFloat;
     ret->set_enabled(enabled);
     ret->set_val(val);
     return ret;
@@ -64,8 +64,8 @@ inline IntPair *allocIntPair(int x, int y) {
     return ret;
 }
 
-inline DoublePair *allocDoublePair(double x, double y) {
-    auto ret = new DoublePair;
+inline FloatPair *allocFloatPair(float x, float y) {
+    auto ret = new FloatPair;
     ret->set_x(x);
     ret->set_y(y);
     return ret;

@@ -14,154 +14,64 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "Parameters.h"
+#include "Utilities.h"
 
 namespace meta {
-
-using TimePoint = std::chrono::steady_clock::time_point;
 
 class AimingSolver {
 public:
 
-    using XYZ = cv::Point3f;
-
-    struct YPD {          // yaw, pitch, distance coordinate
-        float yaw = 0;    // [degree]
-        float pitch = 0;  // [degree]
-        float dist = 0;   // [mm]
-
-        YPD operator-(const YPD &other) const { return {yaw - other.yaw, pitch - other.pitch, dist - other.dist}; }
-
-        YPD operator+(const YPD &other) const { return {yaw + other.yaw, pitch + other.pitch, dist + other.dist}; }
-
-        YPD operator+=(const YPD &other) { return {yaw += other.yaw, pitch += other.pitch, dist += other.dist}; }
-
-        YPD operator*(float f) const { return {yaw * f, pitch * f, dist * f}; }
-
-        YPD operator*=(float f) { return {yaw *= f, pitch *= f, dist *= f}; }
-    };
-
-    struct DetectedArmorInfo {
+    struct ArmorInfo {
     public:
-        DetectedArmorInfo(const std::array<cv::Point2f, 4> &imgPoints, const cv::Point2f &imgCenter,
-                          const cv::Point3f &offset, const cv::Point3f &rotation, bool largeArmor, int number = 0)
-                : imgPoints(imgPoints), imgCenter(imgCenter), offset(offset), rotation(rotation),
+        ArmorInfo() = default;
+        ArmorInfo(const std::array<cv::Point2f, 4> &imgPoints, const cv::Point2f &imgCenter,
+                  const cv::Point3f &offset, bool largeArmor, int number = 0)
+                : imgPoints(imgPoints), imgCenter(imgCenter), offset(offset),
                   largeArmor(largeArmor), number(number) {}
 
         std::array<cv::Point2f, 4> imgPoints;  // pixel
         cv::Point2f imgCenter;                 // pixel
         cv::Point3f offset;                    // x, y, z in mm, relative to current view
-        cv::Point3f rotation;                  // unused yet
         bool largeArmor;
         int number = 0;                        // 0 for empty (no number sticker)
 
+        cv::Point3f ypd;                       // YPD: Yaw (.x [deg]) + Pitch (.y [deg]) + Distance (.z [mm])
+
         enum Flag : unsigned {
             NONE = 0,
-            PROCESSED = 1,
-            SELECTED_TARGET = 2,
+            SELECTED_TARGET = 1,
         };
         unsigned flags = 0;
-
-        XYZ xyz;  // XYZ coordinate in relative (the same as offset) or actual world
-        YPD ypd;  // YPD position in relative or actual world
-
-        unsigned history_index = 0;
     };
 
     void setParams(const package::ParamSet &p);
 
     void resetHistory();
 
-    void updateArmors(std::vector<DetectedArmorInfo> &detectedArmors, TimePoint imageCaptureTime);
-
-    /**
-     * Update gimbal's current angle based on reported angles and velocities from Control.
-     * @param yawAngle       [degree]
-     * @param pitchAngle     [degree]
-     * @param yawVelocity    [degree/s]
-     * @param pitchVelocity  [degree/s]
-     * @note  This function can be called in another thread other than the Executor thread.
-     */
-    void updateGimbal(float yawAngle, float pitchAngle, float yawVelocity, float pitchVelocity);
-
-    enum ControlMode {
-        RELATIVE_ANGLE,
-        ABSOLUTE_ANGLE
-    };
+    void updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageCaptureTime);
 
     struct ControlCommand {
-        ControlMode mode;
-
-        float yaw = 0;
-        float pitch = 0;
+        bool detected;
+        float yawDelta = 0;
+        float pitchDelta = 0;
+        float distance = 0;
     };
 
-    bool shouldSendControlCommand() const { return shouldSendCommand; }
-
-    ControlCommand getControlCommand() const;
+    bool getControlCommand(ControlCommand &command) const;
 
 private:
 
     package::ParamSet params;
-    float bulletSpeed;
     ControlCommand latestCommand;
     bool shouldSendCommand = false;
 
-    struct DistanceLess {
-        inline bool operator()(const DetectedArmorInfo &a, const DetectedArmorInfo &b) const {
-            return cv::norm(a.offset) < cv::norm(b.offset);
-        }
-    };
+    bool tracking = false;
+    int lost_tracking_frame_count = 0;
+    ArmorInfo lastSelectedArmor;
 
-    TimePoint lastArmorUpdateTime = TimePoint();
-    TimePoint lastGimbalUpdateTime = TimePoint();
-
-    // Invalidate gimbal feedback and switch to relative angle mode after this time
-    static constexpr int GIMBAL_UPDATE_LIFE_TIME = 100;  // [ms]
-
-    float yawCurrentAngle = 0;
-    float pitchCurrentAngle = 0;
-    float yawCurrentVelocity = 0;
-    float pitchCurrentVelocity = 0;
-    std::mutex gimbalAngleMutex;
-
-    struct ArmorHistory {
-
-        ArmorHistory(unsigned index, const cv::Point2f &initImgCenter, const cv::Size2f &initImgSize,
-                     const XYZ &initXYZ, const YPD &initYPD, const TimePoint &initTime)
-                : index(index), imgCenter({initImgCenter}), imgSize({initImgSize}),
-                  xyz({initXYZ}), ypd({initYPD}), time({initTime}) {};
-
-        unsigned index;
-
-        std::deque<cv::Point2f> imgCenter;
-        std::deque<cv::Size2f> imgSize;
-        std::deque<XYZ> xyz;
-        std::deque<YPD> ypd;
-        std::list<TimePoint> time;
-
-        auto count() const { return time.size(); }
-
-        enum Flag : unsigned {
-            NONE = 0,
-        };
-        unsigned flags = 0;
-    };
-
-    unsigned nextArmorIndex = 0;
-
-    ControlMode historyMode;
-    std::list<ArmorHistory> history;
-
-    DetectedArmorInfo *matchArmor(std::vector<DetectedArmorInfo> &candidates, const ArmorHistory &target,
-                                  const TimePoint &time) const;
-
-    static YPD xyzToYPD(const XYZ &xyz);
-    static cv::Size2f imgPointsToSize(const std::array<cv::Point2f, 4> &imgPoints);
+    static cv::Point3f xyzToYPD(const cv::Point3f &xyz);
 
     static constexpr float PI = 3.14159265358979323846264338327950288f;
-    static constexpr float g = 9.81f;
-
-    friend class Executor;
 };
 
 }

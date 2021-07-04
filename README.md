@@ -39,7 +39,10 @@ The Boost library from apt-get of Ubuntu 18.04 is too old. Building from source 
 doesn't have powerful CPU. Instead, install newer Boost from third-party source.
 ```shell
 sudo add-apt-repository ppa:mhier/libboost-latest
-sudo apt-get updateArmors
+```
+
+```shell
+sudo apt-get update
 sudo apt install libboost1.74-dev
 ```
 
@@ -89,10 +92,7 @@ TODO...
 * Near-zero overhead for terminal-related code in Solais Core
   * Solais Core never sends actively
   * Result images, frame rates, parameters and other data are fetched by Solais Terminal
-* Gimbal rotates fast, vehicles move slow
-  * Locate armors/vehicles based on absolute angle
-  * Current gimbal angles (from AHRS) and velocities are sent by Control
-  * Assuming the latency (AHRS, serial, processing) of the received angles is a constant, offset each angle with velocity * some time
+* AimingSolver should always use time stamp from Source and should never call chrono::now().
 
 
 # Packages

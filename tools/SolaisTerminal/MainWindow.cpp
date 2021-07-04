@@ -353,11 +353,10 @@ void MainWindow::applyResultMessage() {
             painter.drawPoint(armorInfo.image_center().x(), armorInfo.image_center().y());
 
             // Large/small armor, number, and offset
-            ss << armorInfo.history_index();
             if (armorInfo.large_armor()) {
-                ss << " {" << armorInfo.number() << "} ";
+                ss << "{" << armorInfo.number() << "} ";
             } else {
-                ss << " [" << armorInfo.number() << "] ";
+                ss << "[" << armorInfo.number() << "] ";
             }
             ss << QString::number(armorInfo.ypd().x(), 'f', 1) << ", "
                << QString::number(armorInfo.ypd().y(), 'f', 1) << ", "
@@ -375,17 +374,9 @@ void MainWindow::applyResultMessage() {
     {
         QString s;
         QTextStream ss(&s);
-        if (resultMessage.has_current_gimbal()) {
-            ss << "Gimbal: "
-               << QString::number(resultMessage.current_gimbal().x(), 'f', 2) << ", "
-               << QString::number(resultMessage.current_gimbal().y(), 'f', 2) << "\n";
-        }
-        if (resultMessage.has_aiming_relative_mode()) {
-            ss << "Target: " << (resultMessage.aiming_relative_mode() ? "RELATIVE " : "ABSOLUTE ");
-            if (resultMessage.has_aiming_target()) {
-                ss << QString::number(resultMessage.aiming_target().x(), 'f', 2) << ", "
-                   << QString::number(resultMessage.aiming_target().y(), 'f', 2);
-            }
+        if (resultMessage.has_aiming_target()) {
+            ss << QString::number(resultMessage.aiming_target().x(), 'f', 2) << ", "
+               << QString::number(resultMessage.aiming_target().y(), 'f', 2);
         }
         phases->aimingInfoLabel->setText(s);
     }
