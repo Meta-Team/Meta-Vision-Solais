@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->connectButton, &QPushButton::clicked, this, &MainWindow::connectToServer);
     connect(ui->transferImagesCheck, &QCheckBox::stateChanged, [this](auto state) {
         if (state == Qt::Checked) {
-            socket.sendBytes("fetch");
+            sendFetch();
         } else {
             phases->resetImageLabels();
         }
@@ -137,6 +137,19 @@ void MainWindow::connectToServer() {
     }
 }
 
+void MainWindow::sendFetch() {
+    if (ui->fetchImageCheck->isChecked()) {
+        socket.sendSingleString("fetch",
+                                (std::string) (phases->cameraImageLabel->visibleRegion().isEmpty() &&
+                                               phases->armorImageLabel->visibleRegion().isEmpty() ? "F" : "T") +
+                                (phases->brightnessImageLabel->visibleRegion().isEmpty() ? "F" : "T") +
+                                (phases->colorImageLabel->visibleRegion().isEmpty() ? "F" : "T") +
+                                (phases->contourImageLabel->visibleRegion().isEmpty() ? "F" : "T"));
+    } else {
+        socket.sendSingleString("fetch", "FFFF");
+    }
+}
+
 void MainWindow::handleClientDisconnection(TerminalSocketClient *) {
     showStatusMessage(
             "Disconnected from " + ui->serverCombo->currentText() + ":" + TCP_SOCKET_PORT_STR);
@@ -166,7 +179,7 @@ void MainWindow::handleRecvBytes(std::string_view name, const uint8_t *buf, size
                     ++resultPackageCounter;
                     applyResultMessage();
                 }
-                socket.sendBytes("fetch");  // continue for next cycle
+                sendFetch();  // continue for next cycle
             }
         }  // Otherwise, discard result and do not send next fetching request
 
@@ -198,7 +211,7 @@ void MainWindow::handleRecvSingleString(std::string_view name, std::string_view 
     } else if (name == "executionStarted") {
         showStatusMessage("Start execution on " + QString::fromStdString(std::string(s)));
         if (holdingFetchPackage || lastRunSingleImage) {
-            socket.sendBytes("fetch");
+            sendFetch();
             holdingFetchPackage = false;
         }
 
@@ -316,13 +329,20 @@ void MainWindow::applyResultMessage() {
     }
 
     // GROUP: Contours
-    if (resultMessage.has_contour_info()) {
-        phases->contourInfoLabel->setText(QString::fromStdString(resultMessage.contour_info()));
-    }
     if (resultMessage.has_contour_image()) {
         if (!resultMessage.contour_image().data().empty()) {
             phases->contourImage = QImage::fromData((const uint8_t *) resultMessage.contour_image().data().c_str(),
-                                                    resultMessage.contour_image().data().size()).copy();
+                                                    resultMessage.contour_image().data().size())
+                    .copy()
+                    .convertToFormat(QImage::Format_BGR888);
+            QPainter painter(&phases->contourImage);
+            painter.setPen(Qt::yellow);
+            for (const auto &rect : resultMessage.lights()) {
+                painter.resetTransform();
+                painter.translate(rect.center().x(), rect.center().y());
+                painter.rotate(rect.angle());
+                painter.drawRect(-rect.size().x() / 2, -rect.size().y() / 2, rect.size().x(), rect.size().y());
+            }
             phases->contourImageLabel->setPixmap(QPixmap::fromImage(phases->contourImage));
         } else {
             phases->contourImageLabel->setText("Empty");

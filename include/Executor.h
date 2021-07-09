@@ -121,11 +121,12 @@ public:
      * @param originalImage
      * @param brightnessImage
      * @param colorImage
-     * @param contourImage
+     * @param lightsImage
+     * @param lightRects
      * @param armors
      */
-    void fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage, cv::Mat &contourImage,
-                      std::vector<AimingSolver::ArmorInfo> &armors);
+    void fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage, cv::Mat &lightsImage,
+                      std::vector<cv::RotatedRect> &lightRects, std::vector<AimingSolver::ArmorInfo> &armors);
 
 private:
 
@@ -166,9 +167,9 @@ private:
     cv::Mat grayOutput;
     cv::Mat brightnessOutput;
     cv::Mat colorOutput;
-    cv::Mat lightsOutput;
-    cv::Mat contoursOutput;
+    cv::Mat lightsImageOutput;
 
+    std::vector<cv::RotatedRect> lightRectsOutput;
     std::vector<AimingSolver::ArmorInfo> armorsOutput;
 };
 

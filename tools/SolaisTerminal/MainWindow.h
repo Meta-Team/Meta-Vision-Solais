@@ -69,6 +69,10 @@ private:
      */
     bool holdingFetchPackage = false;
 
+    void loadListOfStringsToQListWidget(const std::vector<const char *> &list, QListWidget *listWidget);
+
+    void sendFetch();
+
 private slots:
 
     void connectToServer();
@@ -76,8 +80,6 @@ private slots:
     void updateStats();
 
     void performIO();
-
-    void loadListOfStringsToQListWidget(const std::vector<const char *> &list, QListWidget *listWidget);
 };
 
 }

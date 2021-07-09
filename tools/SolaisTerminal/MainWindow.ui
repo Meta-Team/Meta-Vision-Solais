@@ -60,7 +60,51 @@
           <string>Connection</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_15">
-          <item row="3" column="0" colspan="2">
+          <item row="4" column="2">
+           <widget class="QLabel" name="resultFPSLabel">
+            <property name="text">
+             <string>0 pkgs/s</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="3">
+           <widget class="QComboBox" name="serverCombo">
+            <property name="editable">
+             <bool>true</bool>
+            </property>
+            <item>
+             <property name="text">
+              <string>localhost</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-1.local</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-2.local</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>meta-jetson-nano-3.local</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="reloadListsButton">
+            <property name="text">
+             <string>Reload</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="3">
            <widget class="QWidget" name="widget" native="true">
             <property name="minimumSize">
              <size>
@@ -136,52 +180,21 @@
             </layout>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="connectButton">
-            <property name="text">
-             <string>Connect</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="reloadListsButton">
-            <property name="text">
-             <string>Reload</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QComboBox" name="serverCombo">
-            <property name="editable">
-             <bool>true</bool>
-            </property>
-            <item>
-             <property name="text">
-              <string>localhost</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-1.local</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-2.local</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>meta-jetson-nano-3.local</string>
-             </property>
-            </item>
-           </widget>
-          </item>
           <item row="4" column="0">
            <widget class="QCheckBox" name="transferImagesCheck">
             <property name="toolTip">
              <string>Transfering images may slow down the Solais core</string>
             </property>
+            <property name="text">
+             <string>Fetch</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QCheckBox" name="fetchImageCheck">
             <property name="text">
              <string>Images</string>
             </property>
@@ -190,13 +203,10 @@
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
-           <widget class="QLabel" name="resultFPSLabel">
+          <item row="1" column="0" colspan="2">
+           <widget class="QPushButton" name="connectButton">
             <property name="text">
-             <string>0 pkgs/s</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             <string>Connect</string>
             </property>
            </widget>
           </item>

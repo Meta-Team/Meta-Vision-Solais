@@ -25,7 +25,7 @@ public:
         bool largeArmor = false;
         int number = 0;                 // unused yet
         std::array<int, 2> lightIndex;  // left, right
-        float lightAngleDiff;
+        float lightAngleDiff;           // absolute value, non-negative
     };
 
     std::vector<DetectedArmor> detect(const cv::Mat &img);
@@ -40,8 +40,8 @@ private:
     cv::Mat imgGray;
     cv::Mat imgBrightness;
     cv::Mat imgColor;
+    std::vector<cv::RotatedRect> lightRects;
     cv::Mat imgLights;
-    cv::Mat imgContours;
 
     static void drawRotatedRect(cv::Mat &img, const cv::RotatedRect &rect, const cv::Scalar &boarderColor);
 
@@ -54,6 +54,8 @@ private:
      * @param rect
      */
     static void canonicalizeRotatedRect(cv::RotatedRect &rect);
+
+    std::vector<DetectedArmor>::iterator filterAcceptedArmorsToRemove(std::vector<DetectedArmor> &acceptedArmors) const;
 
     friend class Executor;
 

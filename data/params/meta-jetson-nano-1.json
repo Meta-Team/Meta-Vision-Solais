@@ -5,7 +5,7 @@
  "roi_height": 640,
  "enemy_color": "BLUE",
  "video_speed": 0.4,
- "video_playback_speed": 0.2,
+ "video_playback_speed": 0.5,
  "camera_backend": "MV_CAMERA",
  "camera_id": 0,
  "fps": 200,

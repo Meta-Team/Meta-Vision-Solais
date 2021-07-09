@@ -58,31 +58,43 @@ void sendStatusBarMsg(const std::string &msg) {
     socketServer.sendSingleString("msg", "Core: " + msg);
 }
 
-void sendResult() {
+void sendResult(std::string_view mask) {
 
     // Always send a package, but non-empty only if the executor is running
     if (executor->hasOutputs()) {
         resultPackage.Clear();
 
         // Fetch outputs
-        cv::Mat originalImage, brightnessImage, colorImage, contourImage;
+        cv::Mat originalImage, brightnessImage, colorImage, lightsImage;
+        std::vector<cv::RotatedRect> lightRects;
         std::vector<AimingSolver::ArmorInfo> armors;
 
-        executor->fetchOutputs(originalImage, brightnessImage, colorImage, contourImage, armors);
+        executor->fetchOutputs(originalImage, brightnessImage, colorImage, lightsImage, lightRects, armors);
         // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
 
         // Detector images
         {
             // Empty handled in allocateProtoJPG
-            resultPackage.set_allocated_camera_image(allocProtoJPG(originalImage));
-            resultPackage.set_allocated_brightness_image(allocProtoJPG(brightnessImage));
-            resultPackage.set_allocated_color_image(allocProtoJPG(colorImage));
-            resultPackage.set_allocated_contour_image(allocProtoJPG(contourImage));
+            if (mask[0] == 'T') resultPackage.set_allocated_camera_image(allocProtoJPG(originalImage));
+            if (mask[1] == 'T') resultPackage.set_allocated_brightness_image(allocProtoJPG(brightnessImage));
+            if (mask[2] == 'T') resultPackage.set_allocated_color_image(allocProtoJPG(colorImage));
+            if (mask[3] == 'T') resultPackage.set_allocated_contour_image(allocProtoJPG(lightsImage));
+        }
+
+        float imageScale = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().roi_height();
+
+        // Light Rects
+        {
+            for (const auto &rect : lightRects) {
+                auto r = resultPackage.add_lights();
+                r->set_allocated_center(allocResultPoint2f(rect.center.x * imageScale, rect.center.y * imageScale));
+                r->set_allocated_size(allocResultPoint2f(rect.size.width * imageScale, rect.size.height * imageScale));
+                r->set_angle(rect.angle);
+            }
         }
 
         // Armors
         {
-            float imageScale = (float) TERMINAL_IMAGE_PREVIEW_HEIGHT / executor->getCurrentParams().roi_height();
             for (const auto &armor : armors) {
                 auto armorInfo = resultPackage.add_armors();
                 for (int i = 0; i < 4; i++) {
@@ -117,7 +129,10 @@ void sendResult() {
 }
 
 void handleRecvSingleString(std::string_view name, std::string_view s) {
-    if (name == "switchImageSet") {
+    if (name == "fetch") {
+        sendResult(s);  // reply anyway, whether the executor is running or not
+
+    } else if (name == "switchImageSet") {
         if (executor->switchImageSet(std::string(s)) == 0) {
             sendStatusBarMsg("empty data set " + std::string(s));
         } else {
@@ -151,10 +166,7 @@ void handleRecvSingleString(std::string_view name, std::string_view s) {
 }
 
 void handleRecvBytes(std::string_view name, const uint8_t *buf, size_t size) {
-    if (name == "fetch") {
-        sendResult();  // reply anyway, whether the executor is running or not
-
-    } else if (name == "fps") {
+    if (name == "fps") {
         socketServer.sendListOfStrings("fps", {
                 std::to_string(executor->fetchAndClearInputFrameCounter()),
                 std::to_string(executor->fetchAndClearExecutorFrameCounter()),

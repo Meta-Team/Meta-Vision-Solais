@@ -68,12 +68,10 @@ private:
     bool tracking = false;
     int lost_tracking_frame_count = 0;
     ArmorInfo lastSelectedArmor;
-    float lastDist = 0;
 
     static cv::Point3f xyzToYPD(const cv::Point3f &xyz);
 
     static constexpr float PI = 3.14159265358979323846264338327950288f;
-    static constexpr float g = 9.81E3f;  // [mm/s^2]
 };
 
 }

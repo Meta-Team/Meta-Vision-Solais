@@ -155,6 +155,12 @@ message ResultPoint3f {
   required float z = 3;
 }
 
+message ResultRotatedRect {
+  required ResultPoint2f center = 1;
+  required ResultPoint2f size = 2;
+  required float angle = 3;
+}
+
 message ArmorInfo {
   repeated ResultPoint2f image_points = 1;
   required ResultPoint2f image_center = 2;
@@ -196,8 +202,8 @@ message Result {
   // GROUP: Contours
   // INFO: contourInfo
   // IMAGE: contourImage
-  optional string contour_info = 5;  // Contour info
-  optional Image contour_image = 6;  // Contour image
+  optional Image contour_image = 5;  // Contour image
+  repeated ResultRotatedRect lights = 6;
 
   // GROUP: Armors
   // INFO: armorInfo

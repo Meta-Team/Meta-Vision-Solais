@@ -19,7 +19,7 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
     // ================================ Setup ================================
     {
         imgOriginal = img;
-        imgGray = imgBrightness = imgColor = imgLights = imgContours = Mat();
+        imgGray = imgBrightness = imgColor = imgLights = Mat();
     }
 
     // ================================ Brightness Threshold ================================
@@ -99,8 +99,8 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
         morphologyEx(imgLights, imgLights, MORPH_CLOSE, element);
     }
 
-    std::vector<RotatedRect> lightRects;
     {
+        lightRects.clear();
 
         std::vector<std::vector<Point>> contours;
         findContours(imgLights, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -162,12 +162,6 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
             // Accept the rect
             lightRects.emplace_back(rect);
         }
-    }
-
-    // FIXME: is this costly?
-    cv::cvtColor(imgLights, imgContours, COLOR_GRAY2BGR);
-    for (const auto &rect : lightRects) {
-        drawRotatedRect(imgContours, rect, Scalar(0, 255, 255));
     }
 
     // If there is less than two light contours, stop detection
@@ -327,7 +321,37 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
         }
     }
 
+    // Filter armors that share lights
+    {
+        while(true) {
+            auto it = filterAcceptedArmorsToRemove(acceptedArmors);
+            if (it == acceptedArmors.end()) break;  // nothing to remove
+            acceptedArmors.erase(it);       // remove the armor
+            // continue to try again
+        }
+    }
+
     return acceptedArmors;
+}
+
+std::vector<ArmorDetector::DetectedArmor>::iterator
+ArmorDetector::filterAcceptedArmorsToRemove(std::vector<DetectedArmor> &acceptedArmors) const {
+    for (auto it = acceptedArmors.begin(); it != acceptedArmors.end(); ++it) {
+        for (auto it2 = it + 1; it2 != acceptedArmors.end(); ++it2) {
+            if (it->lightIndex[0] == it->lightIndex[0] || it->lightIndex[0] == it->lightIndex[1] ||
+                it->lightIndex[1] == it->lightIndex[0] || it->lightIndex[1] == it->lightIndex[1]) {
+                // Share light
+
+                if (it->largeArmor != it2->largeArmor) {  // one small one large, prioritize small
+                    return it->largeArmor ? it : it2;
+                }
+
+                // Remove the one that has lights more nonparallel
+                return (it->lightAngleDiff > it2->lightAngleDiff) ? it : it2;
+            }
+        }
+    }
+    return acceptedArmors.end();  // nothing to remove
 }
 
 void ArmorDetector::drawRotatedRect(Mat &img, const RotatedRect &rect, const Scalar &boarderColor) {

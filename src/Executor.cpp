@@ -221,13 +221,13 @@ void Executor::runStreamingDetection(InputSource *source) {
                     command.distance);
         }
 
-        // Assign (no copying) results all at once, if the result is not being processed
+        // Assign (no copying for cv::Mat) results all at once, if the result is not being processed
         if (outputMutex.try_lock()) {
             originalOutput = detector_->imgOriginal;
             brightnessOutput = detector_->imgBrightness;
             colorOutput = detector_->imgColor;
-            contoursOutput = detector_->imgContours;
-
+            lightsImageOutput = detector_->imgLights;
+            lightRectsOutput = detector_->lightRects;
             armorsOutput = armors;
 
             outputMutex.unlock();
@@ -312,14 +312,16 @@ bool Executor::hasOutputs() {
 }
 
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
-                            cv::Mat &contourImage, std::vector <AimingSolver::ArmorInfo> &armors) {
+                            cv::Mat &lightsImage, std::vector<cv::RotatedRect> &lightRects,
+                            std::vector <AimingSolver::ArmorInfo> &armors) {
     if (curAction != NONE) {
         outputMutex.lock();
         {
             originalImage = originalOutput;
             brightnessImage = brightnessOutput;
             colorImage = colorOutput;
-            contourImage = contoursOutput;
+            lightsImage = lightsImageOutput;
+            lightRects = lightRectsOutput;
             armors = armorsOutput;
         }
         outputMutex.unlock();

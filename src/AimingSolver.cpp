@@ -65,35 +65,15 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
         selectedArmor->ypd = xyzToYPD(selectedArmor->offset);
         selectedArmor->flags |= ArmorInfo::SELECTED_TARGET;
         lastSelectedArmor = *selectedArmor;
+        tracking = true;
 
         const auto &xyz = selectedArmor->offset;
         const auto &ypd = selectedArmor->ypd;
 
-        if (!tracking) {
-            tracking = true;
-            lastDist = ypd.z;
-        }
-
-        float targetYaw = ypd.x;
-        float targetPitch = ypd.y;
-
-        lastDist = ypd.z * 0.1 + lastDist * 0.9;
-
-        if (params.compensate_bullet_speed().enabled()) {
-            // Compensate gravity
-            float v0 = params.compensate_bullet_speed().val();  // [mm/s]
-            float a = pow2(v0) / g;
-            targetPitch = -atan((a - sqrt(pow2(a - (-xyz.y)) - pow2(lastDist))) / sqrt(pow2(xyz.z) + pow2(xyz.x))) * 180.0f / PI;
-        }
-
-        // Manual offset
-        targetYaw += params.manual_delta_offset().x();
-        targetPitch += params.manual_delta_offset().y();
-
         latestCommand.detected = true;
-        latestCommand.yawDelta = targetYaw;
-        latestCommand.pitchDelta = targetPitch;
-        latestCommand.distance = lastDist;
+        latestCommand.yawDelta = ypd.x + params.manual_delta_offset().x();
+        latestCommand.pitchDelta = ypd.y + params.manual_delta_offset().y();
+        latestCommand.distance = ypd.z;
         shouldSendCommand = true;
     }
 
