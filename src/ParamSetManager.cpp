@@ -76,8 +76,7 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_large_armor_size(allocIntPair(240, 60));
 
         params.set_tracking_life_time(5);
-        params.set_top_max_pitch_offset(10);
-        params.set_top_yaw_threshold(15);
+        params.set_allocated_compensate_bullet_speed(allocToggledInt(false, 14000));
         params.set_allocated_manual_delta_offset(allocFloatPair(0, 0));
 
         std::cout << "ParamSetManager: create default ParamSet " << defaultParamSetName << ".json" << std::endl;

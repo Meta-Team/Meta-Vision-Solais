@@ -177,6 +177,7 @@ void Executor::runStreamingDetection(InputSource *source) {
 
         // Wait for new frame, fetch and store time first and then compare
         while (!threadShouldExit && lastFrameTime == (frameTime = source->getFrameCaptureTime())) {
+            source->fetchNextFrame();
             std::this_thread::yield();
         }
 
@@ -190,10 +191,10 @@ void Executor::runStreamingDetection(InputSource *source) {
 
 
         // Run armor detection algorithm
-        std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
+        std::vector <ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
 
         // Solve armor positions
-        std::vector<AimingSolver::ArmorInfo> armors;
+        std::vector <AimingSolver::ArmorInfo> armors;
         for (const auto &detectedArmor : detectedArmors) {
             cv::Point3f offset;
             if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset)) {
@@ -214,9 +215,10 @@ void Executor::runStreamingDetection(InputSource *source) {
         if (serial_ && aimingSolver_->getControlCommand(command)) {
             // Send control command
             serial_->sendControlCommand(
-                    {Serial::RELATIVE_ANGLE,
-                     -command.yawDelta,
-                     command.pitchDelta});  // notice the minus sign
+                    command.detected,
+                    -command.yawDelta,  // notice the minus sign
+                    command.pitchDelta,
+                    command.distance);
         }
 
         // Assign (no copying) results all at once, if the result is not being processed
@@ -310,7 +312,7 @@ bool Executor::hasOutputs() {
 }
 
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
-                            cv::Mat &contourImage, std::vector<AimingSolver::ArmorInfo> &armors) {
+                            cv::Mat &contourImage, std::vector <AimingSolver::ArmorInfo> &armors) {
     if (curAction != NONE) {
         outputMutex.lock();
         {

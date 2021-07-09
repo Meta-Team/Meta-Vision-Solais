@@ -13,10 +13,14 @@ namespace meta {
 
 inline float pow2(float v) { return v * v; }
 
+using std::sqrt;
+using std::atan;
+using cv::norm;
+
 cv::Point3f AimingSolver::xyzToYPD(const cv::Point3f &xyz) {
-    return {(float) (std::atan(xyz.x / xyz.z) * 180.0f / PI),  // +: horizontal right
-            (float) (std::atan(xyz.y / xyz.z) * 180.0f / PI),  // +: vertical down
-            (float) cv::norm(xyz)};  // +: away
+    return {(float) (atan(xyz.x / xyz.z) * 180.0f / PI),  // +: horizontal right
+            (float) (atan(xyz.y / sqrt(pow2(xyz.x) + pow2(xyz.z))) * 180.0f / PI),  // +: vertical down
+            (float) norm(xyz)};  // +: away
 }
 
 void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageCaptureTime) {
@@ -58,15 +62,38 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
             }
         }
 
+        selectedArmor->ypd = xyzToYPD(selectedArmor->offset);
         selectedArmor->flags |= ArmorInfo::SELECTED_TARGET;
         lastSelectedArmor = *selectedArmor;
 
-        selectedArmor->ypd = xyzToYPD(selectedArmor->offset);
+        const auto &xyz = selectedArmor->offset;
+        const auto &ypd = selectedArmor->ypd;
+
+        if (!tracking) {
+            tracking = true;
+            lastDist = ypd.z;
+        }
+
+        float targetYaw = ypd.x;
+        float targetPitch = ypd.y;
+
+        lastDist = ypd.z * 0.1 + lastDist * 0.9;
+
+        if (params.compensate_bullet_speed().enabled()) {
+            // Compensate gravity
+            float v0 = params.compensate_bullet_speed().val();  // [mm/s]
+            float a = pow2(v0) / g;
+            targetPitch = -atan((a - sqrt(pow2(a - (-xyz.y)) - pow2(lastDist))) / sqrt(pow2(xyz.z) + pow2(xyz.x))) * 180.0f / PI;
+        }
+
+        // Manual offset
+        targetYaw += params.manual_delta_offset().x();
+        targetPitch += params.manual_delta_offset().y();
 
         latestCommand.detected = true;
-        latestCommand.yawDelta = selectedArmor->ypd.x + params.manual_delta_offset().x();
-        latestCommand.pitchDelta = selectedArmor->ypd.y + params.manual_delta_offset().y();
-        latestCommand.distance = selectedArmor->ypd.z;
+        latestCommand.yawDelta = targetYaw;
+        latestCommand.pitchDelta = targetPitch;
+        latestCommand.distance = lastDist;
         shouldSendCommand = true;
     }
 

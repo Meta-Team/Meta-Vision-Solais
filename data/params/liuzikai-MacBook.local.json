@@ -101,8 +101,10 @@
   "y": 60
  },
  "tracking_life_time": 5,
- "top_max_pitch_offset": 10,
- "top_yaw_threshold": 15,
+ "compensate_bullet_speed": {
+  "enabled": true,
+  "val": 14000
+ },
  "manual_delta_offset": {
   "x": 0,
   "y": -5

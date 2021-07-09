@@ -10,7 +10,7 @@
 
 namespace meta {
 
-using TimePoint = int;  // 0.1ms
+using TimePoint = unsigned;  // 0.1ms
 
 inline std::string currentTimeString() {
     // Reference: https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format

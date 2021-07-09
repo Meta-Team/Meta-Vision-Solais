@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
         socket(ioContext, [this](auto c) { handleClientDisconnection(c); }) {
 
     // Setup UI
+    setWindowTitle("Meta-Vision-Solais Terminal");
     ui->setupUi(this);
     phases = new PhaseController(ui->centralContainer, ui->centralContainerVertialLayout, this);
 

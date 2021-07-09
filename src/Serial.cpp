@@ -32,28 +32,26 @@ Serial::Serial(boost::asio::io_context &ioContext)
                             [this](auto &error, auto numBytes) { handleRecv(error, numBytes); });
 }
 
-bool Serial::sendControlCommand(const VisionControlCommand &command) {
+bool Serial::sendControlCommand(bool detected, float yawDelta, float pitchDelta, float distance) {
 
     auto pkg = std::make_shared<Package>();
 
-    pkg->header.sof = SOF;
-    pkg->header.dataLength = sizeof(pkg->controlCommand);
-    pkg->header.seq = sendSeq++;
-    rm::appendCRC8CheckSum((uint8_t *) &pkg->header, sizeof(pkg->header));
-
+    pkg->sof = SOF;
     pkg->cmdID = VISION_CONTROL_CMD_ID;
 
-    // TODO
-    pkg->controlCommand = command;
-    rm::appendCRC16CheckSum((uint8_t *) pkg.get(),
-                            sizeof(pkg->header) + sizeof(pkg->cmdID) +
-                            sizeof(pkg->controlCommand) + sizeof(pkg->tail));
+    pkg->command.flag = 0;
+    if (detected) pkg->command.flag |= VisionCommand::DETECTED;
+
+    pkg->command.yawDelta = (int) (yawDelta * 100);
+    pkg->command.pitchDelta = (int) (pitchDelta * 100);
+    pkg->command.distance = (int) distance;
+    rm::appendCRC8CheckSum((uint8_t *) (pkg.get()), sizeof(uint8_t) * 2 + sizeof(VisionCommand) + sizeof(uint8_t));
 
     //::tcflush(serial.lowest_layer().native_handle(), TCIFLUSH);  // clear input buffer
-    boost::asio::async_write(serial, boost::asio::buffer(
-            pkg.get(),
-            sizeof(pkg->header) + sizeof(pkg->cmdID) + sizeof(pkg->controlCommand) + sizeof(pkg->tail)),
-                             [this, pkg](auto &error, auto numBytes) { handleSend(pkg, error, numBytes); }
+    boost::asio::async_write(
+            serial,
+            boost::asio::buffer(pkg.get(), sizeof(uint8_t) * 2 + sizeof(VisionCommand) + sizeof(uint8_t)),
+            [this, pkg](auto &error, auto numBytes) { handleSend(pkg, error, numBytes); }
     );
 
     return true;
@@ -74,61 +72,55 @@ void Serial::handleRecv(const boost::system::error_code &error, size_t numBytes)
         // Continue to process data and start next async_recv
     }
 
+    size_t nextOffset, nextSize;
+
     switch (recvState) {
 
         case RECV_PREAMBLE:
-            if (recvPackage.header.sof == SOF) {
-                recvState = RECV_REMAINING_HEADER;
-            } // else, keep waiting for SOF
+            if (recvPackage.sof == SOF) {
+                recvState = RECV_CMD_ID;
+            } // otherwise, keep waiting for SOF
             break;
 
-        case RECV_REMAINING_HEADER:
-            if (rm::verifyCRC8CheckSum((uint8_t *) &recvPackage.header, sizeof(Header))) {
-                recvState = RECV_CMD_ID_DATA_TAIL; // go to next status
+        case RECV_CMD_ID:
+            if (recvPackage.cmdID < CMD_ID_COUNT) {
+                recvState = RECV_DATA_TAIL;
             } else {
                 recvState = RECV_PREAMBLE;
             }
             break;
 
-        case RECV_CMD_ID_DATA_TAIL:
-            if (rm::verifyCRC16CheckSum(
-                    (uint8_t *) &recvPackage,
-                    sizeof(Header) + sizeof(uint16_t) + recvPackage.header.dataLength + sizeof(uint16_t))) {
+        case RECV_DATA_TAIL:
+            if (rm::verifyCRC8CheckSum((uint8_t *) &recvPackage,
+                                       sizeof(uint8_t) * 2 + DATA_SIZE[recvPackage.cmdID] + sizeof(uint8_t))) {
 
                 switch (recvPackage.cmdID) {
-                    case GIMBAL_INFO_CMD_ID:
-                        if (gimbalInfoCallback) {
-                            const auto &info = recvPackage.gimbalInfo;
-                            // Notice the minus signs
-                            gimbalInfoCallback(-info.yawAngle, info.pitchAngle, -info.yawVelocity, info.pitchVelocity);
-                        }
-                        break;
+
                 }
             }
-
             recvState = RECV_PREAMBLE;
             break;
     }
 
-    size_t offset, size;
+
     switch (recvState) {
         case RECV_PREAMBLE:
-            offset = 0;
-            size = sizeof(uint8_t);
+            nextOffset = 0;
+            nextSize = sizeof(uint8_t);
             break;
-        case RECV_REMAINING_HEADER:
-            offset = sizeof(uint8_t);
-            size = sizeof(Header) - sizeof(uint8_t);
+        case RECV_CMD_ID:
+            nextOffset = sizeof(uint8_t);
+            nextSize = sizeof(uint8_t);
             break;
-        case RECV_CMD_ID_DATA_TAIL:
-            offset = sizeof(Header);
-            size = sizeof(uint16_t) + recvPackage.header.dataLength + sizeof(uint16_t);
+        case RECV_DATA_TAIL:
+            nextOffset = sizeof(uint8_t) * 2;
+            nextSize = DATA_SIZE[recvPackage.cmdID] + sizeof(uint8_t);
             break;
     }
 
     boost::asio::async_read(serial,
-                            boost::asio::buffer(((uint8_t *) &recvPackage) + offset, size),
-                            boost::asio::transfer_exactly(size),
+                            boost::asio::buffer(((uint8_t *) &recvPackage) + nextOffset, nextSize),
+                            boost::asio::transfer_exactly(nextSize),
                             [this](auto &error, auto numBytes) { handleRecv(error, numBytes); });
 }
 

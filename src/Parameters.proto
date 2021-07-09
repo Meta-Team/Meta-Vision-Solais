@@ -139,8 +139,7 @@ message ParamSet {
 
   // GROUP: Aiming
   required int32 tracking_life_time = 34;                  // Consider lost after frames
-  required float top_max_pitch_offset = 35;                // TopKiller max armor pitch offset [deg]
-  required float top_yaw_threshold = 36;                   // TopKiller recognition yaw threshold [deg]
+  required ToggledInt compensate_bullet_speed = 35;        // Compensate gravity with bullet speed [mm/s]
   required FloatPair manual_delta_offset = 37;             // Target manual offset
 }
 
