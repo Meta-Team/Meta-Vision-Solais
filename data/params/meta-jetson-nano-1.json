@@ -100,13 +100,18 @@
   "x": 225,
   "y": 60
  },
- "tracking_life_time": 40,
- "compensate_bullet_speed": {
-  "enabled": true,
-  "val": 13500
+ "pulse_min_x_offset": 200,
+ "pulse_max_y_offset": 700,
+ "pulse_min_interval": 200,
+ "tk_threshold": {
+  "x": 3,
+  "y": 1500
  },
+ "tk_compute_period_using_pulses": 2,
+ "tk_target_dist_offset": -100,
+ "tracking_life_time": 150,
  "manual_delta_offset": {
-  "x": 0.5,
+  "x": 0,
   "y": 0
  }
 }

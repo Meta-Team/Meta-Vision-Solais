@@ -32,7 +32,8 @@ Serial::Serial(boost::asio::io_context &ioContext)
                             [this](auto &error, auto numBytes) { handleRecv(error, numBytes); });
 }
 
-bool Serial::sendControlCommand(bool detected, float yawDelta, float pitchDelta, float distance) {
+bool Serial::sendControlCommand(bool detected, bool topKillerTriggered, float yawDelta, float pitchDelta,
+                                float distance, int remainingTimeToTarget, int period) {
 
     auto pkg = std::make_shared<Package>();
 
@@ -41,10 +42,13 @@ bool Serial::sendControlCommand(bool detected, float yawDelta, float pitchDelta,
 
     pkg->command.flag = 0;
     if (detected) pkg->command.flag |= VisionCommand::DETECTED;
+    if (topKillerTriggered) pkg->command.flag |= VisionCommand::TOP_KILLER_TRIGGERED;
 
-    pkg->command.yawDelta = (int) (yawDelta * 100);
+    pkg->command.yawDelta = (int) (-yawDelta * 100);  // notice the minus sign
     pkg->command.pitchDelta = (int) (pitchDelta * 100);
     pkg->command.distance = (int) distance;
+    pkg->command.remainingTimeToTarget = (int16_t) remainingTimeToTarget;
+    pkg->command.period = (int16_t) period;
     rm::appendCRC8CheckSum((uint8_t *) (pkg.get()), sizeof(uint8_t) * 2 + sizeof(VisionCommand) + sizeof(uint8_t));
 
     //::tcflush(serial.lowest_layer().native_handle(), TCIFLUSH);  // clear input buffer

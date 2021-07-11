@@ -10,6 +10,7 @@
 #include <boost/asio.hpp>
 #include <utility>
 #include "FrameCounterBase.h"
+#include "Utilities.h"
 
 namespace meta {
 
@@ -18,7 +19,8 @@ public:
 
     explicit Serial(boost::asio::io_context &ioContext);
 
-    bool sendControlCommand(bool detected, float yawDelta, float pitchDelta, float distance);
+    bool sendControlCommand(bool detected, bool topKillerTriggered, float yawDelta, float pitchDelta, float distance,
+                            int remainingTimeToTarget, int period);
 
 private:
 
@@ -28,13 +30,16 @@ private:
 
         enum VisionFlag : uint8_t {
             NONE = 0,
-            DETECTED = 1
+            DETECTED = 1,
+            TOP_KILLER_TRIGGERED = 2,
         };
 
         uint8_t flag;
-        int16_t yawDelta;    // yaw relative angle [deg] * 100
-        int16_t pitchDelta;  // pitch relative angle [deg] * 100
-        int16_t distance;    // [mm]
+        int16_t yawDelta;               // yaw relative angle [deg] * 100
+        int16_t pitchDelta;             // pitch relative angle [deg] * 100
+        int16_t distance;               // [mm]
+        int16_t remainingTimeToTarget;  // [ms]
+        int16_t period;                 // [ms]
     };
 
     struct __attribute__((packed, aligned(1))) Package {

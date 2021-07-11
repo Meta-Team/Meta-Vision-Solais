@@ -68,8 +68,11 @@ void sendResult(std::string_view mask) {
         cv::Mat originalImage, brightnessImage, colorImage, lightsImage;
         std::vector<cv::RotatedRect> lightRects;
         std::vector<AimingSolver::ArmorInfo> armors;
+        bool tkTriggered;
+        std::deque<AimingSolver::PulseInfo> tkPulses;
 
-        executor->fetchOutputs(originalImage, brightnessImage, colorImage, lightsImage, lightRects, armors);
+        executor->fetchOutputs(originalImage, brightnessImage, colorImage, lightsImage, lightRects, armors,
+                               tkTriggered, tkPulses);
         // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
 
         // Detector images
@@ -112,11 +115,22 @@ void sendResult(std::string_view mask) {
             }
         }
 
+        // TopKiller
+        {
+            resultPackage.set_tk_triggered(tkTriggered);
+            for (const auto &pulse : tkPulses) {
+                auto p = resultPackage.add_tk_pulses();
+                p->set_allocated_mid_ypd(allocResultPoint3f(pulse.ypdMid.x, pulse.ypdMid.y, pulse.ypdMid.z));
+                p->set_time(pulse.time / 10);
+            }
+        }
+
         // Aiming
         {
             AimingSolver::ControlCommand command;
             if (executor->aimingSolver()->getControlCommand(command)) {
                 resultPackage.set_allocated_aiming_target(allocResultPoint2f(command.yawDelta, command.pitchDelta));
+                resultPackage.set_remaining_time_to_target(command.remainingTimeToTarget);
             }
         }
         socketServer.sendBytes("res", resultPackage);

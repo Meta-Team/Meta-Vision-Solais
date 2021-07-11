@@ -155,7 +155,7 @@ void MVCamera::newFrameCallback(CameraHandle hCamera, BYTE *pFrameBuffer, tSdkFr
             p->videoWriterMutex.unlock();
         }
 
-        p->bufferCaptureTime[workingBuffer] = frameInfo.uiTimeStamp * 100;
+        p->bufferCaptureTime[workingBuffer] = frameInfo.uiTimeStamp;
 
         // Switch frame
         p->lastBuffer = workingBuffer;

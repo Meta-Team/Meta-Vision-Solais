@@ -216,9 +216,12 @@ void Executor::runStreamingDetection(InputSource *source) {
             // Send control command
             serial_->sendControlCommand(
                     command.detected,
-                    -command.yawDelta,  // notice the minus sign
+                    command.topKillerTriggered,
+                    command.yawDelta,
                     command.pitchDelta,
-                    command.distance);
+                    command.dist,
+                    command.remainingTimeToTarget,
+                    command.period);
         }
 
         // Assign (no copying for cv::Mat) results all at once, if the result is not being processed
@@ -229,6 +232,8 @@ void Executor::runStreamingDetection(InputSource *source) {
             lightsImageOutput = detector_->imgLights;
             lightRectsOutput = detector_->lightRects;
             armorsOutput = armors;
+            tkTriggeredOutput = aimingSolver_->topKiller.triggered;
+            tkPulsesOutput = aimingSolver_->topKiller.pulses;
 
             outputMutex.unlock();
         }
@@ -313,7 +318,8 @@ bool Executor::hasOutputs() {
 
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
                             cv::Mat &lightsImage, std::vector<cv::RotatedRect> &lightRects,
-                            std::vector <AimingSolver::ArmorInfo> &armors) {
+                            std::vector <AimingSolver::ArmorInfo> &armors,
+                            bool &tkTriggered, std::deque<AimingSolver::PulseInfo> &tkPulses) {
     if (curAction != NONE) {
         outputMutex.lock();
         {
@@ -323,6 +329,8 @@ void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv
             lightsImage = lightsImageOutput;
             lightRects = lightRectsOutput;
             armors = armorsOutput;
+            tkTriggered = tkTriggeredOutput;
+            tkPulses = tkPulsesOutput;
         }
         outputMutex.unlock();
 

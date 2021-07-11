@@ -349,6 +349,20 @@ void MainWindow::applyResultMessage() {
         }
     }
 
+    // GROUP: TopKiller
+    {
+        QString s;
+        QTextStream ss(&s);
+        for (const auto &pulse : resultMessage.tk_pulses()) {
+            ss << "[" << pulse.time() << "] ("
+               << QString::number(pulse.mid_ypd().x(), 'f', 1) << ", "
+               << QString::number(pulse.mid_ypd().y(), 'f', 1) << ", "
+               << QString::number(pulse.mid_ypd().z(), 'f', 1) << ")\n";
+        }
+        ss << (resultMessage.tk_triggered() ? "Triggered!" : "Not triggered") << "\n";
+        phases->topKillerInfoLabel->setText(s);
+    }
+
     // GROUP: Armors
     if (resultMessage.armors_size() != 0) {
 
@@ -397,7 +411,8 @@ void MainWindow::applyResultMessage() {
         QTextStream ss(&s);
         if (resultMessage.has_aiming_target()) {
             ss << QString::number(resultMessage.aiming_target().x(), 'f', 2) << ", "
-               << QString::number(resultMessage.aiming_target().y(), 'f', 2);
+               << QString::number(resultMessage.aiming_target().y(), 'f', 2) << " | "
+               << resultMessage.remaining_time_to_target();
         }
         phases->aimingInfoLabel->setText(s);
     }

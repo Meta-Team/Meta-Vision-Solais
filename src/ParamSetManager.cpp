@@ -75,8 +75,12 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_small_armor_size(allocIntPair(120, 60));
         params.set_allocated_large_armor_size(allocIntPair(240, 60));
 
-        params.set_tracking_life_time(5);
-        params.set_allocated_compensate_bullet_speed(allocToggledInt(false, 14000));
+        params.set_pulse_min_x_offset(500);
+        params.set_pulse_max_y_offset(300);
+        params.set_allocated_tk_threshold(allocIntPair(3, 1500));
+        params.set_tk_compute_period_using_pulses(2);
+        params.set_tk_target_dist_offset(-50);
+        params.set_tracking_life_time(40);
         params.set_allocated_manual_delta_offset(allocFloatPair(0, 0));
 
         std::cout << "ParamSetManager: create default ParamSet " << defaultParamSetName << ".json" << std::endl;

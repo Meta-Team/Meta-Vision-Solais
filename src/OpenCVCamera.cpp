@@ -126,7 +126,7 @@ void OpenCVCamera::readFrameFromCamera(const package::ParamSet &params) {
             videoWriterMutex.unlock();
         }
 
-        bufferCaptureTime[workingBuffer] = ((int) cap.get(cv::CAP_PROP_POS_MSEC)) * 10;
+        bufferCaptureTime[workingBuffer] = (TimePoint) (cap.get(cv::CAP_PROP_POS_MSEC) * 10);
 
         lastBuffer = workingBuffer;
 

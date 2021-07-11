@@ -50,7 +50,7 @@ message Image {
  The following message definition is processed by GeneratePhaseUI.py to generate PhaseController for SolaisTerminal.
  Each field becomes one UI components, grouped into QGroupBoxes.
 
- Group label: "// GROUP: <name>". Group name should be capitalized and must not contain spaces.
+ Group label: "// GROUP: <name>". Group name should be capitalized and must not contain spaces or special characters.
  Supported types:
    int32/int64          ->  QDoubleSpinBox with 0 decimal
    float/double         ->  QDoubleSpinBox with 2 decimal
@@ -71,8 +71,8 @@ message ParamSet {
   // GROUP: General
   required int32 image_width = 1;                          // Input width
   required int32 image_height = 2;                         // Image height
-  required int32 roi_width = 38;                           // ROI width ratio
-  required int32 roi_height = 39;                          // ROI height ratio
+  required int32 roi_width = 38;                           // ROI width
+  required int32 roi_height = 39;                          // ROI height
 
   enum EnemyColor {
       RED = 0;
@@ -95,19 +95,18 @@ message ParamSet {
   required ToggledFloat gamma = 9;                         // Gamma
   required ToggledInt manual_exposure = 10;                // Manual exposure
 
-  // GROUP: Brightness
+  // GROUP: Brightness_Color
   required float brightness_threshold = 11;                // Brightness threshold
 
-  // GROUP: Color
   enum ColorThresholdMode {
       HSV = 0;
       RB_CHANNELS = 1;
   };
-  required ColorThresholdMode color_threshold_mode = 12;   // Mode
+  required ColorThresholdMode color_threshold_mode = 12;   // Color threshold mode
 
   required FloatRange hsv_red_hue = 13;                    // Red hue range (for HSV)
   required FloatRange hsv_blue_hue = 14;                   // Blue hue range (for HSV)
-  required float rb_channel_threshold = 15;                // RB diff threshold (for RB_CHANNELS)
+  required float rb_channel_threshold = 15;                // RB threshold (for RB_CHANNELS)
 
   // GROUP: Contours
   required ToggledInt contour_erode = 16;                  // Erode (SLOW)
@@ -137,9 +136,16 @@ message ParamSet {
   required IntPair small_armor_size = 32;                  // Small armor region size [mm]
   required IntPair large_armor_size = 33;                  // Large armor region size [mm]
 
+  // GROUP: TopKiller
+  required float pulse_min_x_offset = 34;                  // Pulse min X offset [mm]
+  required float pulse_max_y_offset = 35;                  // Pulse max Y offset [mm]
+  required int32 pulse_min_interval = 43;                  // Min interval between pulses [ms]
+  required IntPair tk_threshold = 36;                      // Trigger TopKiller for X pulses in Y ms
+  required int32 tk_compute_period_using_pulses = 41;      // TopKiller predicts using last X pulses
+  required float tk_target_dist_offset = 42;               // TopKiller target distance offset [mm]
+
   // GROUP: Aiming
-  required int32 tracking_life_time = 34;                  // Consider lost after frames
-  required ToggledInt compensate_bullet_speed = 35;        // Compensate gravity with bullet speed [mm/s]
+  required int32 tracking_life_time = 40;                  // Consider discard tracking after frames
   required FloatPair manual_delta_offset = 37;             // Target manual offset
 }
 
@@ -161,6 +167,11 @@ message ResultRotatedRect {
   required float angle = 3;
 }
 
+message TopKillerPulse {
+  required ResultPoint3f mid_ypd = 1;
+  required int32 time = 2;
+}
+
 message ArmorInfo {
   repeated ResultPoint2f image_points = 1;
   required ResultPoint2f image_center = 2;
@@ -176,7 +187,7 @@ message ArmorInfo {
  Special comments in the following message definition are processed by GeneratePhaseUI.py to generate PhaseController
  for SolaisTerminal. Fields are not processed.
 
- Group label: "// GROUP: <name>". Group name should be capitalized and must not contain spaces.
+ Group label: "// GROUP: <name>". Group name should be capitalized and must not contain spaces or special characters.
  Supported option (at most one for each):
   "// INFO: <name>" -> QLabel called "<name>Label"
   "// IMAGE: <name>" -> QLabel called "<name>Label" + QImage* called "<name>"
@@ -191,12 +202,10 @@ message Result {
   optional string camera_info = 1;  // Camera info
   optional Image camera_image = 2;  // Camera image
 
-  // GROUP: Brightness
+  // GROUP: Brightness_Color
   // IMAGE: brightnessImage
-  optional Image brightness_image = 3;  // Brightness threshold image
-
-  // GROUP: Color
   // IMAGE: colorImage
+  optional Image brightness_image = 3;  // Brightness threshold image
   optional Image color_image = 4;  // Color threshold image
 
   // GROUP: Contours
@@ -210,8 +219,14 @@ message Result {
   // IMAGE: armorImage
   repeated ArmorInfo armors = 7;
 
+  // GROUP: TopKiller
+  // INFO: topKillerInfo
+  // IMAGE: topKillerImage
+  optional bool tk_triggered = 8;
+  repeated TopKillerPulse tk_pulses = 9;
+
   // GROUP: Aiming
   // INFO: aimingInfo
-  // IMAGE: aimingImage
-  optional ResultPoint2f aiming_target = 9;
+  optional ResultPoint2f aiming_target = 10;
+  optional int32 remaining_time_to_target = 11;
 }

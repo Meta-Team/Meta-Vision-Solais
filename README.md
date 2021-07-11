@@ -102,7 +102,7 @@ TODO...
 ## Terminal -> Core
 | Name   | Type   | Argument         |Description| Note |
 |--------|--------|------------------|----|----|
-| fetch | NameOnly |  | Fetch result | |
+| fetch | String | Four characters of 'T' or 'F' for images of camera, brightness, color, and contours  | Fetch result | |
 | stop | NameOnly | | Stop execution | |
 | fps | NameOnly | | Fetch frame processed in each components | See reply fps package below |
 | switchParamSet | String | ParamSet name | | |
