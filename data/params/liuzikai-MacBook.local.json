@@ -100,6 +100,10 @@
     "x": 240,
     "y": 60
   },
+  "manual_pnp_rect_max_height": {
+    "enabled": true,
+    "val": 50
+  },
   "pulse_min_x_offset": 500,
   "pulse_max_y_offset": 300,
   "tk_threshold": {

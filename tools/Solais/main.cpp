@@ -121,7 +121,7 @@ void sendResult(std::string_view mask) {
             for (const auto &pulse : tkPulses) {
                 auto p = resultPackage.add_tk_pulses();
                 p->set_allocated_mid_ypd(allocResultPoint3f(pulse.ypdMid.x, pulse.ypdMid.y, pulse.ypdMid.z));
-                p->set_time(pulse.time / 10);
+                p->set_time(pulse.avgTime / 10);
             }
         }
 

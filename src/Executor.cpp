@@ -191,13 +191,19 @@ void Executor::runStreamingDetection(InputSource *source) {
 
 
         // Run armor detection algorithm
-        std::vector <ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
+        std::vector<ArmorDetector::DetectedArmor> detectedArmors = detector_->detect(img);
 
         // Solve armor positions
-        std::vector <AimingSolver::ArmorInfo> armors;
+        std::vector<AimingSolver::ArmorInfo> armors;
         for (const auto &detectedArmor : detectedArmors) {
             cv::Point3f offset;
-            if (positionCalculator_->solve(detectedArmor.points, detectedArmor.largeArmor, offset)) {
+            float longLightLength = std::max(cv::norm(detectedArmor.points[1] - detectedArmor.points[0]),
+                                             cv::norm(detectedArmor.points[2] - detectedArmor.points[3]));
+            if (positionCalculator_->solve(detectedArmor.points,
+                                           detectedArmor.largeArmor,
+                                           params.manual_pnp_rect_max_height().enabled() &&
+                                           (longLightLength < params.manual_pnp_rect_max_height().val()),
+                                           offset)) {
                 armors.emplace_back(AimingSolver::ArmorInfo{
                         detectedArmor.points,
                         detectedArmor.center,
@@ -318,7 +324,7 @@ bool Executor::hasOutputs() {
 
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
                             cv::Mat &lightsImage, std::vector<cv::RotatedRect> &lightRects,
-                            std::vector <AimingSolver::ArmorInfo> &armors,
+                            std::vector<AimingSolver::ArmorInfo> &armors,
                             bool &tkTriggered, std::deque<AimingSolver::PulseInfo> &tkPulses) {
     if (curAction != NONE) {
         outputMutex.lock();

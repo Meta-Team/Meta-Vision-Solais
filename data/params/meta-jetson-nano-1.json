@@ -17,7 +17,7 @@
   "enabled": true,
   "val": 1000
  },
- "brightness_threshold": 75,
+ "brightness_threshold": 60,
  "color_threshold_mode": "RB_CHANNELS",
  "hsv_red_hue": {
   "min": 150,
@@ -33,7 +33,7 @@
   "val": 3
  },
  "contour_dilate": {
-  "enabled": true,
+  "enabled": false,
   "val": 3
  },
  "contour_open": {
@@ -44,7 +44,7 @@
   "enabled": false,
   "val": 3
  },
- "contour_fit_function": "ELLIPSE",
+ "contour_fit_function": "MIN_AREA_RECT",
  "contour_pixel_count": {
   "enabled": false,
   "val": 15
@@ -93,25 +93,29 @@
   "max": 5
  },
  "small_armor_size": {
-  "x": 130,
-  "y": 60
+  "x": 133,
+  "y": 53
  },
  "large_armor_size": {
   "x": 225,
   "y": 60
  },
+ "manual_pnp_rect_max_height": {
+  "enabled": true,
+  "val": 50
+ },
  "pulse_min_x_offset": 200,
- "pulse_max_y_offset": 700,
+ "pulse_max_y_offset": 1000,
  "pulse_min_interval": 200,
  "tk_threshold": {
-  "x": 3,
-  "y": 1500
+  "x": 4,
+  "y": 2000
  },
- "tk_compute_period_using_pulses": 2,
+ "tk_compute_period_using_pulses": 3,
  "tk_target_dist_offset": -100,
  "tracking_life_time": 150,
  "manual_delta_offset": {
-  "x": 0,
+  "x": 0.5,
   "y": 0
  }
 }

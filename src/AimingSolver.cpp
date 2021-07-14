@@ -90,7 +90,8 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
              * rotated armors at the two sides.
              */
             latestCommand.dist = ypd.z + params.tk_target_dist_offset();
-            latestCommand.remainingTimeToTarget = ((int) topKiller.getTimePointToTarget() - (int) imageCaptureTime) / 10;
+            latestCommand.remainingTimeToTarget =
+                    ((int) topKiller.getTimePointToTarget() - (int) imageCaptureTime) / 10;
             latestCommand.period = (int) topKiller.getPeriod() / 10;
         }
 
@@ -147,7 +148,7 @@ void AimingSolver::TopKiller::update(const AimingSolver::ArmorInfo *armor, TimeP
     bool historyChanged = false;
 
     // Discard out-of-date pulse history
-    while (!pulses.empty() && time - pulses.front().time > params.tk_threshold().y() * 10) {
+    while (!pulses.empty() && time - pulses.front().endTime > params.tk_threshold().y() * 10) {
         pulses.pop_front();
         historyChanged = true;
     }
@@ -158,18 +159,37 @@ void AimingSolver::TopKiller::update(const AimingSolver::ArmorInfo *armor, TimeP
         if (std::abs(armor->offset.y - lastArmor->offset.y) <= params.pulse_max_y_offset() &&
             std::abs(armor->offset.x - lastArmor->offset.x) >= params.pulse_min_x_offset()) {
 
-            if (!pulses.empty() && time - pulses.back().time <= params.pulse_min_interval() * 10) {
+            // Multiple pulses are triggered at the edge of switching armors
+            if (!pulses.empty() && time - pulses.back().endTime <= params.pulse_min_interval() * 10) {
                 PulseInfo lastPulse = pulses.back();
                 pulses.pop_back();
+
+                /*
+                 * Completely replace the pulse position with the latest.
+                 * This update will trigger the sending thread, which is basically like high-frequency control signal.
+                 * Gimbal may rotate during this series of updates. Including the last pulses introduces inaccuracy.
+                 * Let Control filter the angles and the distance.
+                 */
+
                 pulses.emplace_back(PulseInfo{
-                        lastPulse.ypdMid * 0.8f + ((lastArmor->ypd + armor->ypd) / 2) * 0.2f,
-                        time
+                        {(lastArmor->ypd.x + armor->ypd.x) / 2,
+                         (lastArmor->ypd.y + armor->ypd.y) / 2,
+                         (lastPulse.ypdMid.z * lastPulse.frameCount + (lastArmor->ypd.z + armor->ypd.z)) / (lastPulse.frameCount + 2)},
+                        lastPulse.startTime,
+                        (lastPulse.avgTime * lastPulse.frameCount + time) / (lastPulse.frameCount + 1),
+                        time,
+                        lastPulse.frameCount + 1
                 });
             } else {
                 pulses.emplace_back(PulseInfo{
-                        (lastArmor->ypd + armor->ypd) / 2, time
+                        (lastArmor->ypd + armor->ypd) / 2,
+                        time,
+                        time,
+                        time,
+                        1
                 });
             }
+
 
             historyChanged = true;
         }
@@ -184,6 +204,7 @@ void AimingSolver::TopKiller::update(const AimingSolver::ArmorInfo *armor, TimeP
             targetUpdated = true;
 
             const auto &lastPulse = pulses[pulses.size() - 1];
+            const auto &lastButOnePulse = pulses[pulses.size() - 2];
 
             // Compute target point and distance
             {
@@ -191,11 +212,11 @@ void AimingSolver::TopKiller::update(const AimingSolver::ArmorInfo *armor, TimeP
                 targetYPD = lastPulse.ypdMid;
             }
 
-            // Compute average period
+            // Compute average period, use last but one pulse since current pulse may still in-progress
             {
-                auto count = std::min(pulses.size() - 1, (size_t) params.tk_compute_period_using_pulses());
-                period = (lastPulse.time - pulses[pulses.size() - 1 - count].time) / count;
-                timeToTarget = lastPulse.time + period / 2U;
+                auto count = std::min(pulses.size() - 2, (size_t) params.tk_compute_period_using_pulses());
+                period = (lastButOnePulse.avgTime - pulses[pulses.size() - 2 - count].avgTime) / count;
+                timeToTarget = lastButOnePulse.avgTime + period + period / 2U;
             }
 
         } else {

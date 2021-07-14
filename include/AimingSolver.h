@@ -67,7 +67,10 @@ public:
 
     struct PulseInfo {
         cv::Point3f ypdMid;
-        TimePoint time;
+        TimePoint startTime;
+        TimePoint avgTime;
+        TimePoint endTime;
+        int frameCount = 0;
     };
 
 private:

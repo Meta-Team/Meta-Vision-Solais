@@ -16,7 +16,7 @@ class PositionCalculator {
 public:
 
     /**
-     *
+     * Set parameters.
      * @param smallArmorSize  [mm]
      * @param largeArmorSize  [mm]
      * @param cameraMatrix
@@ -30,10 +30,12 @@ public:
      * Solve armor position in physical world.
      * @param imagePoints
      * @param largeArmor
-     * @param offset       Displacement: x, y, z(distance) in mm
+     * @param manualImagePoints
+     * @param offset       [Out] Displacement: x, y, z(distance) in mm
      * @return
      */
-    bool solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor, cv::Point3f &offset) const;
+    bool solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor, bool manualImagePoints,
+               cv::Point3f &offset) const;
 
 private:
 

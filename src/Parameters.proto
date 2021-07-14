@@ -135,6 +135,7 @@ message ParamSet {
   required FloatRange large_armor_aspect_ratio = 31;       // Large armor width/height range
   required IntPair small_armor_size = 32;                  // Small armor region size [mm]
   required IntPair large_armor_size = 33;                  // Large armor region size [mm]
+  required ToggledInt manual_pnp_rect_max_height = 44;     // Use manual PnP rect when height <
 
   // GROUP: TopKiller
   required float pulse_min_x_offset = 34;                  // Pulse min X offset [mm]

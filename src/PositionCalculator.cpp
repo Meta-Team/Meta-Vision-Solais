@@ -25,7 +25,7 @@ void PositionCalculator::setParameters(cv::Point2f smallArmorSize_, cv::Point2f 
                               {-largeArmorSize.x / 2, -largeArmorSize.y / 2, 0},
                               {largeArmorSize.x / 2,  -largeArmorSize.y / 2, 0},
                               {largeArmorSize.x / 2,  largeArmorSize.y / 2,  0}};
-    
+
     /*
      *              1 ----------- 2
      *            |*|             |*|
@@ -36,12 +36,29 @@ void PositionCalculator::setParameters(cv::Point2f smallArmorSize_, cv::Point2f 
 
 }
 
-bool PositionCalculator::solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor, cv::Point3f &offset) const {
+bool PositionCalculator::solve(const std::array<cv::Point2f, 4> &imagePoints, bool largeArmor, bool manualImagePoints,
+                               cv::Point3f &offset) const {
+
     cv::Mat rVec = cv::Mat::zeros(3, 1, CV_64FC1);
     cv::Mat tVec = cv::Mat::zeros(3, 1, CV_64FC1);
-    cv::solvePnP((largeArmor ? largeArmorObjectPoints : smallArmorObjectPoints), imagePoints,
+    std::array<cv::Point2f, 4> points;
+
+    if (!manualImagePoints) {
+        points = imagePoints;
+    } else {
+        cv::Point2f center = (imagePoints[0] + imagePoints[1] + imagePoints[2] + imagePoints[3]) / 4;
+        float height = std::max(cv::norm(imagePoints[1] - imagePoints[0]), cv::norm(imagePoints[2] - imagePoints[3]));
+        float width = height / (largeArmor ? largeArmorSize.y : smallArmorSize.y) *
+                      (largeArmor ? largeArmorSize.x : smallArmorSize.x);
+        points = {cv::Point2f{center.x - width / 2, center.y + height / 2},
+                  cv::Point2f{center.x - width / 2, center.y - height / 2},
+                  cv::Point2f{center.x + width / 2, center.y - height / 2},
+                  cv::Point2f{center.x + width / 2, center.y + height / 2}};
+    }
+
+    cv::solvePnP((largeArmor ? largeArmorObjectPoints : smallArmorObjectPoints), points,
                  cameraMatrix, distCoeffs, rVec, tVec, false, cv::SOLVEPNP_ITERATIVE);
-    assert(tVec.rows == 3 && tVec.cols == 1);
+
     offset = {static_cast<float>(tVec.at<double>(0, 0)),
               static_cast<float>(tVec.at<double>(1, 0)),
               static_cast<float>(tVec.at<double>(2, 0)) * zScale};

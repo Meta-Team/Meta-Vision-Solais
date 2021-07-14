@@ -71,6 +71,7 @@ void ParamSetManager::reloadParamSetList() {
         params.set_allocated_light_angle_max_diff(allocToggledFloat(true, 10));
         params.set_allocated_small_armor_aspect_ratio(allocFloatRange(1.25, 2));
         params.set_allocated_large_armor_aspect_ratio(allocFloatRange(2, 5));
+        params.set_allocated_manual_pnp_rect_max_height(allocToggledInt(false, 50));
 
         params.set_allocated_small_armor_size(allocIntPair(120, 60));
         params.set_allocated_large_armor_size(allocIntPair(240, 60));
