@@ -124,10 +124,13 @@ public:
      * @param lightsImage
      * @param lightRects
      * @param armors
+     * @param tkTriggered
+     * @param tkPulses
+     * @param tkPeriod
      */
     void fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage, cv::Mat &lightsImage,
                       std::vector<cv::RotatedRect> &lightRects, std::vector<AimingSolver::ArmorInfo> &armors,
-                      bool &tkTriggered, std::deque<AimingSolver::PulseInfo> &tkPulses);
+                      bool &tkTriggered, std::deque<AimingSolver::PulseInfo> &tkPulses, TimePoint &tkPeriod);
 
 private:
 
@@ -174,6 +177,7 @@ private:
     std::vector<AimingSolver::ArmorInfo> armorsOutput;
     bool tkTriggeredOutput;
     std::deque<AimingSolver::PulseInfo> tkPulsesOutput;
+    TimePoint tkPeriodOutput;
 };
 
 }

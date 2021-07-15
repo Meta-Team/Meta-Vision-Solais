@@ -338,8 +338,8 @@ std::vector<ArmorDetector::DetectedArmor>::iterator
 ArmorDetector::filterAcceptedArmorsToRemove(std::vector<DetectedArmor> &acceptedArmors) const {
     for (auto it = acceptedArmors.begin(); it != acceptedArmors.end(); ++it) {
         for (auto it2 = it + 1; it2 != acceptedArmors.end(); ++it2) {
-            if (it->lightIndex[0] == it->lightIndex[0] || it->lightIndex[0] == it->lightIndex[1] ||
-                it->lightIndex[1] == it->lightIndex[0] || it->lightIndex[1] == it->lightIndex[1]) {
+            if (it->lightIndex[0] == it2->lightIndex[0] || it->lightIndex[0] == it2->lightIndex[1] ||
+                it->lightIndex[1] == it2->lightIndex[0] || it->lightIndex[1] == it2->lightIndex[1]) {
                 // Share light
 
                 if (it->largeArmor != it2->largeArmor) {  // one small one large, prioritize small

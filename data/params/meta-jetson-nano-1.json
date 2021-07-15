@@ -68,7 +68,7 @@
  },
  "light_length_max_ratio": {
   "enabled": true,
-  "val": 1.7
+  "val": 2
  },
  "light_x_dist_over_l": {
   "enabled": true,
@@ -101,21 +101,21 @@
   "y": 60
  },
  "manual_pnp_rect_max_height": {
-  "enabled": true,
+  "enabled": false,
   "val": 50
  },
- "pulse_min_x_offset": 200,
+ "pulse_min_x_offset": 150,
  "pulse_max_y_offset": 1000,
  "pulse_min_interval": 200,
  "tk_threshold": {
   "x": 4,
   "y": 2000
  },
- "tk_compute_period_using_pulses": 3,
+ "tk_compute_period_using_pulses": 9,
  "tk_target_dist_offset": -100,
  "tracking_life_time": 150,
  "manual_delta_offset": {
-  "x": 0.5,
+  "x": 0,
   "y": 0
  }
 }

@@ -240,6 +240,7 @@ void Executor::runStreamingDetection(InputSource *source) {
             armorsOutput = armors;
             tkTriggeredOutput = aimingSolver_->topKiller.triggered;
             tkPulsesOutput = aimingSolver_->topKiller.pulses;
+            tkPeriodOutput = aimingSolver_->topKiller.period;
 
             outputMutex.unlock();
         }
@@ -325,7 +326,7 @@ bool Executor::hasOutputs() {
 void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv::Mat &colorImage,
                             cv::Mat &lightsImage, std::vector<cv::RotatedRect> &lightRects,
                             std::vector<AimingSolver::ArmorInfo> &armors,
-                            bool &tkTriggered, std::deque<AimingSolver::PulseInfo> &tkPulses) {
+                            bool &tkTriggered, std::deque<AimingSolver::PulseInfo> &tkPulses, TimePoint &tkPeriod) {
     if (curAction != NONE) {
         outputMutex.lock();
         {
@@ -337,6 +338,7 @@ void Executor::fetchOutputs(cv::Mat &originalImage, cv::Mat &brightnessImage, cv
             armors = armorsOutput;
             tkTriggered = tkTriggeredOutput;
             tkPulses = tkPulsesOutput;
+            tkPeriod = tkPeriodOutput;
         }
         outputMutex.unlock();
 

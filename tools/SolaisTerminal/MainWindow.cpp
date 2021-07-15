@@ -354,12 +354,13 @@ void MainWindow::applyResultMessage() {
         QString s;
         QTextStream ss(&s);
         for (const auto &pulse : resultMessage.tk_pulses()) {
-            ss << "[" << pulse.time() << "] ("
+            ss << "[" << pulse.avg_time() << "] ("
                << QString::number(pulse.mid_ypd().x(), 'f', 1) << ", "
                << QString::number(pulse.mid_ypd().y(), 'f', 1) << ", "
-               << QString::number(pulse.mid_ypd().z(), 'f', 1) << ")\n";
+               << QString::number(pulse.mid_ypd().z(), 'f', 1) << ") for "
+               << pulse.frame_count() << " frames \n";
         }
-        ss << (resultMessage.tk_triggered() ? "Triggered!" : "Not triggered") << "\n";
+        ss << (resultMessage.tk_triggered() ? "Triggered! " : "Not triggered ") << resultMessage.tk_period() << "\n";
         phases->topKillerInfoLabel->setText(s);
     }
 

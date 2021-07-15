@@ -70,9 +70,10 @@ void sendResult(std::string_view mask) {
         std::vector<AimingSolver::ArmorInfo> armors;
         bool tkTriggered;
         std::deque<AimingSolver::PulseInfo> tkPulses;
+        TimePoint tkPeriod;
 
         executor->fetchOutputs(originalImage, brightnessImage, colorImage, lightsImage, lightRects, armors,
-                               tkTriggered, tkPulses);
+                               tkTriggered, tkPulses, tkPeriod);
         // If can't lock immediately, simply wait. Detector only performs several non-copy assignments.
 
         // Detector images
@@ -121,8 +122,10 @@ void sendResult(std::string_view mask) {
             for (const auto &pulse : tkPulses) {
                 auto p = resultPackage.add_tk_pulses();
                 p->set_allocated_mid_ypd(allocResultPoint3f(pulse.ypdMid.x, pulse.ypdMid.y, pulse.ypdMid.z));
-                p->set_time(pulse.avgTime / 10);
+                p->set_avg_time(pulse.avgTime / 10);
+                p->set_frame_count(pulse.frameCount);
             }
+            resultPackage.set_tk_period(tkPeriod / 10);
         }
 
         // Aiming

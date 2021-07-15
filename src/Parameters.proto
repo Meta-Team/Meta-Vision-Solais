@@ -170,7 +170,8 @@ message ResultRotatedRect {
 
 message TopKillerPulse {
   required ResultPoint3f mid_ypd = 1;
-  required int32 time = 2;
+  required int32 avg_time = 2;
+  required int32 frame_count = 3;
 }
 
 message ArmorInfo {
@@ -225,6 +226,7 @@ message Result {
   // IMAGE: topKillerImage
   optional bool tk_triggered = 8;
   repeated TopKillerPulse tk_pulses = 9;
+  optional int32 tk_period = 12;
 
   // GROUP: Aiming
   // INFO: aimingInfo

@@ -19,7 +19,7 @@ using cv::norm;
 
 cv::Point3f AimingSolver::xyzToYPD(const cv::Point3f &xyz) {
     return {(float) (atan(xyz.x / xyz.z) * 180.0f / PI),  // +: horizontal right
-            (float) (atan(xyz.y / sqrt(pow2(xyz.x) + pow2(xyz.z))) * 180.0f / PI),  // +: vertical down
+            (float) (atan(xyz.y / xyz.z) * 180.0f / PI),  // +: vertical down
             (float) norm(xyz)};  // +: away
 }
 
@@ -35,6 +35,10 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
 
     } else {
 
+        for (auto &armor : armors) {
+            armor.ypd = xyzToYPD(armor.offset);
+        }
+
         // Select the armor closest to the point required by the Tracker
         cv::Point2f targetImgPoint = tracker.getTargetImgPoint();
         float imgMinDist = 1000000;
@@ -47,7 +51,6 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
         }
 
         // Update
-        selectedArmor->ypd = xyzToYPD(selectedArmor->offset);
         selectedArmor->flags |= ArmorInfo::SELECTED_TARGET;
         topKiller.update(selectedArmor, imageCaptureTime);  // TopKiller needs to be updated before Tracker
         tracker.update(selectedArmor);
@@ -214,9 +217,9 @@ void AimingSolver::TopKiller::update(const AimingSolver::ArmorInfo *armor, TimeP
 
             // Compute average period, use last but one pulse since current pulse may still in-progress
             {
-                auto count = std::min(pulses.size() - 2, (size_t) params.tk_compute_period_using_pulses());
-                period = (lastButOnePulse.avgTime - pulses[pulses.size() - 2 - count].avgTime) / count;
-                timeToTarget = lastButOnePulse.avgTime + period + period / 2U;
+                auto count = std::min(pulses.size() - 1, (size_t) params.tk_compute_period_using_pulses());
+                period = (lastPulse.avgTime - pulses[pulses.size() - 1 - count].avgTime) / count;
+                timeToTarget = lastPulse.avgTime + period / 2U;
             }
 
         } else {
