@@ -339,6 +339,7 @@ void MainWindow::applyResultMessage() {
             painter.setPen(Qt::yellow);
             for (const auto &rect : resultMessage.lights()) {
                 painter.resetTransform();
+                painter.drawText(rect.center().x(), rect.center().y() - 5, QString::number((int) rect.angle()));
                 painter.translate(rect.center().x(), rect.center().y());
                 painter.rotate(rect.angle());
                 painter.drawRect(-rect.size().x() / 2, -rect.size().y() / 2, rect.size().x(), rect.size().y());
@@ -360,7 +361,11 @@ void MainWindow::applyResultMessage() {
                << QString::number(pulse.mid_ypd().z(), 'f', 1) << ") for "
                << pulse.frame_count() << " frames \n";
         }
-        ss << (resultMessage.tk_triggered() ? "Triggered! " : "Not triggered ") << resultMessage.tk_period() << "\n";
+        if (resultMessage.tk_triggered()) {
+            ss << "Triggered! " << resultMessage.tk_period() << "\n";
+        } else {
+            ss << "Not triggered\n";
+        }
         phases->topKillerInfoLabel->setText(s);
     }
 

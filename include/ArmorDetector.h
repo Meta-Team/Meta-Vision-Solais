@@ -26,11 +26,12 @@ public:
         int number = 0;                 // unused yet
         std::array<int, 2> lightIndex;  // left, right
         float lightAngleDiff;           // absolute value, non-negative
+        float avgLightAngle;
     };
 
     std::vector<DetectedArmor> detect(const cv::Mat &img);
 
-    void clearImages() { imgOriginal = imgGray = imgBrightness = imgColor = imgLights = cv::Mat(); }
+    static float normalizeLightAngle(float angle) { return angle <= 90 ? angle : 180 - angle; }
 
 private:
 

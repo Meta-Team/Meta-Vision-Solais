@@ -117,6 +117,8 @@ message ParamSet {
   enum ContourFitFunction {
       MIN_AREA_RECT = 0;
       ELLIPSE = 1;
+      ELLIPSE_AMS = 2;
+      ELLIPSE_DIRECT = 3;
   };
   required ContourFitFunction contour_fit_function = 20;   // Fit function
 
@@ -136,6 +138,7 @@ message ParamSet {
   required IntPair small_armor_size = 32;                  // Small armor region size [mm]
   required IntPair large_armor_size = 33;                  // Large armor region size [mm]
   required ToggledInt manual_pnp_rect_max_height = 44;     // Use manual PnP rect when height <
+  required int32 dist_manual_offset = 45;                  // Manual distance offset
 
   // GROUP: TopKiller
   required float pulse_min_x_offset = 34;                  // Pulse min X offset [mm]
@@ -147,7 +150,7 @@ message ParamSet {
 
   // GROUP: Aiming
   required int32 tracking_life_time = 40;                  // Consider discard tracking after frames
-  required FloatPair manual_delta_offset = 37;             // Target manual offset
+  required FloatPair manual_delta_offset = 37;             // Manual angle offsets
 }
 
 // ============================================== Result Structures ==============================================

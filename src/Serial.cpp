@@ -32,8 +32,8 @@ Serial::Serial(boost::asio::io_context &ioContext)
                             [this](auto &error, auto numBytes) { handleRecv(error, numBytes); });
 }
 
-bool Serial::sendControlCommand(bool detected, bool topKillerTriggered, float yawDelta, float pitchDelta,
-                                float distance, int remainingTimeToTarget, int period) {
+bool Serial::sendControlCommand(bool detected, TimePoint time, float yawDelta, float pitchDelta, float distance,
+                                float avgLightAngle) {
 
     auto pkg = std::make_shared<Package>();
 
@@ -42,13 +42,11 @@ bool Serial::sendControlCommand(bool detected, bool topKillerTriggered, float ya
 
     pkg->command.flag = 0;
     if (detected) pkg->command.flag |= VisionCommand::DETECTED;
-    if (topKillerTriggered) pkg->command.flag |= VisionCommand::TOP_KILLER_TRIGGERED;
-
-    pkg->command.yawDelta = (int) (-yawDelta * 100);  // notice the minus sign
-    pkg->command.pitchDelta = (int) (pitchDelta * 100);
-    pkg->command.distance = (int) distance;
-    pkg->command.remainingTimeToTarget = (int16_t) remainingTimeToTarget;
-    pkg->command.period = (int16_t) period;
+    pkg->command.frameTime = time;
+    pkg->command.yawDelta = (int16_t) (-yawDelta * 100);  // notice the minus sign
+    pkg->command.pitchDelta = (int16_t) (pitchDelta * 100);
+    pkg->command.distance = (int16_t) distance;
+    pkg->command.avgLightAngle = (int16_t) (avgLightAngle * 100);
     rm::appendCRC8CheckSum((uint8_t *) (pkg.get()), sizeof(uint8_t) * 2 + sizeof(VisionCommand) + sizeof(uint8_t));
 
     //::tcflush(serial.lowest_layer().native_handle(), TCIFLUSH);  // clear input buffer

@@ -208,6 +208,7 @@ void Executor::runStreamingDetection(InputSource *source) {
                         detectedArmor.points,
                         detectedArmor.center,
                         offset,
+                        detectedArmor.avgLightAngle,
                         detectedArmor.largeArmor,
                         detectedArmor.number
                 });
@@ -222,12 +223,11 @@ void Executor::runStreamingDetection(InputSource *source) {
             // Send control command
             serial_->sendControlCommand(
                     command.detected,
-                    command.topKillerTriggered,
+                    frameTime,
                     command.yawDelta,
                     command.pitchDelta,
                     command.dist,
-                    command.remainingTimeToTarget,
-                    command.period);
+                    command.avgLightAngle);
         }
 
         // Assign (no copying for cv::Mat) results all at once, if the result is not being processed

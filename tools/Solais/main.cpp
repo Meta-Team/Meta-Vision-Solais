@@ -93,7 +93,11 @@ void sendResult(std::string_view mask) {
                 auto r = resultPackage.add_lights();
                 r->set_allocated_center(allocResultPoint2f(rect.center.x * imageScale, rect.center.y * imageScale));
                 r->set_allocated_size(allocResultPoint2f(rect.size.width * imageScale, rect.size.height * imageScale));
-                r->set_angle(rect.angle);
+                if (rect.angle <= 90) {
+                    r->set_angle(rect.angle);
+                } else {
+                    r->set_angle(rect.angle - 180);
+                }
             }
         }
 
@@ -133,7 +137,7 @@ void sendResult(std::string_view mask) {
             AimingSolver::ControlCommand command;
             if (executor->aimingSolver()->getControlCommand(command)) {
                 resultPackage.set_allocated_aiming_target(allocResultPoint2f(command.yawDelta, command.pitchDelta));
-                resultPackage.set_remaining_time_to_target(command.remainingTimeToTarget);
+//                resultPackage.set_remaining_time_to_target(command.remainingTimeToTarget);
             }
         }
         socketServer.sendBytes("res", resultPackage);

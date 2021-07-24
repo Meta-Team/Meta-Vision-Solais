@@ -104,8 +104,10 @@
     "enabled": true,
     "val": 50
   },
+  "dist_manual_offset": 200,
   "pulse_min_x_offset": 500,
   "pulse_max_y_offset": 300,
+  "pulse_min_interval": 200,
   "tk_threshold": {
     "x": 3,
     "y": 1500

@@ -134,6 +134,14 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
                     if (contour.size() < 5) continue;
                     rect = fitEllipse(contour);
                     break;
+                case ParamSet::ELLIPSE_AMS:
+                    if (contour.size() < 5) continue;
+                    rect = fitEllipseAMS(contour);
+                    break;
+                case ParamSet::ELLIPSE_DIRECT:
+                    if (contour.size() < 5) continue;
+                    rect = fitEllipseDirect(contour);
+                    break;
                 default:
                     assert(!"Invalid params.contour_fit_function()");
             }
@@ -315,7 +323,8 @@ std::vector<ArmorDetector::DetectedArmor> ArmorDetector::detect(const Mat &img) 
                         largeArmor,
                         0,
                         {leftLightIndex, rightLightIndex},
-                        angleDiff
+                        angleDiff,
+                        (normalizeLightAngle(leftRect.angle) + normalizeLightAngle(rightRect.angle)) / 2
                 });
             }
         }

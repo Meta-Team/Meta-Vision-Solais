@@ -30,12 +30,12 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
 
     if (armors.empty()) {
 
-        topKiller.update(nullptr, imageCaptureTime);  // TopKiller needs to be updated before Tracker
         tracker.update(nullptr);
 
     } else {
 
         for (auto &armor : armors) {
+            armor.offset.z += 200;  //FIXME:
             armor.ypd = xyzToYPD(armor.offset);
         }
 
@@ -52,52 +52,25 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
 
         // Update
         selectedArmor->flags |= ArmorInfo::SELECTED_TARGET;
-        topKiller.update(selectedArmor, imageCaptureTime);  // TopKiller needs to be updated before Tracker
         tracker.update(selectedArmor);
 
     }
 
-    if (!topKiller.isTriggered()) {
 
-        latestCommand.topKillerTriggered = false;
+    if (selectedArmor) {
 
-        if (selectedArmor) {
-
-            // Aim at the selected armor
-            const auto &xyz = selectedArmor->offset;
-            const auto &ypd = selectedArmor->ypd;
-            latestCommand.detected = true;
-            latestCommand.yawDelta = ypd.x + params.manual_delta_offset().x();
-            latestCommand.pitchDelta = ypd.y + params.manual_delta_offset().y();
-            latestCommand.dist = ypd.z;
-            latestCommand.remainingTimeToTarget = latestCommand.period = 0;
-        } else {
-
-            // Let Control keep last target angles
-            latestCommand.detected = false;
-        }
-
+        // Aim at the selected armor
+        const auto &xyz = selectedArmor->offset;
+        const auto &ypd = selectedArmor->ypd;
+        latestCommand.detected = true;
+        latestCommand.yawDelta = ypd.x + params.manual_delta_offset().x();
+        latestCommand.pitchDelta = ypd.y + params.manual_delta_offset().y();
+        latestCommand.dist = ypd.z;
+        latestCommand.avgLightAngle = selectedArmor->avgLightAngle;
     } else {
 
-        // Aim at the predicted target point
-
-        latestCommand.topKillerTriggered = true;
-
-        cv::Point3f ypd;
-        latestCommand.detected = topKiller.shouldSendTarget(ypd);
-        if (latestCommand.detected) {
-            latestCommand.yawDelta = ypd.x + params.manual_delta_offset().x();
-            latestCommand.pitchDelta = ypd.y + params.manual_delta_offset().y();
-            /*
-             * When an armor rotates to the target point, it will be little closer than the midpoint of two
-             * rotated armors at the two sides.
-             */
-            latestCommand.dist = ypd.z + params.tk_target_dist_offset();
-            latestCommand.remainingTimeToTarget =
-                    ((int) topKiller.getTimePointToTarget() - (int) imageCaptureTime) / 10;
-            latestCommand.period = (int) topKiller.getPeriod() / 10;
-        }
-
+        // Let Control keep last target angles
+        latestCommand.detected = false;
     }
 
     shouldSendCommand = true;  // always send the command for Control to update latest gimbal angles
@@ -177,7 +150,8 @@ void AimingSolver::TopKiller::update(const AimingSolver::ArmorInfo *armor, TimeP
                 pulses.emplace_back(PulseInfo{
                         {(lastArmor->ypd.x + armor->ypd.x) / 2,
                          (lastArmor->ypd.y + armor->ypd.y) / 2,
-                         (lastPulse.ypdMid.z * lastPulse.frameCount + (lastArmor->ypd.z + armor->ypd.z)) / (lastPulse.frameCount + 2)},
+                         (lastPulse.ypdMid.z * lastPulse.frameCount + (lastArmor->ypd.z + armor->ypd.z)) /
+                         (lastPulse.frameCount + 2)},
                         lastPulse.startTime,
                         (lastPulse.avgTime * lastPulse.frameCount + time) / (lastPulse.frameCount + 1),
                         time,

@@ -28,13 +28,14 @@ public:
         ArmorInfo() = default;
 
         ArmorInfo(const std::array<cv::Point2f, 4> &imgPoints, const cv::Point2f &imgCenter,
-                  const cv::Point3f &offset, bool largeArmor, int number = 0)
-                : imgPoints(imgPoints), imgCenter(imgCenter), offset(offset),
+                  const cv::Point3f &offset, float avgLightAngle, bool largeArmor, int number = 0)
+                : imgPoints(imgPoints), imgCenter(imgCenter), offset(offset), avgLightAngle(avgLightAngle),
                   largeArmor(largeArmor), number(number) {}
 
         std::array<cv::Point2f, 4> imgPoints;  // pixel
         cv::Point2f imgCenter;                 // pixel
         cv::Point3f offset;                    // x, y, z in mm, relative to current view
+        float avgLightAngle;
         bool largeArmor = false;
         int number = 0;                        // 0 for empty (no number sticker)
 
@@ -55,12 +56,10 @@ public:
 
     struct ControlCommand {
         bool detected;
-        bool topKillerTriggered;
         float yawDelta = 0;         // rightward for positive [deg]
         float pitchDelta = 0;       // downward for positive [deg]
         float dist = 0;             // non-negative [mm]
-        int remainingTimeToTarget;  // TopKiller: remaining time [ms] for the armor to reach the target, 0 otherwise
-        int period;                 // TopKiller: rotation period [ms]
+        float avgLightAngle = 0;
     };
 
     bool getControlCommand(ControlCommand &command) const;

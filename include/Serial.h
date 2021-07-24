@@ -19,8 +19,8 @@ public:
 
     explicit Serial(boost::asio::io_context &ioContext);
 
-    bool sendControlCommand(bool detected, bool topKillerTriggered, float yawDelta, float pitchDelta, float distance,
-                            int remainingTimeToTarget, int period);
+    bool sendControlCommand(bool detected, TimePoint time, float yawDelta, float pitchDelta, float distance,
+                            float avgLightAngle);
 
 private:
 
@@ -31,15 +31,14 @@ private:
         enum VisionFlag : uint8_t {
             NONE = 0,
             DETECTED = 1,
-            TOP_KILLER_TRIGGERED = 2,
         };
 
         uint8_t flag;
+        uint16_t frameTime;             // [0.1ms]
         int16_t yawDelta;               // yaw relative angle [deg] * 100
         int16_t pitchDelta;             // pitch relative angle [deg] * 100
         int16_t distance;               // [mm]
-        int16_t remainingTimeToTarget;  // [ms]
-        int16_t period;                 // [ms]
+        int16_t avgLightAngle;          // [deg] * 100
     };
 
     struct __attribute__((packed, aligned(1))) Package {
