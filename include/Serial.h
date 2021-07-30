@@ -20,7 +20,7 @@ public:
     explicit Serial(boost::asio::io_context &ioContext);
 
     bool sendControlCommand(bool detected, TimePoint time, float yawDelta, float pitchDelta, float distance,
-                            float avgLightAngle);
+                            float avgLightAngle, float imageX, float imageY);
 
 private:
 
@@ -39,6 +39,8 @@ private:
         int16_t pitchDelta;             // pitch relative angle [deg] * 100
         int16_t distance;               // [mm]
         int16_t avgLightAngle;          // [deg] * 100
+        int16_t imageX;                 // pixel
+        int16_t imageY;                 // pixel
     };
 
     struct __attribute__((packed, aligned(1))) Package {

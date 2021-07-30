@@ -116,7 +116,7 @@
  "tk_target_dist_offset": -100,
  "tracking_life_time": 150,
  "manual_delta_offset": {
-  "x": 0.5,
+  "x": 0,
   "y": 0
  }
 }

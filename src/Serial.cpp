@@ -33,7 +33,7 @@ Serial::Serial(boost::asio::io_context &ioContext)
 }
 
 bool Serial::sendControlCommand(bool detected, TimePoint time, float yawDelta, float pitchDelta, float distance,
-                                float avgLightAngle) {
+                                float avgLightAngle, float imageX, float imageY) {
 
     auto pkg = std::make_shared<Package>();
 
@@ -47,6 +47,8 @@ bool Serial::sendControlCommand(bool detected, TimePoint time, float yawDelta, f
     pkg->command.pitchDelta = (int16_t) (pitchDelta * 100);
     pkg->command.distance = (int16_t) distance;
     pkg->command.avgLightAngle = (int16_t) (avgLightAngle * 100);
+    pkg->command.imageX = (int16_t) imageX;
+    pkg->command.imageY = (int16_t) imageY;
     rm::appendCRC8CheckSum((uint8_t *) (pkg.get()), sizeof(uint8_t) * 2 + sizeof(VisionCommand) + sizeof(uint8_t));
 
     //::tcflush(serial.lowest_layer().native_handle(), TCIFLUSH);  // clear input buffer

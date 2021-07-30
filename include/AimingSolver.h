@@ -60,6 +60,8 @@ public:
         float pitchDelta = 0;       // downward for positive [deg]
         float dist = 0;             // non-negative [mm]
         float avgLightAngle = 0;
+        float imageX = 0;
+        float imageY = 0;
     };
 
     bool getControlCommand(ControlCommand &command) const;

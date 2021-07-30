@@ -227,7 +227,9 @@ void Executor::runStreamingDetection(InputSource *source) {
                     command.yawDelta,
                     command.pitchDelta,
                     command.dist,
-                    command.avgLightAngle);
+                    command.avgLightAngle,
+                    command.imageX,
+                    command.imageY);
         }
 
         // Assign (no copying for cv::Mat) results all at once, if the result is not being processed

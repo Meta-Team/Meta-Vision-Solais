@@ -67,6 +67,8 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
         latestCommand.pitchDelta = ypd.y + params.manual_delta_offset().y();
         latestCommand.dist = ypd.z;
         latestCommand.avgLightAngle = selectedArmor->avgLightAngle;
+        latestCommand.imageX = selectedArmor->imgCenter.x;
+        latestCommand.imageY = selectedArmor->imgCenter.y;
     } else {
 
         // Let Control keep last target angles
