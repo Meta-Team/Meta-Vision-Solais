@@ -52,10 +52,14 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
 
         // Update
         selectedArmor->flags |= ArmorInfo::SELECTED_TARGET;
+        topKiller.update(selectedArmor, imageCaptureTime);  // TopKiller needs to be updated before Tracker
         tracker.update(selectedArmor);
 
     }
 
+    if (!topKiller.isTriggered()) {
+
+        latestCommand.topKillerTriggered = false;
 
     if (selectedArmor) {
 
@@ -73,6 +77,29 @@ void AimingSolver::updateArmors(std::vector<ArmorInfo> &armors, TimePoint imageC
 
         // Let Control keep last target angles
         latestCommand.detected = false;
+    }
+
+    } else {
+
+        // Aim at the predicted target point
+
+        latestCommand.topKillerTriggered = true;
+
+        cv::Point3f ypd;
+        latestCommand.detected = topKiller.shouldSendTarget(ypd);
+        if (latestCommand.detected) {
+            latestCommand.yawDelta = ypd.x + params.manual_delta_offset().x();
+            latestCommand.pitchDelta = ypd.y + params.manual_delta_offset().y();
+            /*
+             * When an armor rotates to the target point, it will be little closer than the midpoint of two
+             * rotated armors at the two sides.
+             */
+            latestCommand.dist = ypd.z + params.tk_target_dist_offset();
+            latestCommand.remainingTimeToTarget =
+                    ((int) topKiller.getTimePointToTarget() - (int) imageCaptureTime) / 10;
+            latestCommand.period = (int) topKiller.getPeriod() / 10;
+        }
+
     }
 
     shouldSendCommand = true;  // always send the command for Control to update latest gimbal angles

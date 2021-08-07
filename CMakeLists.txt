@@ -57,14 +57,6 @@ else ()
             "(-DQt5_DIR=\"path/to/Qt/lib/cmake\" or -DQt5_DIR=/usr/include/{host}/qt{version}/ on Ubuntu)")
 endif ()
 
-# Find pugixml
-find_package(pugixml)
-if (pugixml_FOUND)
-    #    message("Protobuf ${Protobuf_VERSION} found")
-else ()
-    message(WARNING "pugixml not found so some targets may not be available")
-endif ()
-
 # Find GStreamer
 find_package(PkgConfig)
 if (PkgConfig_FOUND)

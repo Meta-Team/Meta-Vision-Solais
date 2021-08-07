@@ -56,12 +56,15 @@ public:
 
     struct ControlCommand {
         bool detected;
+        bool topKillerTriggered;
         float yawDelta = 0;         // rightward for positive [deg]
         float pitchDelta = 0;       // downward for positive [deg]
         float dist = 0;             // non-negative [mm]
         float avgLightAngle = 0;
         float imageX = 0;
         float imageY = 0;
+        int remainingTimeToTarget;  // TopKiller: remaining time [ms] for the armor to reach the target, 0 otherwise
+        int period;                 // TopKiller: rotation period [ms]
     };
 
     bool getControlCommand(ControlCommand &command) const;

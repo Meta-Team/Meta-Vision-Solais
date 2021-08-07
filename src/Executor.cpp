@@ -223,13 +223,16 @@ void Executor::runStreamingDetection(InputSource *source) {
             // Send control command
             serial_->sendControlCommand(
                     command.detected,
+                    command.topKillerTriggered,
                     frameTime,
                     command.yawDelta,
                     command.pitchDelta,
                     command.dist,
                     command.avgLightAngle,
                     command.imageX,
-                    command.imageY);
+                    command.imageY,
+                    command.remainingTimeToTarget,
+                    command.period);
         }
 
         // Assign (no copying for cv::Mat) results all at once, if the result is not being processed

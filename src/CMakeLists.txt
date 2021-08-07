@@ -76,7 +76,7 @@ endif()
 #endif ()
 
 # libSolais
-if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET libParameters AND TARGET libTerminalSocket AND TARGET libArmorSolver AND TARGET libSerial)
+if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND TARGET libParameters AND TARGET libTerminalSocket AND TARGET libArmorSolver AND TARGET libSerial)
     add_library(libSolais
             ArmorDetector.cpp
             AimingSolver.cpp
@@ -89,7 +89,6 @@ if (Boost_FOUND AND OpenCV_FOUND AND Protobuf_FOUND AND pugixml_FOUND AND TARGET
             ${Boost_FILESYSTEM_LIBRARY}
             ${Boost_SYSTEM_LIBRARY}
             ${Protobuf_LIBRARIES}
-            pugixml
             pthread
             libParameters
             libTerminalSocket

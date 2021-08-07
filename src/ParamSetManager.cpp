@@ -7,7 +7,6 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <pugixml.hpp>
 #include <google/protobuf/util/json_util.h>
 #include <boost/asio/ip/host_name.hpp>
 
