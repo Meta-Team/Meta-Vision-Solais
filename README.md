@@ -1,3 +1,5 @@
+This repository is archived, please visit [Meta-Vision-SolaisNG](https://github.com/Meta-Team/Meta-Vision-SolaisNG).
+
 Meta-Vision-Solais
 ===
 
